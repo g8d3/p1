@@ -12,4 +12,7 @@ Write code so that agents talk to each other until they accomplish a task, they 
 Here is a list of tasks increasingly complex so that agents can know if their code allows them complete them:
 
 show working directory
-write a 
+write a plan in a file to create an online business using AI
+write code for the plan
+run or deploy code
+test code is giving value to users

@@ -16,3 +16,4 @@ write a plan in a file to create an online business using AI
 write code for the plan
 run or deploy code
 test code is giving value to users
+test and monetize AI tools from other creators, agent is able to pay with a credit card or web3 wallet

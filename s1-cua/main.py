@@ -17,7 +17,7 @@ from uuid import uuid4
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-1.5:generateContent"  # Updated model
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, filename="agent_collaboration.log")
@@ -35,6 +35,14 @@ MAX_MESSAGE_LENGTH = 1000
 COST_PER_API_CALL = 0.001  # Example cost in USD
 MAX_TOTAL_COST = 0.05  # Max total cost in USD
 MIN_QUALITY_SCORE = 0.8  # Minimum peer review score (0-1)
+
+# Validate environment variables
+if not OPENROUTER_API_KEY:
+    logger.error("OPENROUTER_API_KEY is not set")
+    raise ValueError("OPENROUTER_API_KEY is required")
+if not GEMINI_API_KEY:
+    logger.error("GEMINI_API_KEY is not set")
+    raise ValueError("GEMINI_API_KEY is required")
 
 # Database types
 class DBType(Enum):
@@ -173,7 +181,10 @@ class AIAgent:
             "Authorization": f"Bearer {OPENROUTER_API_KEY if config.api_type == 'openrouter' else GEMINI_API_KEY}",
             "Content-Type": "application/json"
         }
-        self.api_url = OPENROUTER_URL if config.api_type == "openrouter" else GEMINI_URL
+        if config.api_type == "openrouter":
+            self.api_headers["HTTP-Referer"] = "http://localhost"  # Required by OpenRouter
+            self.api_headers["X-Title"] = "Agent Collaboration"
+        self.api_url = OPENROUTER_URL if config.api_type == "openrouter" else f"{GEMINI_URL}?key={GEMINI_API_KEY}"  # Append key for Gemini
         self.api_calls = 0
         self.lock = Lock()
 
@@ -190,30 +201,36 @@ class AIAgent:
 
         payload = {
             "model": self.config.model,
-            "messages": [{"role": "user", "content": prompt}]
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 500  # Added to control response length
         }
+        if self.config.api_type == "gemini":
+            payload = {"contents": [{"parts": [{"text": prompt}]}]}  # Gemini-specific payload
+
         try:
+            logger.debug(f"Sending request to {self.api_url} with payload: {json.dumps(payload, indent=2)}")
             response = requests.post(self.api_url, json=payload, headers=self.api_headers)
             response.raise_for_status()
             data = response.json()
-            return data["choices"][0]["message"]["content"]
-        except Exception as e:
+            if self.config.api_type == "openrouter":
+                return data["choices"][0]["message"]["content"]
+            else:
+                return data["candidates"][0]["content"]["parts"][0]["text"]  # Gemini response parsing
+        except requests.exceptions.RequestException as e:
             logger.error(f"API call failed for agent {self.config.id}: {str(e)}")
+            if response:
+                logger.error(f"Response details: {response.text}")
             return None
 
     def contribute_to_task(self, task_state: TaskState) -> Optional[Dict[str, Any]]:
         context = self.memory.query_memory(task_state.task_id, task_state.description)
-        truncated_code = task_state.current_code[:MAX_MESSAGE_LENGTH // 2]
-        truncated_context = str(context)[:MAX_MESSAGE_LENGTH // 2]
-
         prompt = (
             f"Task: {task_state.description}\n"
-            f"Current code:\n```python\n{truncated_code}\n```\n"
-            f"Context: {truncated_context}\n"
+            f"Current code:\n```python\n{task_state.current_code}\n```\n"
+            f"Context: {context}\n"
             f"Contribute a code snippet or suggest improvements. Return code in ```python``` block."
         )
 
-        logger.info(f"Prompt length for agent {self.config.id}: {len(prompt)}")
         response = self.call_model(prompt)
         if not response:
             return None
@@ -228,7 +245,7 @@ class AIAgent:
             f"Current code:\n```python\n{task_state.current_code}\n```\n"
             f"Contribution by {contribution['agent_id']}:\n{contribution['content']}\n"
             f"Score it from 0 to 1 based on correctness, relevance, and clarity. "
-            f"Provide feedback and a score."
+            f"Return JSON: {{'score': float, 'feedback': str}}"
         )
 
         response = self.call_model(prompt)
@@ -236,10 +253,7 @@ class AIAgent:
             return {"score": 0, "feedback": "Review failed"}
 
         try:
-            review_data = json.loads(response) if response.startswith("{") else {
-                "score": 0,
-                "feedback": response
-            }
+            review_data = json.loads(response)
             return {
                 "reviewer_id": self.config.id,
                 "score": min(max(float(review_data.get("score", 0)), 0), 1),
@@ -253,7 +267,6 @@ class AIAgent:
         if not self.config.shell_access:
             return {"status": "error", "output": "Shell access disabled"}
 
-        # Write code to a temporary file
         temp_file = f"{working_dir}/temp_{uuid4().hex}.py"
         with open(temp_file, "w") as f:
             f.write(code)
@@ -295,6 +308,7 @@ class AgentOrchestrator:
 
             task_state.round += 1
             logger.info(f"Round {task_state.round} for task {task_state.task_id}")
+            any_contribution = False
 
             # Agents contribute
             for agent_id, agent in self.agents.items():
@@ -303,13 +317,19 @@ class AgentOrchestrator:
                     task_state.contributions.setdefault(agent_id, []).append(contribution["content"])
                     self.total_cost += COST_PER_API_CALL
                     task_state.total_cost += COST_PER_API_CALL
+                    any_contribution = True
 
-                    # Extract code from contribution
                     if "```python" in contribution["content"]:
                         start = contribution["content"].index("```python") + 9
                         end = contribution["content"].index("```", start)
                         new_code = contribution["content"][start:end].strip()
-                        task_state.current_code = new_code  # Update with latest valid code
+                        task_state.current_code = new_code
+
+            # Stop if no contributions
+            if not any_contribution:
+                task_state.status = "failed"
+                task_state.current_code = "No valid contributions received"
+                break
 
             # Agents review contributions
             for agent_id, contributions in task_state.contributions.items():
@@ -334,7 +354,6 @@ class AgentOrchestrator:
             avg_score = avg_score / review_count if review_count > 0 else 0
 
             if avg_score >= MIN_QUALITY_SCORE:
-                # Test the code
                 test_agent = list(self.agents.values())[0]
                 execution_result = test_agent.execute_code(task_state.current_code)
                 if execution_result["status"] == "success":
@@ -360,7 +379,7 @@ if __name__ == "__main__":
     configs = [
         AgentConfig(
             id="agent1",
-            model="google/gemini-2.0-flash-001",
+            model="google/gemini-2.0-flash-001",  # Updated model name for OpenRouter
             api_type="openrouter",
             shell_access=True,
             db_types=[DBType.SQL],
@@ -368,7 +387,7 @@ if __name__ == "__main__":
         ),
         AgentConfig(
             id="agent2",
-            model="gemini-2.0-flash",
+            model="gemini-2.0-flash",  # Updated model name for Gemini
             api_type="gemini",
             shell_access=True,
             db_types=[DBType.SQL],

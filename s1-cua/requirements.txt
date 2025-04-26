@@ -1,13 +1,3 @@
-os
-subprocess
-sqlite3
-faiss-cpu  # faiss (installs with only CPU support)
+faiss-cpu
 networkx
 requests
-typing
-dataclasses
-enum
-logging
-threading
-json
-uuid

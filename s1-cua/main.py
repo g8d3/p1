@@ -203,13 +203,17 @@ class AIAgent:
 
     def contribute_to_task(self, task_state: TaskState) -> Optional[Dict[str, Any]]:
         context = self.memory.query_memory(task_state.task_id, task_state.description)
+        truncated_code = task_state.current_code[:MAX_MESSAGE_LENGTH // 2]
+        truncated_context = str(context)[:MAX_MESSAGE_LENGTH // 2]
+
         prompt = (
             f"Task: {task_state.description}\n"
-            f"Current code:\n```python\n{task_state.current_code}\n```\n"
-            f"Context: {context}\n"
+            f"Current code:\n```python\n{truncated_code}\n```\n"
+            f"Context: {truncated_context}\n"
             f"Contribute a code snippet or suggest improvements. Return code in ```python``` block."
         )
 
+        logger.info(f"Prompt length for agent {self.config.id}: {len(prompt)}")
         response = self.call_model(prompt)
         if not response:
             return None
@@ -356,7 +360,7 @@ if __name__ == "__main__":
     configs = [
         AgentConfig(
             id="agent1",
-            model="google/gemini-flash-2.0",
+            model="google/gemini-2.0-flash-001",
             api_type="openrouter",
             shell_access=True,
             db_types=[DBType.SQL],

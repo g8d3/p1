@@ -1,16 +1,18 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.service import Service
 import time
 
-# Configure Chrome options
+# Configure Firefox options
 options = Options()
-options.binary_location = "/usr/bin/firefox"
 options.add_argument("--headless")  # Run in headless mode (no GUI)
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 
-# Set up the Chrome WebDriver
-driver = webdriver.Firefox(options=options)
+# Set up the Firefox WebDriver using webdriver_manager
+service = Service(GeckoDriverManager().install())
+driver = webdriver.Firefox(service=service, options=options)
 
 try:
     # Open the website

@@ -10,9 +10,11 @@ options.add_argument("--headless")  # Run in headless mode (no GUI)
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 
+print('before service')
 # Set up the Firefox WebDriver using webdriver_manager
 service = Service(GeckoDriverManager().install())
 driver = webdriver.Firefox(service=service, options=options)
+print('after service')
 
 try:
     # Open the website

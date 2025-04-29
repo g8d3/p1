@@ -30,46 +30,51 @@ def get_tweets(username, password, num_tweets=10):
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
     try:
-        # Log in to Twitter
-        driver.get("https://twitter.com/login")
-        time.sleep(5)  # Wait for the page to load
+        driver = None  # Initialize driver to None
+        try:
+            # Log in to Twitter
+            driver.get("https://twitter.com/login")
+            time.sleep(5)  # Wait for the page to load
+    
+            # Enter username
+            username_input = driver.find_element(By.NAME, "text")
+            username_input.send_keys(username)
+            next_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Next']]")
+            next_button.click()
+            time.sleep(5)
+    
+            # Enter password
+            password_input = driver.find_element(By.NAME, "password")
+            password_input.send_keys(password)
+            login_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Log in']]")
+            login_button.click()
+            time.sleep(10)
+    
+            # Get tweets from feed
+            driver.get("https://twitter.com/home")
+            time.sleep(5)
+            feed_tweets = []
+            feed_tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
+            for tweet_element in feed_tweet_elements[:num_tweets]:
+                feed_tweets.append(tweet_element.text)
+    
+            # Get tweets from likes
+            driver.get(f"https://twitter.com/{username}/likes")
+            time.sleep(5)
+            likes_tweets = []
+            likes_tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
+            for tweet_element in likes_tweet_elements[:num_tweets]:
+                likes_tweets.append(tweet_element.text)
+    
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            feed_tweets, likes_tweets = [], []
+        finally:
+            if driver:
+                driver.quit()
 
-        # Enter username
-        username_input = driver.find_element(By.NAME, "text")
-        username_input.send_keys(username)
-        next_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Next']]")
-        next_button.click()
-        time.sleep(5)
-
-        # Enter password
-        password_input = driver.find_element(By.NAME, "password")
-        password_input.send_keys(password)
-        login_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Log in']]")
-        login_button.click()
-        time.sleep(10)
-
-        # Get tweets from feed
-        driver.get("https://twitter.com/home")
-        time.sleep(5)
-        feed_tweets = []
-        feed_tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
-        for tweet_element in feed_tweet_elements[:num_tweets]:
-            feed_tweets.append(tweet_element.text)
-
-        # Get tweets from likes
-        driver.get(f"https://twitter.com/{username}/likes")
-        time.sleep(5)
-        likes_tweets = []
-        likes_tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
-        for tweet_element in likes_tweet_elements[:num_tweets]:
-            likes_tweets.append(tweet_element.text)
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return [], []
     finally:
-        driver.quit()
-    return feed_tweets, likes_tweets
+        pass
 
 def predict_tweet_liking(tweet_text, model=MODEL, feed_tweets=[], likes_tweets=[]):
     # Combine feed and likes tweets into context

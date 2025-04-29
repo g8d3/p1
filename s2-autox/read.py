@@ -1,7 +1,7 @@
 import tweepy
-import openai
 import os
 from neo4j import GraphDatabase
+import requests
 
 # Twitter API credentials
 bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
@@ -10,8 +10,10 @@ consumer_secret = os.environ.get("TWITTER_CONSUMER_SECRET")
 access_token = os.environ.get("TWITTER_ACCESS_TOKEN")
 access_token_secret = os.environ.get("TWITTER_ACCESS_TOKEN_SECRET")
 
-# OpenAI API key
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# OpenRouter API key
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+MODEL = "google/gemini-2.0-flash-001" # Default model
 
 # Neo4j connection details
 NEO4J_URI = os.environ.get("NEO4J_URI")
@@ -24,17 +26,22 @@ def get_tweets(username, num_tweets=10):
     tweets = response.data
     return tweets
 
-def predict_tweet_liking(tweet_text):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=f"Will I like this tweet? {tweet_text}\nLikelihood:",
-        max_tokens=10,
-        n=1,
-        stop=None,
-        temperature=0.5,
-    )
-    prediction = response.choices[0].text.strip()
-    return prediction
+def predict_tweet_liking(tweet_text, model=MODEL):
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": model,
+        "messages": [{"role": "user", "content": f"Will I like this tweet? {tweet_text}"}]
+    }
+    response = requests.post(OPENROUTER_URL, headers=headers, json=data)
+    if response.status_code == 200:
+        prediction = response.json()["choices"][0]["message"]["content"].strip()
+        return prediction
+    else:
+        print(f"Error: {response.status_code}, {response.text}")
+        return "Unknown"
 
 def save_to_graphdb(tweet_text, prediction):
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))

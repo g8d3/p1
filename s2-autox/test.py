@@ -16,10 +16,13 @@ driver = webdriver.Firefox(service=service, options=options)
 
 try:
     # Open the website
+    print("Navigating to x.com...")
     driver.get("https://x.com")
+    print("Navigated to x.com.")
     time.sleep(5)  # Wait for the page to load (adjust if needed)
 
     # Take a screenshot
+    print("Taking screenshot...")
     driver.save_screenshot("x_com_screenshot.png")
     print("Screenshot saved as 'x_com_screenshot.png'")
 

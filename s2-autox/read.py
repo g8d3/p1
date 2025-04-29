@@ -29,50 +29,58 @@ def get_tweets(username, password, num_tweets=10):
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # Log in to Twitter
-    driver.get("https://twitter.com/login")
-    time.sleep(5)  # Wait for the page to load
-
-    # Enter username
-    username_input = driver.find_element(By.NAME, "text")
-    username_input.send_keys(username)
-    next_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Next']]")
-    next_button.click()
-    time.sleep(5)
-
-    # Enter password
-    password_input = driver.find_element(By.NAME, "password")
-    password_input.send_keys(password)
-    login_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Log in']]")
-    login_button.click()
-    time.sleep(10)
-
-    # Get tweets
     try:
-        driver.get(f"https://twitter.com/{username}")
+        # Log in to Twitter
+        driver.get("https://twitter.com/login")
+        time.sleep(5)  # Wait for the page to load
+
+        # Enter username
+        username_input = driver.find_element(By.NAME, "text")
+        username_input.send_keys(username)
+        next_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Next']]")
+        next_button.click()
         time.sleep(5)
 
-        tweets = []
-        tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
-        for tweet_element in tweet_elements[:num_tweets]:
-            tweets.append(tweet_element.text)
+        # Enter password
+        password_input = driver.find_element(By.NAME, "password")
+        password_input.send_keys(password)
+        login_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Log in']]")
+        login_button.click()
+        time.sleep(10)
 
-        
+        # Get tweets from feed
+        driver.get("https://twitter.com/home")
+        time.sleep(5)
+        feed_tweets = []
+        feed_tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
+        for tweet_element in feed_tweet_elements[:num_tweets]:
+            feed_tweets.append(tweet_element.text)
+
+        # Get tweets from likes
+        driver.get(f"https://twitter.com/{username}/likes")
+        time.sleep(5)
+        likes_tweets = []
+        likes_tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
+        for tweet_element in likes_tweet_elements[:num_tweets]:
+            likes_tweets.append(tweet_element.text)
+
     except Exception as e:
         print(f"An error occurred: {e}")
-        tweets = []
+        return [], []
     finally:
         driver.quit()
-    return tweets
+    return feed_tweets, likes_tweets
 
-def predict_tweet_liking(tweet_text, model=MODEL):
+def predict_tweet_liking(tweet_text, model=MODEL, feed_tweets=[], likes_tweets=[]):
+    # Combine feed and likes tweets into context
+    context = " ".join(feed_tweets + likes_tweets)
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
     data = {
         "model": model,
-        "messages": [{"role": "user", "content": f"Will I like this tweet? {tweet_text}"}]
+        "messages": [{"role": "user", "content": f"Given my recent tweets: {context}, will I like this tweet? {tweet_text}"}]
     }
     response = requests.post(OPENROUTER_URL, headers=headers, json=data)
     if response.status_code == 200:
@@ -94,12 +102,17 @@ def save_to_graphdb(tweet_text, prediction):
 if __name__ == "__main__":
     username = os.environ.get("X_USER")  # Twitter username
     password = os.environ.get("X_PASSWORD")  # Twitter password
-    tweets = get_tweets(username, password)
+    feed_tweets, likes_tweets = get_tweets(username, password)
 
-    if tweets:
-        for tweet in tweets:
+    if feed_tweets or likes_tweets:
+        for tweet in feed_tweets:
             tweet_text = tweet
-            prediction = predict_tweet_liking(tweet_text)
+            prediction = predict_tweet_liking(tweet_text, feed_tweets=feed_tweets, likes_tweets=likes_tweets)
+            print(f"Tweet: {tweet_text}\nPrediction: {prediction}\n")
+            save_to_graphdb(tweet_text, prediction)
+        for tweet in likes_tweets:
+            tweet_text = tweet
+            prediction = predict_tweet_liking(tweet_text, feed_tweets=feed_tweets, likes_tweets=likes_tweets)
             print(f"Tweet: {tweet_text}\nPrediction: {prediction}\n")
             save_to_graphdb(tweet_text, prediction)
     else:

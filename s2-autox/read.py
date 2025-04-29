@@ -1,14 +1,12 @@
-import tweepy
 import os
 from neo4j import GraphDatabase
 import requests
-
-# Twitter API credentials
-bearer_token = os.environ.get("TWITTER_BEARER_TOKEN")
-consumer_key = os.environ.get("TWITTER_CONSUMER_KEY")
-consumer_secret = os.environ.get("TWITTER_CONSUMER_SECRET")
-access_token = os.environ.get("TWITTER_ACCESS_TOKEN")
-access_token_secret = os.environ.get("TWITTER_ACCESS_TOKEN_SECRET")
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time
 
 # OpenRouter API key
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
@@ -20,10 +18,45 @@ NEO4J_URI = os.environ.get("NEO4J_URI")
 NEO4J_USER = os.environ.get("NEO4J_USER")
 NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD")
 
-def get_tweets(username, num_tweets=10):
-    client = tweepy.Client(bearer_token, consumer_key, consumer_secret, access_token, access_token_secret)
-    response = client.get_users_tweets(id=username, max_results=num_tweets)
-    tweets = response.data
+def get_tweets(username, password, num_tweets=10):
+    # Set up Chrome options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run Chrome in headless mode
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
+    chrome_options.add_argument("--window-size=1920x1080")  # Set window size
+
+    # Set up Chrome driver
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+
+    # Log in to Twitter
+    driver.get("https://twitter.com/login")
+    time.sleep(5)  # Wait for the page to load
+
+    # Enter username
+    username_input = driver.find_element(By.NAME, "text")
+    username_input.send_keys(username)
+    next_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Next']]")
+    next_button.click()
+    time.sleep(5)
+
+    # Enter password
+    password_input = driver.find_element(By.NAME, "password")
+    password_input.send_keys(password)
+    login_button = driver.find_element(By.XPATH, "//div[@role='button' and span[text()='Log in']]")
+    login_button.click()
+    time.sleep(10)
+
+    # Get tweets
+    driver.get(f"https://twitter.com/{username}")
+    time.sleep(5)
+
+    tweets = []
+    tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
+    for tweet_element in tweet_elements[:num_tweets]:
+        tweets.append(tweet_element.text)
+
+    driver.quit()
     return tweets
 
 def predict_tweet_liking(tweet_text, model=MODEL):
@@ -54,11 +87,12 @@ def save_to_graphdb(tweet_text, prediction):
 
 if __name__ == "__main__":
     username = os.environ.get("X_USER")  # Twitter username
-    tweets = get_tweets(username)
+    password = os.environ.get("X_PASSWORD")  # Twitter password
+    tweets = get_tweets(username, password)
 
     if tweets:
         for tweet in tweets:
-            tweet_text = tweet.text
+            tweet_text = tweet
             prediction = predict_tweet_liking(tweet_text)
             print(f"Tweet: {tweet_text}\nPrediction: {prediction}\n")
             save_to_graphdb(tweet_text, prediction)

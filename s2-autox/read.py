@@ -48,15 +48,21 @@ def get_tweets(username, password, num_tweets=10):
     time.sleep(10)
 
     # Get tweets
-    driver.get(f"https://twitter.com/{username}")
-    time.sleep(5)
+    try:
+        driver.get(f"https://twitter.com/{username}")
+        time.sleep(5)
 
-    tweets = []
-    tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
-    for tweet_element in tweet_elements[:num_tweets]:
-        tweets.append(tweet_element.text)
+        tweets = []
+        tweet_elements = driver.find_elements(By.XPATH, "//div[@data-testid='tweetText']")
+        for tweet_element in tweet_elements[:num_tweets]:
+            tweets.append(tweet_element.text)
 
-    driver.quit()
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        tweets = []
+    finally:
+        driver.quit()
     return tweets
 
 def predict_tweet_liking(tweet_text, model=MODEL):

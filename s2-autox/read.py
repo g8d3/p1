@@ -2,14 +2,18 @@ import os
 import sqlite3
 import botasaurus
 import google.generativeai as genai
+from openai import OpenAI
 
 # Environment variables
 TWITTER_USERNAME = os.environ.get("X_USER")
 TWITTER_PASSWORD = os.environ.get("X_PASSWORD")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_SITE_URL = os.environ.get("OPENROUTER_SITE_URL", "http://localhost")
+OPENROUTER_SITE_NAME = os.environ.get("OPENROUTER_SITE_NAME", "Localhost")
 
 # LLM Model Selection
-LLM_MODEL = "gemini-2.0-flash-001" # Default Gemini model
+LLM_MODEL = "google/gemini-2.0-flash-001" # Default Gemini model
 
 # SQLite setup
 DATABASE_PATH = "tweets.db"
@@ -22,11 +26,35 @@ def create_tweet_node(conn, tweet_id, tweet_text, prediction):
     )
     conn.commit()
 
-def predict_tweet_relevance(tweet_text):
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel(LLM_MODEL)
-    response = model.generate_content(f"Would the user like this tweet? {tweet_text}. Answer with yes or no.")
-    return response.text
+def predict_tweet_relevance(tweet_text, provider="gemini"):
+    if provider == "gemini":
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(LLM_MODEL)
+        response = model.generate_content(f"Would the user like this tweet? {tweet_text}. Answer with yes or no.")
+        return response.text
+    elif provider == "openrouter":
+        client = OpenAI(
+          base_url="https://openrouter.ai/api/v1",
+          api_key=OPENROUTER_API_KEY,
+        )
+
+        completion = client.chat.completions.create(
+          extra_headers={
+            "HTTP-Referer": OPENROUTER_SITE_URL, # Optional. Site URL for rankings on openrouter.ai.
+            "X-Title": OPENROUTER_SITE_NAME, # Optional. Site title for rankings on openrouter.ai.
+          },
+          extra_body={},
+          model=LLM_MODEL,
+          messages=[
+            {
+              "role": "user",
+              "content": f"Would the user like this tweet? {tweet_text}. Answer with yes or no."
+            }
+          ]
+        )
+        return completion.choices[0].message.content
+    else:
+        return "Invalid provider"
 
 def read_twitter_feed():
     # Botasaurus code to login to Twitter and read the feed
@@ -65,9 +93,10 @@ def main():
     conn.commit()
 
     for tweet in tweets:
-        prediction = predict_tweet_relevance(tweet["text"])
-        create_tweet_node(conn, tweet["id"], tweet["text"], prediction)
-        print(f"Tweet ID: {tweet['id']}, Prediction: {prediction}")
+        prediction_gemini = predict_tweet_relevance(tweet["text"], provider="gemini")
+        prediction_openrouter = predict_tweet_relevance(tweet["text"], provider="openrouter")
+        create_tweet_node(conn, tweet["id"], tweet["text"], f"Gemini: {prediction_gemini}, OpenRouter: {prediction_openrouter}")
+        print(f"Tweet ID: {tweet['id']}, Gemini Prediction: {prediction_gemini}, OpenRouter Prediction: {prediction_openrouter}")
 
     conn.close()
 

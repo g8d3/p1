@@ -1,13 +1,9 @@
-import asyncio
-from playwright.async_api import async_playwright
+# patchright here!
+from patchright.sync_api import sync_playwright
 
-async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto("https://x.com")
-        await page.screenshot(path="x_com_screenshot_playwright.png")
-        await browser.close()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto('http://playwright.dev')
+    page.screenshot(path=f'example-{p.chromium.name}.png')
+    browser.close()

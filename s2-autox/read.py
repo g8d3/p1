@@ -44,20 +44,28 @@ def predict_tweet_relevance(tweet_text):
 
 def read_twitter_feed():
     # Botasaurus code to login to Twitter and read the feed
-    # This is a placeholder, replace with actual Botasaurus code
-    # Example:
-    # b = botasaurus.create_browser()
-    # b.go_to("https://twitter.com")
-    # ... login and scrape tweets ...
-    # tweets = [...]
-    
-    # Replace with actual scraped tweets
-    tweets = [
-        {"id": "123", "text": "This is a tweet about AI."},
-        {"id": "456", "text": "This is a tweet about cats."},
-        {"id": "789", "text": "Another tweet about technology."},
-        {"id": "101", "text": "A tweet about the weather."}
-    ]
+    b = botasaurus.create_browser()
+    b.go_to("https://twitter.com/login")
+
+    # Login
+    b.type("#layers > div:nth-child(2) > div > div > div > div > div > div.css-1dbjc4n.r-1867qdf.r-1wbh5a2.r-kwpbio.r-rsyp9y.r-1pjcn9w.r-htvpln > div > div.css-1dbjc4n.r-eqz5dr.r-16y2uox.r-1wbh5a2 > div > div.css-1dbjc4n.r-1awozwy.r-18kxxzh.r-dnmrzf > div.css-1dbjc4n.r-1niwhzg.r-1udh08x.r-u8s1d.r-zchlnj.r-ipm5af.r-1wyyakj > div.css-1dbjc4n.r-mk0jrb.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61zpm3.r-oyd9v9 > div > label > div.css-1dbjc4n.r-16y2uox.r-1wbh5a2 > div > div > div.css-901oao.r-1bwzh9t.r-1b88vr5.r-1b7u577.r-16eur91.r-bcqeeo.r-qvutc0 > input", TWITTER_USERNAME)
+    b.click('div[data-testid="Next"]')
+    b.sleep(2)
+    b.type('div[data-testid="PasswordField"] > div > label > div.css-1dbjc4n.r-16y2uox.r-1wbh5a2 > div > div > div.css-901oao.r-1bwzh9t.r-1b88vr5.r-1b7u577.r-16eur91.r-bcqeeo.r-qvutc0 > input', TWITTER_PASSWORD)
+    b.click('div[data-testid="Login"]')
+    b.sleep(5)
+
+    # Scrape tweets
+    tweets = []
+    for article in b.query_all('article[data-testid="tweet"]'):
+        try:
+            tweet_id = article.get_attribute("data-tweet-id")
+            tweet_text = article.query_selector('div[data-testid="tweetText"]').inner_text()
+            tweets.append({"id": tweet_id, "text": tweet_text})
+        except Exception as e:
+            print(f"Error extracting tweet: {e}")
+
+    b.close()
     return tweets
 
 def main():

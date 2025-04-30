@@ -6,4 +6,7 @@ code to automate reading my twitter feed on s2-autox/read.py
 - Save predictions in a graph DB.
 - Use LLM provider openrouter and gemini api, allow easy swith in code
 - Use LLM google/gemini-2.0-flash-001 and gemini-2.0-flash, allow easy swith in code
+- URL for liked tweets seems to be x.com/<user>/likes, it needs auth
+- scrape liked tweets so that LLM can predict
+- URL for tweets to predict is x.com/home
 

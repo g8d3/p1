@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 X_USER = os.getenv("X_USER")
 X_PASSWORD = os.getenv("X_PASSWORD")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # SQLite database setup
 DB_FILE = "twitter_predictions.db"
@@ -38,7 +38,7 @@ def init_db():
 MODEL = "gpt-3.5-turbo"
 
 def get_llm_client():
-    return OpenAI(api_key=OPENAI_API_KEY)
+    return OpenAI(api_key=OPENROUTER_API_KEY)
 
 # Tweet prediction logic
 def predict_tweet_likability(tweet_text, liked_tweets):  # Fixed syntax error here
@@ -157,7 +157,7 @@ def automate_twitter_feed(data):
     init_db()
     
     # Verify environment variables
-    if not all([X_USER, X_PASSWORD, OPENAI_API_KEY]):
+    if not all([X_USER, X_PASSWORD, OPENROUTER_API_KEY]):
         raise ValueError("Missing required environment variables")
     
     with browser(headless=False) as b:  # Headless=False to avoid detection

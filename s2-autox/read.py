@@ -17,14 +17,16 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 LLM_PROVIDER = "gemini"  # Default to Gemini, can be "openrouter"
 LLM_MODEL = "gemini-2.0-flash-001" # Default Gemini model
 
-# Neo4j setup
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+# SQLite setup
+DATABASE_PATH = "tweets.db"
 
-def create_tweet_node(tx, tweet_id, tweet_text, prediction):
-    query = (
-        "CREATE (t:Tweet {tweet_id: $tweet_id, text: $tweet_text, prediction: $prediction})"
+def create_tweet_node(conn, tweet_id, tweet_text, prediction):
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO tweets (tweet_id, text, prediction) VALUES (?, ?, ?)",
+        (tweet_id, tweet_text, prediction),
     )
-    tx.run(query, tweet_id=tweet_id, tweet_text=tweet_text, prediction=prediction)
+    conn.commit()
 
 def predict_tweet_relevance(tweet_text):
     if LLM_PROVIDER == "openrouter":
@@ -71,13 +73,19 @@ def read_twitter_feed():
 def main():
     tweets = read_twitter_feed()
 
-    with driver.session() as session:
-        for tweet in tweets:
-            prediction = predict_tweet_relevance(tweet["text"])
-            session.execute_write(create_tweet_node, tweet["id"], tweet["text"], prediction)
-            print(f"Tweet ID: {tweet['id']}, Prediction: {prediction}")
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS tweets (tweet_id TEXT, text TEXT, prediction TEXT)"
+    )
+    conn.commit()
 
-    driver.close()
+    for tweet in tweets:
+        prediction = predict_tweet_relevance(tweet["text"])
+        create_tweet_node(conn, tweet["id"], tweet["text"], prediction)
+        print(f"Tweet ID: {tweet['id']}, Prediction: {prediction}")
+
+    conn.close()
 
 if __name__ == "__main__":
     main()

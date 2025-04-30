@@ -1,17 +1,14 @@
 import os
 import sqlite3
 import botasaurus
-from openrouter import OpenRouter
 import google.generativeai as genai
 
 # Environment variables
 TWITTER_USERNAME = os.environ.get("X_USER")
 TWITTER_PASSWORD = os.environ.get("X_PASSWORD")
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# LLM Provider Selection
-LLM_PROVIDER = "gemini"  # Default to Gemini, can be "openrouter"
+# LLM Model Selection
 LLM_MODEL = "gemini-2.0-flash-001" # Default Gemini model
 
 # SQLite setup
@@ -26,20 +23,10 @@ def create_tweet_node(conn, tweet_id, tweet_text, prediction):
     conn.commit()
 
 def predict_tweet_relevance(tweet_text):
-    if LLM_PROVIDER == "openrouter":
-        client = OpenRouter(api_key=OPENROUTER_API_KEY)
-        response = client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[{"role": "user", "content": f"Would the user like this tweet? {tweet_text}. Answer with yes or no."}],
-        )
-        return response.choices[0].message.content
-    elif LLM_PROVIDER == "gemini":
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(LLM_MODEL)
-        response = model.generate_content(f"Would the user like this tweet? {tweet_text}. Answer with yes or no.")
-        return response.text
-    else:
-        return "No prediction"
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel(LLM_MODEL)
+    response = model.generate_content(f"Would the user like this tweet? {tweet_text}. Answer with yes or no.")
+    return response.text
 
 def read_twitter_feed():
     # Botasaurus code to login to Twitter and read the feed

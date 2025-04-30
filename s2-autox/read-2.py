@@ -184,5 +184,6 @@ def automate_twitter_feed(data):
             prediction = predict_tweet_likability(tweet["text"], liked_tweets)
             save_prediction(tweet, prediction, MODEL)
 
+
 if __name__ == "__main__":
-    automate_twitter_feed.run()
+    automate_twitter_feed()  # Simply call the task function directly

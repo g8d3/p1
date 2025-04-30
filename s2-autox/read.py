@@ -50,10 +50,14 @@ def read_twitter_feed():
     # b.go_to("https://twitter.com")
     # ... login and scrape tweets ...
     # tweets = [...]
+    
+    # Replace with actual scraped tweets
     tweets = [
         {"id": "123", "text": "This is a tweet about AI."},
         {"id": "456", "text": "This is a tweet about cats."},
-    ]  # Replace with actual scraped tweets
+        {"id": "789", "text": "Another tweet about technology."},
+        {"id": "101", "text": "A tweet about the weather."}
+    ]
     return tweets
 
 def main():

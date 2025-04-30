@@ -12,9 +12,38 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 LLM_MODEL = "google/gemini-2.0-flash-001"  # or "gemini-2.0-flash"
 
+@decorators.catch_exceptions
 def scrape_liked_tweets(user):
-    # TODO: Implement scraping of liked tweets from x.com/<user>/likes
-    pass
+    url = f"https://x.com/{user}/likes"
+    
+    async def task(driver: AntiDetectDriver, logger: Logger):
+        await driver.goto(url)
+        # TODO: Implement login logic here
+        # Assuming there's a login button with id "login_button"
+        # await driver.click("#login_button")
+        # await driver.fill("#username", X_USER)
+        # await driver.fill("#password", X_PASSWORD)
+        # await driver.click("#submit_button")
+
+        # TODO: Implement scrolling and tweet extraction logic here
+        # This is a placeholder, replace with actual tweet extraction
+        tweets = await driver.query_selector_all('article[data-testid="tweet"]')
+        extracted_tweets = []
+        for tweet in tweets:
+            try:
+                tweet_text = await tweet.inner_text()
+                extracted_tweets.append(tweet_text)
+            except Exception as e:
+                logger.error(f"Error extracting tweet: {e}")
+        return extracted_tweets
+
+    
+    tweets = run(
+        task,
+        browser_type="chromium",  # or "firefox", "webkit"
+        max_concurrency=1,
+    )
+    return tweets
 
 def scrape_tweets_to_predict():
     # TODO: Implement scraping of tweets from x.com/home

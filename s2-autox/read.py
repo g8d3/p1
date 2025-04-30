@@ -1,15 +1,12 @@
 import os
+import sqlite3
 import botasaurus
-from neo4j import GraphDatabase
 from openrouter import OpenRouter
 import google.generativeai as genai
 
 # Environment variables
 TWITTER_USERNAME = os.environ.get("X_USER")
 TWITTER_PASSWORD = os.environ.get("X_PASSWORD")
-NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
-NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "password")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 

@@ -41,7 +41,7 @@ def get_llm_client():
     return OpenAI(api_key=OPENROUTER_API_KEY)
 
 # Tweet prediction logic
-def predict_tweet_likability(tweet_text, liked_tweets):  # Fixed syntax error here
+def predict_tweet_likability(tweet_text, liked_tweets):
     prompt = f"""
     Based on the user's liked tweets, predict if they would like the following tweet.
     Liked tweets: {json.dumps(liked_tweets, indent=2)}
@@ -63,6 +63,29 @@ def predict_tweet_likability(tweet_text, liked_tweets):  # Fixed syntax error he
     except Exception as e:
         print(f"Error in LLM prediction: {e}")
         return {"likelihood": 0}  # Default to dislike on error
+
+# Login to Twitter
+@browser(
+    reuse_driver=True,
+    cache=True,
+    max_retry=5,
+    close_on_crash=True,
+    create_error_logs=False,
+    output=None
+)
+def login_to_twitter(driver: Driver, data):
+    driver.google_get("https://x.com/login", bypass_cloudflare=True)
+    driver.type("input[name='text']", X_USER)
+    driver.enable_human_mode()
+    driver.click("button[type='submit']")
+    driver.disable_human_mode()
+    driver.short_random_sleep()
+    driver.type("input[name='password']", X_PASSWORD)
+    driver.enable_human_mode()
+    driver.click("button[type='submit']")
+    driver.disable_human_mode()
+    driver.wait_for_url("https://x.com/home", timeout=10)
+    return True
 
 # Scrape liked tweets
 @browser(
@@ -160,30 +183,18 @@ def automate_twitter_feed(data):
     if not all([X_USER, X_PASSWORD, OPENROUTER_API_KEY]):
         raise ValueError("Missing required environment variables")
     
-    with browser(headless=False) as b:  # Headless=False to avoid detection
-        # Login to Twitter
-        b.google_get("https://x.com/login")
-        b.type("input[name='text']", X_USER)
-        b.enable_human_mode()
-        b.click("button[type='submit']")
-        b.disable_human_mode()
-        b.short_random_sleep()
-        b.type("input[name='password']", X_PASSWORD)
-        b.enable_human_mode()
-        b.click("button[type='submit']")
-        b.disable_human_mode()
-        b.wait_for_url("https://x.com/home", timeout=10)
-        
-        # Scrape liked tweets
-        liked_tweets = scrape_liked_tweets()
-        
-        # Scrape home feed and predict
-        home_tweets = scrape_home_feed()
-        
-        for tweet in home_tweets:
-            prediction = predict_tweet_likability(tweet["text"], liked_tweets)
-            save_prediction(tweet, prediction, MODEL)
-
+    # Perform login
+    login_to_twitter()
+    
+    # Scrape liked tweets
+    liked_tweets = scrape_liked_tweets()
+    
+    # Scrape home feed and predict
+    home_tweets = scrape_home_feed()
+    
+    for tweet in home_tweets:
+        prediction = predict_tweet_likability(tweet["text"], liked_tweets)
+        save_prediction(tweet, prediction, MODEL)
 
 if __name__ == "__main__":
-    automate_twitter_feed()  # Simply call the task function directly
+    automate_twitter_feed()

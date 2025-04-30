@@ -6,7 +6,6 @@ from botasaurus.browser import browser, Driver
 from botasaurus.task import task
 from botasaurus import bt
 from openai import OpenAI
-from google.generativeai import GenerativeModel
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,7 +13,6 @@ load_dotenv()
 X_USER = os.getenv("X_USER")
 X_PASSWORD = os.getenv("X_PASSWORD")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # SQLite database setup
 DB_FILE = "twitter_predictions.db"
@@ -37,19 +35,13 @@ def init_db():
     conn.close()
 
 # LLM Configuration
-LLM_PROVIDER = "openai"  # Switch to "gemini" for Gemini API
-MODEL = "google/gemini-2.0-flash-001"  # Switch to "gemini-2.0-flash" as needed
+MODEL = "gpt-3.5-turbo"
 
 def get_llm_client():
-    if LLM_PROVIDER == "openai":
-        return OpenAI(api_key=OPENAI_API_KEY)
-    elif LLM_PROVIDER == "gemini":
-        return GenerativeModel(model_name=MODEL, api_key=GEMINI_API_KEY)
-    else:
-        raise ValueError("Unsupported LLM provider")
+    return OpenAI(api_key=OPENAI_API_KEY)
 
 # Tweet prediction logic
-def predict_tweet_likability(tweet_text, liked_tweets, llm_client):
+def predict_tweet_likability(tweet_text, liked_tweets):  # Fixed syntax error here
     prompt = f"""
     Based on the user's liked tweets, predict if they would like the following tweet.
     Liked tweets: {json.dumps(liked_tweets, indent=2)}
@@ -57,9 +49,10 @@ def predict_tweet_likability(tweet_text, liked_tweets, llm_client):
     Return a JSON object with a single key 'likelihood' with a value of 0 (dislike) or 1 (like).
     """
     
-    if LLM_PROVIDER == "openai":
+    try:
+        llm_client = get_llm_client()
         response = llm_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=MODEL,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
@@ -67,9 +60,9 @@ def predict_tweet_likability(tweet_text, liked_tweets, llm_client):
             max_tokens=100
         )
         return json.loads(response.choices[0].message.content)
-    elif LLM_PROVIDER == "gemini":
-        response = llm_client.generate_content(prompt)
-        return json.loads(response.text)
+    except Exception as e:
+        print(f"Error in LLM prediction: {e}")
+        return {"likelihood": 0}  # Default to dislike on error
 
 # Scrape liked tweets
 @browser(
@@ -162,21 +155,24 @@ def save_prediction(tweet, prediction, model):
 )
 def automate_twitter_feed(data):
     init_db()
-    llm_client = get_llm_client()
     
-    with Browser(headless=False) as browser:  # Headless=False to avoid detection
+    # Verify environment variables
+    if not all([X_USER, X_PASSWORD, OPENAI_API_KEY]):
+        raise ValueError("Missing required environment variables")
+    
+    with browser(headless=False) as b:  # Headless=False to avoid detection
         # Login to Twitter
-        browser.google_get("https://x.com/login")
-        browser.type("input[name='text']", X_USER)
-        browser.enable_human_mode()
-        browser.click("button[type='submit']")
-        browser.disable_human_mode()
-        browser.short_random_sleep()
-        browser.type("input[name='password']", X_PASSWORD)
-        browser.enable_human_mode()
-        browser.click("button[type='submit']")
-        browser.disable_human_mode()
-        browser.wait_for_url("https://x.com/home", timeout=10)
+        b.google_get("https://x.com/login")
+        b.type("input[name='text']", X_USER)
+        b.enable_human_mode()
+        b.click("button[type='submit']")
+        b.disable_human_mode()
+        b.short_random_sleep()
+        b.type("input[name='password']", X_PASSWORD)
+        b.enable_human_mode()
+        b.click("button[type='submit']")
+        b.disable_human_mode()
+        b.wait_for_url("https://x.com/home", timeout=10)
         
         # Scrape liked tweets
         liked_tweets = scrape_liked_tweets()
@@ -185,7 +181,7 @@ def automate_twitter_feed(data):
         home_tweets = scrape_home_feed()
         
         for tweet in home_tweets:
-            prediction = predict_tweet_likability(tweet["text"], liked_tweets, llm_client)
+            prediction = predict_tweet_likability(tweet["text"], liked_tweets)
             save_prediction(tweet, prediction, MODEL)
 
 if __name__ == "__main__":

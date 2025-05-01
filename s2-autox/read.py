@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import os
 import sqlite3
 import json
@@ -43,27 +45,76 @@ def init_db():
 
 # Twitter scraping functions
 def scrape_tweets(url, source):
-    # TODO: Implement Twitter scraping using botasaurus
-    # - Log in to Twitter
-    # - Navigate to the specified URL
-    # - Extract tweet data (tweet_id, tweet_text, author, date)
-    # - Store tweet data in the 'tweets' table
-    pass
+    print(f"Scraping tweets from {url}...")
+    
+    @browser(profile="twitter")
+    async def task(driver, initial_url):
+        await driver.goto(initial_url)
+        await driver.wait_for_selector('article[data-testid="tweet"]')
+
+        tweets = await driver.querySelectorAll('article[data-testid="tweet"]')
+        for tweet in tweets:
+            try:
+                tweet_id = await tweet.getAttribute('data-testid')
+                tweet_text = await tweet.querySelectorEval('div[lang]', 'node => node.innerText')
+                author = await tweet.querySelectorEval('div[data-testid*="author"] a', 'node => node.innerText')
+                date = await tweet.querySelectorEval('time', 'node => node.dateTime')
+
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT OR IGNORE INTO tweets (tweet_id, tweet_text, author, date, source)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (tweet_id, tweet_text, author, date, source))
+                conn.commit()
+                conn.close()
+                print(f"Saved tweet: {tweet_id}")
+
+            except Exception as e:
+                print(f"Error processing tweet: {e}")
+
+    initial_url = url
+    task(initial_url=initial_url)
+    print("Finished scraping tweets.")
 
 # LLM prediction functions
 def predict_interest(tweet_text):
-    # TODO: Implement LLM prediction using OpenRouter or Gemini API
-    # - Use the specified LLM model to predict user interest in the tweet
-    # - Return a prediction score
-    pass
+    if LLM_PROVIDER == "openrouter":
+        try:
+            client = OpenRouter(api_key=OPENROUTER_API_KEY)
+            response = client.completions.create(
+                model=LLM_MODEL,
+                prompt=f"Predict the user's interest in the following tweet: {tweet_text}",
+                max_tokens=50,
+            )
+            prediction_score = float(response.choices[0].text)  # Assuming the response is a score
+            return prediction_score
+        except Exception as e:
+            print(f"Error predicting interest using OpenRouter: {e}")
+            return 0.0
+    elif LLM_PROVIDER == "gemini":
+        # TODO: Implement Gemini API integration
+        print("Gemini API integration not implemented yet.")
+        return 0.0
+    else:
+        print("Invalid LLM provider specified.")
+        return 0.0
 
 # Digital product filtering functions
 def filter_product_ideas(tweet_text, prediction_score):
-    # TODO: Implement filtering logic to identify potential product ideas
-    # - Analyze tweet text and prediction score
-    # - Generate a list of potential product ideas
-    # - Return the list of product ideas
-    pass
+    product_ideas = []
+    if prediction_score > 0.5:  # Adjust threshold as needed
+        # Simple keyword-based product idea generation
+        if "learn" in tweet_text.lower() or "tutorial" in tweet_text.lower():
+            product_ideas.append("Create an online course or tutorial")
+        if "tool" in tweet_text.lower() or "software" in tweet_text.lower():
+            product_ideas.append("Develop a software tool or application")
+        if "report" in tweet_text.lower() or "analysis" in tweet_text.lower():
+            product_ideas.append("Write a report or analysis")
+        if "book" in tweet_text.lower() or "guide" in tweet_text.lower():
+            product_ideas.append("Write an ebook or guide")
+
+    return json.dumps(product_ideas)
 
 # Main function
 def main():
@@ -79,7 +130,23 @@ def main():
     # - Fetch tweets from the 'tweets' table
     # - Predict user interest for each tweet
     # - Filter tweets for digital product opportunities
-    # - Save predictions and product ideas in the 'predictions' table
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT tweet_id, tweet_text FROM tweets")
+    tweets = cursor.fetchall()
+
+    for tweet_id, tweet_text in tweets:
+        prediction_score = predict_interest(tweet_text)
+        product_ideas = filter_product_ideas(tweet_text, prediction_score)
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO predictions (tweet_id, prediction_score, product_ideas)
+            VALUES (?, ?, ?)
+        """, (tweet_id, prediction_score, product_ideas))
+        conn.commit()
+        print(f"Saved prediction for tweet: {tweet_id}")
+
+    conn.close()
 
 if __name__ == "__main__":
     main()

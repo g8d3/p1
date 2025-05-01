@@ -11,3 +11,4 @@ code to automate reading my twitter feed on s2-autox/read.py
 - scrape liked tweets so that LLM can predict
 - URL for tweets to predict is x.com/home
 
+given predicted tweets that user would like filter the ones that can be useful to create digital products, user can see possible products and pick where is capital is going to to work

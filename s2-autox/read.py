@@ -1,104 +1,85 @@
 import os
 import sqlite3
-import botasaurus
-import google.generativeai as genai
-from openai import OpenAI
+import json
+from botasaurus import *
+from openrouter import OpenRouter
 
-# Environment variables
-TWITTER_USERNAME = os.environ.get("X_USER")
+# Configuration
+TWITTER_USER = os.environ.get("X_USER")
 TWITTER_PASSWORD = os.environ.get("X_PASSWORD")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-OPENROUTER_SITE_URL = os.environ.get("OPENROUTER_SITE_URL", "http://localhost")
-OPENROUTER_SITE_NAME = os.environ.get("OPENROUTER_SITE_NAME", "Localhost")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+DB_NAME = "twitter_predictions.db"
 
-# LLM Model Selection
-LLM_MODEL = "google/gemini-2.0-flash-001" # Default Gemini model
+# LLM Provider (OpenRouter or Gemini)
+LLM_PROVIDER = "openrouter"  # or "gemini"
+LLM_MODEL = "google/gemini-2.0-flash-001"
 
-# SQLite setup
-DATABASE_PATH = "tweets.db"
-
-def create_tweet_node(conn, tweet_id, tweet_text, prediction):
+# Database initialization
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO tweets (tweet_id, text, prediction) VALUES (?, ?, ?)",
-        (tweet_id, tweet_text, prediction),
-    )
-    conn.commit()
-
-def predict_tweet_relevance(tweet_text, provider="gemini"):
-    if provider == "gemini":
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(LLM_MODEL)
-        response = model.generate_content(f"Would the user like this tweet? {tweet_text}. Answer with yes or no.")
-        return response.text
-    elif provider == "openrouter":
-        client = OpenAI(
-          base_url="https://openrouter.ai/api/v1",
-          api_key=OPENROUTER_API_KEY,
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tweets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tweet_id TEXT UNIQUE,
+            tweet_text TEXT,
+            author TEXT,
+            date TEXT,
+            source TEXT
         )
-
-        completion = client.chat.completions.create(
-          extra_headers={
-            "HTTP-Referer": OPENROUTER_SITE_URL, # Optional. Site URL for rankings on openrouter.ai.
-            "X-Title": OPENROUTER_SITE_NAME, # Optional. Site title for rankings on openrouter.ai.
-          },
-          extra_body={},
-          model=LLM_MODEL,
-          messages=[
-            {
-              "role": "user",
-              "content": f"Would the user like this tweet? {tweet_text}. Answer with yes or no."
-            }
-          ]
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tweet_id TEXT,
+            prediction_score REAL,
+            product_ideas TEXT,
+            FOREIGN KEY (tweet_id) REFERENCES tweets (tweet_id)
         )
-        return completion.choices[0].message.content
-    else:
-        return "Invalid provider"
-
-def read_twitter_feed():
-    # Botasaurus code to login to Twitter and read the feed
-    b = botasaurus.create_browser()
-    b.go_to("https://twitter.com/login")
-
-    # Login
-    b.type("#layers > div:nth-child(2) > div > div > div > div > div > div.css-1dbjc4n.r-1867qdf.r-1wbh5a2.r-kwpbio.r-rsyp9y.r-1pjcn9w.r-htvpln > div > div.css-1dbjc4n.r-eqz5dr.r-16y2uox.r-1wbh5a2 > div > div.css-1dbjc4n.r-1awozwy.r-18kxxzh.r-dnmrzf > div.css-1dbjc4n.r-1niwhzg.r-1udh08x.r-u8s1d.r-zchlnj.r-ipm5af.r-1wyyakj > div.css-1dbjc4n.r-mk0jrb.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61zpm3.r-oyd9v9 > div > label > div.css-1dbjc4n.r-16y2uox.r-1wbh5a2 > div > div > div.css-901oao.r-1bwzh9t.r-1b88vr5.r-1b7u577.r-16eur91.r-bcqeeo.r-qvutc0 > input", TWITTER_USERNAME)
-    b.click('div[data-testid="Next"]')
-    b.sleep(2)
-    b.type('div[data-testid="PasswordField"] > div > label > div.css-1dbjc4n.r-16y2uox.r-1wbh5a2 > div > div > div.css-901oao.r-1bwzh9t.r-1b88vr5.r-1b7u577.r-16eur91.r-bcqeeo.r-qvutc0 > input', TWITTER_PASSWORD)
-    b.click('div[data-testid="Login"]')
-    b.sleep(5)
-
-    # Scrape tweets
-    tweets = []
-    for article in b.query_all('article[data-testid="tweet"]'):
-        try:
-            tweet_id = article.get_attribute("data-tweet-id")
-            tweet_text = article.query_selector('div[data-testid="tweetText"]').inner_text()
-            tweets.append({"id": tweet_id, "text": tweet_text})
-        except Exception as e:
-            print(f"Error extracting tweet: {e}")
-
-    b.close()
-    return tweets
-
-def main():
-    tweets = read_twitter_feed()
-
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS tweets (tweet_id TEXT, text TEXT, prediction TEXT)"
-    )
+    """)
     conn.commit()
-
-    for tweet in tweets:
-        prediction_gemini = predict_tweet_relevance(tweet["text"], provider="gemini")
-        prediction_openrouter = predict_tweet_relevance(tweet["text"], provider="openrouter")
-        create_tweet_node(conn, tweet["id"], tweet["text"], f"Gemini: {prediction_gemini}, OpenRouter: {prediction_openrouter}")
-        print(f"Tweet ID: {tweet['id']}, Gemini Prediction: {prediction_gemini}, OpenRouter Prediction: {prediction_openrouter}")
-
     conn.close()
+
+# Twitter scraping functions
+def scrape_tweets(url, source):
+    # TODO: Implement Twitter scraping using botasaurus
+    # - Log in to Twitter
+    # - Navigate to the specified URL
+    # - Extract tweet data (tweet_id, tweet_text, author, date)
+    # - Store tweet data in the 'tweets' table
+    pass
+
+# LLM prediction functions
+def predict_interest(tweet_text):
+    # TODO: Implement LLM prediction using OpenRouter or Gemini API
+    # - Use the specified LLM model to predict user interest in the tweet
+    # - Return a prediction score
+    pass
+
+# Digital product filtering functions
+def filter_product_ideas(tweet_text, prediction_score):
+    # TODO: Implement filtering logic to identify potential product ideas
+    # - Analyze tweet text and prediction score
+    # - Generate a list of potential product ideas
+    # - Return the list of product ideas
+    pass
+
+# Main function
+def main():
+    init_db()
+
+    # Scrape liked tweets
+    scrape_tweets(f"x.com/{TWITTER_USER}/likes", "likes")
+
+    # Scrape tweets from home timeline
+    scrape_tweets("x.com/home", "home")
+
+    # TODO: Implement logic to:
+    # - Fetch tweets from the 'tweets' table
+    # - Predict user interest for each tweet
+    # - Filter tweets for digital product opportunities
+    # - Save predictions and product ideas in the 'predictions' table
 
 if __name__ == "__main__":
     main()

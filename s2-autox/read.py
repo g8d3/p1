@@ -1,171 +1,151 @@
 import os
 import sqlite3
-from typing import List, Dict
-
-import botasaurus
+from botasaurus import *
 from openrouter import OpenRouter
 
-# Configuration
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+# Environment variables
 X_USER = os.environ.get("X_USER")
 X_PASSWORD = os.environ.get("X_PASSWORD")
-LIKED_TWEETS_URL = f"https://x.com/{X_USER}/likes"
-HOME_TIMELINE_URL = "https://x.com/home"
-DATABASE_NAME = "twitter_predictions.db"
-LLM_MODEL = "google/gemini-2.0-flash-001"  # Default model, allow easy switch in code
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# Database setup
+conn = sqlite3.connect("twitter_predictions.db")
+cursor = conn.cursor()
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS predictions (
+        tweet_id TEXT PRIMARY KEY,
+        tweet_text TEXT,
+        prediction REAL,
+        product_ideas TEXT
+    )
+"""
+)
+conn.commit()
 
 
-def initialize_database():
-    """Initializes the SQLite database."""
-    conn = sqlite3.connect(DATABASE_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tweet_predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tweet_text TEXT NOT NULL,
-            prediction TEXT,
-            product_idea TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-def scrape_tweets(url: str) -> List[str]:
-    """Scrapes tweets from a given URL using Botasaurus."""
-    tweets = []
-
-    def process_tweet(driver, tweet_element):
-        try:
-            tweet_text = tweet_element.text
-            tweets.append(tweet_text)
-        except Exception as e:
-            print(f"Error processing tweet: {e}")
-
-    with botasaurus.create_driver(
-        headless=True,  # Run in headless mode
-    ) as driver:
-        driver.get(url)
-
-        # Authenticate (assuming standard Twitter login)
-        username_field = driver.find_element("xpath", "//input[@name='text']")
-        username_field.send_keys(X_USER)
-        next_button = driver.find_element("xpath", "//div[@role='button' and contains(@aria-label, 'Next')]")
-        next_button.click()
-
-        # Password field might take a moment to load
-        botasaurus.wait(2)
-
-        password_field = driver.find_element("xpath", "//input[@name='password']")
-        password_field.send_keys(X_PASSWORD)
-        login_button = driver.find_element("xpath", "//div[@role='button' and contains(@data-testid, 'loginButton')]")
-        login_button.click()
-
-        # Wait for the timeline to load
-        botasaurus.wait(5)
-
-        # Scroll down to load more tweets (adjust range as needed)
-        for _ in range(3):
-            botasaurus.scroll_down(driver)
-            botasaurus.wait(2)
-
-        # Scrape tweets (adjust XPath as needed)
-        tweet_elements = driver.find_elements("xpath", "//div[@data-testid='tweetText']")
-        for tweet_element in tweet_elements:
-            process_tweet(driver, tweet_element)
-
-    return tweets
-
-
-def predict_tweet_usefulness(tweets: List[str]) -> List[Dict[str, str]]:
-    """Predicts the usefulness of tweets for digital product creation using an LLM."""
-    predictions = []
-    for tweet in tweets:
-        try:
-            prompt = f"Predict if this tweet is useful for creating digital products:\n{tweet}\n\nUseful (yes/no):"
-            response = OpenRouter.chat.completions.create(
-                model=LLM_MODEL,
-                prompt=prompt,
-                max_tokens=50,
-                api_key=OPENROUTER_API_KEY,
+def predict_tweet_usefulness(tweet_text, llm_provider="openrouter", llm_model="google/gemini-2.0-flash-001"):
+    try:
+        if llm_provider == "openrouter":
+            api_key = OPENROUTER_API_KEY
+            client = OpenRouter(api_key=api_key)
+            prompt = f"Given the following tweet, predict how useful it would be for creating digital products (0-1): {tweet_text}"
+            response = client.chat.completions.create(
+                model=llm_model,
+                messages=[{"role": "user", "content": prompt}],
             )
-            prediction = response.choices[0].text.strip()
-            predictions.append({"tweet_text": tweet, "prediction": prediction})
-        except Exception as e:
-            print(f"LLM prediction error: {e}")
-            predictions.append({"tweet_text": tweet, "prediction": "error"})
-    return predictions
+            prediction = float(response.choices[0].message.content.strip())
+        elif llm_provider == "gemini":
+            # need to implement gemini api call
+            # api_key = GEMINI_API_KEY
+            # client = ...
+            # prompt = f"Given the following tweet, predict how useful it would be for creating digital products (0-1): {tweet_text}"
+            # response = client.chat.completions.create(
+            #     model=llm_model,
+            #     messages=[{"role": "user", "content": prompt}],
+            # )
+            # prediction = float(response.choices[0].message.content.strip())
+            prediction = 0.5  # Placeholder for Gemini API
+        else:
+            raise ValueError("Invalid LLM provider.")
+        return prediction
+    except Exception as e:
+        print(f"Error during prediction: {e}")
+        return None
 
 
-def filter_product_ideas(predictions: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """Filters tweets predicted as useful and generates potential product ideas."""
-    product_ideas = []
-    for result in predictions:
-        if result["prediction"].lower() == "yes":
-            tweet = result["tweet_text"]
-            try:
-                prompt = f"Generate a digital product idea based on this tweet:\n{tweet}\n\nProduct idea:"
-                response = OpenRouter.chat.completions.create(
-                    model=LLM_MODEL,
-                    prompt=prompt,
-                    max_tokens=100,
-                    api_key=OPENROUTER_API_KEY,
-                )
-                product_idea = response.choices[0].text.strip()
-                product_ideas.append({"tweet_text": tweet, "product_idea": product_idea})
-            except Exception as e:
-                print(f"LLM product idea error: {e}")
-                product_ideas.append({"tweet_text": tweet, "product_idea": "error"})
-    return product_ideas
+def suggest_product_ideas(tweet_text, llm_provider="openrouter", llm_model="google/gemini-2.0-flash"):
+    try:
+        if llm_provider == "openrouter":
+            api_key = OPENROUTER_API_KEY
+            client = OpenRouter(api_key=api_key)
+            prompt = f"Given the following tweet, suggest some digital product ideas: {tweet_text}"
+            response = client.chat.completions.create(
+                model=llm_model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            product_ideas = response.choices[0].message.content.strip()
+        elif llm_provider == "gemini":
+            # need to implement gemini api call
+            # api_key = GEMINI_API_KEY
+            # client = ...
+            # prompt = f"Given the following tweet, suggest some digital product ideas: {tweet_text}"
+            # response = client.chat.completions.create(
+            #     model=llm_model,
+            #     messages=[{"role": "user", "content": prompt}],
+            # )
+            # product_ideas = response.choices[0].message.content.strip()
+            product_ideas = "Placeholder product ideas for Gemini API"
+        else:
+            raise ValueError("Invalid LLM provider.")
+        return product_ideas
+    except Exception as e:
+        print(f"Error during product idea generation: {e}")
+        return None
 
 
-def save_predictions_to_db(predictions: List[Dict[str, str]]):
-    """Saves tweet predictions and product ideas to the SQLite database."""
-    conn = sqlite3.connect(DATABASE_NAME)
-    cursor = conn.cursor()
-    for result in predictions:
-        tweet_text = result["tweet_text"]
-        prediction = result.get("prediction", None)
-        product_idea = result.get("product_idea", None)
-        cursor.execute("""
-            INSERT INTO tweet_predictions (tweet_text, prediction, product_idea)
-            VALUES (?, ?, ?)
-        """, (tweet_text, prediction, product_idea))
-    conn.commit()
+@browser(
+    headless=True,  # Set to False if you want to see the browser
+    profile_dir="profile_dir",
+    delete_profile=False,
+)
+def automate_twitter_feed(driver: AntiDetectDriver):
+    if not X_USER or not X_PASSWORD:
+        raise ValueError("X_USER and X_PASSWORD environment variables must be set.")
+
+    driver.get("https://x.com/login")
+    # Login
+    driver.fill('input[name="text"]', X_USER)
+    driver.click('div[role="button"] span[class="css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0"]')
+    driver.fill('input[name="password"]', X_PASSWORD)
+    driver.click('div[role="button"] span[class="css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0"]')
+    driver.wait_for_selector('a[href*="/likes"]')
+
+    # Scrape liked tweets
+    driver.get(f"https://x.com/{X_USER}/likes")
+    liked_tweets = []
+    while True:
+        tweets = driver.query_selector_all('div[data-testid="tweetText"]')
+        if not tweets:
+            break
+        for tweet in tweets:
+            tweet_text = tweet.inner_text()
+            liked_tweets.append(tweet_text)
+        driver.scroll_down(1000)  # Scroll down to load more tweets
+
+    # Scrape tweets to predict
+    driver.get("https://x.com/home")
+    predict_tweets = []
+    while True:
+        tweets = driver.query_selector_all('div[data-testid="tweetText"]')
+        if not tweets:
+            break
+        for tweet in tweets:
+            tweet_text = tweet.inner_text()
+            predict_tweets.append(tweet_text)
+        driver.scroll_down(1000)  # Scroll down to load more tweets
+
+    # LLM predictions and database storage
+    for tweet_text in predict_tweets:
+        tweet_id = str(hash(tweet_text))  # Create a unique ID for the tweet
+        prediction = predict_tweet_usefulness(tweet_text)
+        if prediction is not None:
+            product_ideas = suggest_product_ideas(tweet_text)
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO predictions (tweet_id, tweet_text, prediction, product_ideas)
+                VALUES (?, ?, ?, ?)
+            """,
+                (tweet_id, tweet_text, prediction, product_ideas),
+            )
+            conn.commit()
+            print(
+                f"Tweet: {tweet_text[:50]}..., Prediction: {prediction}, Product Ideas: {product_ideas[:50]}..."
+            )
+
     conn.close()
-
-
-def main():
-    """Main function to orchestrate the tweet scraping, prediction, and filtering."""
-    initialize_database()
-
-    # 1. Scrape liked tweets
-    print(f"Scraping liked tweets from {LIKED_TWEETS_URL}...")
-    liked_tweets = scrape_tweets(LIKED_TWEETS_URL)
-    print(f"Found {len(liked_tweets)} liked tweets.")
-
-    # 2. Scrape home timeline tweets
-    print(f"Scraping home timeline tweets from {HOME_TIMELINE_URL}...")
-    home_timeline_tweets = scrape_tweets(HOME_TIMELINE_URL)
-    print(f"Found {len(home_timeline_tweets)} home timeline tweets.")
-
-    # 3. Combine tweets for prediction
-    all_tweets = liked_tweets + home_timeline_tweets
-
-    # 4. Predict tweet usefulness
-    print("Predicting tweet usefulness...")
-    tweet_predictions = predict_tweet_usefulness(all_tweets)
-
-    # 5. Filter product ideas
-    print("Filtering product ideas...")
-    product_ideas = filter_product_ideas(tweet_predictions)
-
-    # 6. Save results to database
-    print("Saving results to database...")
-    save_predictions_to_db(tweet_predictions + product_ideas)  # Save both predictions and ideas
-
-    print("Finished processing tweets.")
 
 
 if __name__ == "__main__":
-    main()
+    automate_twitter_feed()

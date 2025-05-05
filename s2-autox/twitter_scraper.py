@@ -1,7 +1,8 @@
 import os
 import sqlite3
 import time
-from botasaurus import *
+from botasaurus.browser import browser
+import botasaurus as bt
 
 
 def scrape_tweets(number_of_pages: int = 3):
@@ -29,7 +30,7 @@ def scrape_tweets(number_of_pages: int = 3):
         return
 
     # Botasaurus setup
-    with bt.Browser() as browser:
+    with bt.browser() as browser:
         page = browser.open("https://x.com/home")
 
         # Login

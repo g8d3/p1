@@ -1,4 +1,6 @@
-code to automate reading my twitter feed on s2-autox/read.py
+code to automate reading my twitter feed on s2-autox/read.py.
+
+Do not ask to read s2-autox/read.py, overwrite it.
 
 - I put my twitter user and pass in env vars X_USER, X_PASSWORD.
 - Full browser is automated by code using botasaurus, so twitter app might not be needed.

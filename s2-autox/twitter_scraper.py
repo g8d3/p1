@@ -1,7 +1,6 @@
 import os
 import sqlite3
 import time
-import botasaurus as bt
 from botasaurus import *
 
 

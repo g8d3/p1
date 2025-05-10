@@ -1,205 +1,194 @@
 import requests
-import pandas as pd
 import json
 import time
+import os
 from datetime import datetime, timedelta
-import asyncio
-import aiohttp
-from typing import List, Dict, Any
-import uuid
+import numpy as np
+from collections import defaultdict
+import pandas as pd
+from dotenv import load_dotenv
 
-# CoinGecko API endpoints
-COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
-TRENDING_URL = "https://www.coingecko.com/en/highlights/trending-crypto"
-GAINERS_LOSERS_URL = "https://www.coingecko.com/en/crypto-gainers-losers"
-AI_AGENTS_URL = "https://www.coingecko.com/en/categories/ai-agents"
+# Load environment variables from .env file (if present)
+load_dotenv()
 
-# OpenRouter API configuration
-OPENROUTER_API_KEY = "your_openrouter_api_key_here"  # Replace with your actual API key
-OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "google/gemini-2.0-flash-001"
+# Configuration variables
+HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")
+RAYDIUM_PROGRAM_ID = os.getenv("RAYDIUM_PROGRAM_ID", "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8")  # Default Raydium program ID
+N_DAYS = int(os.getenv("N_DAYS", 7))  # Default to 7 days
 
-# Headers for OpenRouter
-HEADERS = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json"
-}
+# Validate required variables
+if not HELIUS_API_KEY:
+    raise ValueError("HELIUS_API_KEY is not set. Please set it in .env or environment variables.")
 
-async def fetch_coingecko_data(endpoint: str, params: Dict[str, Any] = None) -> Dict:
-    """Fetch data from CoinGecko API with rate limiting."""
-    async with aiohttp.ClientSession() as session:
+# Helius API endpoints
+HELIUS_API_URL = "https://api.helius.xyz/v1/transactions"
+HELIUS_PRICE_URL = "https://api.helius.xyz/v1/token-price"
+
+def get_token_price(token_mint):
+    """Fetch current USD price for a token using Helius token price API."""
+    try:
+        params = {"api-key": HELIUS_API_KEY, "mint": token_mint}
+        response = requests.get(HELIUS_PRICE_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("price", 0)  # Returns price in USD or 0 if unavailable
+    except Exception as e:
+        print(f"Error fetching price for {token_mint}: {e}")
+        return 0
+
+def fetch_dex_trades(start_time, end_time, limit=1000):
+    """Fetch Raydium DEX trades within a time range using Helius Enhanced Transaction API."""
+    trades = []
+    last_signature = None
+    
+    while True:
+        params = {
+            "api-key": HELIUS_API_KEY,
+            "programIds": [RAYDIUM_PROGRAM_ID],
+            "startTime": int(start_time.timestamp()),
+            "endTime": int(end_time.timestamp()),
+            "limit": limit,
+            "types": ["SWAP"]
+        }
+        if last_signature:
+            params["before"] = last_signature
+        
         try:
-            async with session.get(f"{COINGECKO_BASE_URL}{endpoint}", params=params) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    print(f"Error fetching {endpoint}: {response.status}")
-                    return {}
+            response = requests.get(HELIUS_API_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if not data:
+                break
+                
+            trades.extend(data)
+            last_signature = data[-1]["signature"] if data else None
+            
+            if len(data) < limit:
+                break
+                
+            time.sleep(0.5)  # Respect rate limits
         except Exception as e:
-            print(f"Exception in fetch_coingecko_data: {e}")
-            return {}
-        finally:
-            await asyncio.sleep(1)  # Rate limiting
-
-async def get_token_ids(url: str) -> List[str]:
-    """Scrape token IDs from CoinGecko pages (simplified, ideally use CoinGecko API)."""
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status == 200:
-                # Note: Web scraping is complex and fragile. For production, use CoinGecko API directly.
-                # This is a placeholder; actual implementation needs HTML parsing (e.g., BeautifulSoup).
-                data = await fetch_coingecko_data("/coins/markets", {"vs_currency": "usd", "per_page": 100})
-                return [coin["id"] for coin in data if coin.get("platform", {}).get("id") in ["solana", "base"]]
-            return []
-
-async def fetch_historical_data(token_id: str, days: int = 30) -> pd.DataFrame:
-    """Fetch historical price data for a token."""
-    endpoint = f"/coins/{token_id}/market_chart"
-    params = {"vs_currency": "usd", "days": days, "interval": "daily"}
-    data = await fetch_coingecko_data(endpoint, params)
+            print(f"Error fetching trades: {e}")
+            break
     
-    if not data or "prices" not in data:
-        return pd.DataFrame()
-    
-    df = pd.DataFrame(data["prices"], columns=["timestamp", "price"])
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
-    df.set_index("timestamp", inplace=True)
-    return df
+    return trades
 
-async def call_openrouter_llm(prompt: str) -> str:
-    """Call OpenRouter API with the given prompt."""
-    payload = {
-        "model": MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 4000
+def calculate_trade_pl(trade):
+    """Calculate profit/loss for a single trade in USD."""
+    try:
+        # Extract token transfers from swap event
+        transfers = trade.get("tokenTransfers", [])
+        if len(transfers) < 2:  # Expect at least one token in, one out
+            return 0, None
+        
+        # Assume first transfer is token sold, second is token bought
+        token_sold = transfers[0]
+        token_bought = transfers[1]
+        
+        # Get USD prices for tokens
+        price_sold = get_token_price(token_sold["mint"])
+        price_bought = get_token_price(token_bought["mint"])
+        
+        # Calculate P/L: (Value of token bought - Value of token sold)
+        amount_sold = token_sold["amount"] / (10 ** token_sold["decimals"])
+        amount_bought = token_bought["amount"] / (10 ** token_bought["decimals"])
+        pl_usd = (amount_bought * price_bought) - (amount_sold * price_sold)
+        
+        # Get trader's wallet (user initiating the swap)
+        trader = trade.get("source", None)
+        
+        return pl_usd, trader
+    except Exception as e:
+        print(f"Error calculating P/L for trade: {e}")
+        return 0, None
+
+def compute_sharpe_ratio(daily_pl):
+    """Calculate Sharpe Ratio for a trader's daily P/L series."""
+    if not daily_pl or len(daily_pl) < 2:
+        return 0
+    
+    # Convert to numpy array
+    returns = np.array(daily_pl)
+    
+    # Calculate mean daily return and volatility (std dev)
+    mean_return = np.mean(returns)
+    volatility = np.std(returns, ddof=1)
+    
+    # Sharpe Ratio: (Mean Return - Risk-Free Rate) / Volatility
+    # Assume risk-free rate = 0 for simplicity
+    if volatility == 0:
+        return 0
+    return mean_return / volatility
+
+def get_top_traders(n_days=N_DAYS):
+    """Fetch and rank top traders by risk-adjusted returns over n days."""
+    # Define time range
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(days=n_days)
+    
+    # Fetch DEX trades
+    print(f"Fetching Raydium trades from {start_time} to {end_time}...")
+    trades = fetch_dex_trades(start_time, end_time)
+    print(f"Fetched {len(trades)} trades.")
+    
+    # Aggregate P/L by trader and day
+    trader_daily_pl = defaultdict(lambda: defaultdict(list))
+    for trade in trades:
+        pl_usd, trader = calculate_trade_pl(trade)
+        if pl_usd == 0 or not trader:
+            continue
+        
+        # Get trade timestamp and convert to date
+        timestamp = trade.get("timestamp", 0)
+        trade_date = datetime.utcfromtimestamp(timestamp).date()
+        
+        # Store P/L by trader and date
+        trader_daily_pl[trader][trade_date].append(pl_usd)
+    
+    # Calculate Sharpe Ratio for each trader
+    trader_metrics = []
+    for trader, daily_pl_dict in trader_daily_pl.items():
+        # Sum P/L for each day
+        daily_pl = []
+        for date in (start_time + timedelta(days=i) for i in range(n_days)):
+            date = date.date()
+            total_pl = sum(daily_pl_dict.get(date, []))
+            daily_pl.append(total_pl)
+        
+        # Compute Sharpe Ratio
+        sharpe = compute_sharpe_ratio(daily_pl)
+        total_pl = sum(sum(pls) for pls in daily_pl_dict.values())
+        
+        trader_metrics.append({
+            "trader": trader,
+            "total_pl_usd": total_pl,
+            "sharpe_ratio": sharpe
+        })
+    
+    # Sort by Sharpe Ratio (descending)
+    trader_metrics.sort(key=lambda x: x["sharpe_ratio"], reverse=True)
+    
+    # Return top 10 traders
+    return trader_metrics[:10]
+
+def main():
+    """Main function to run the analysis and save results."""
+    top_traders = get_top_traders()
+    
+    # Save results to JSON
+    output = {
+        "n_days": N_DAYS,
+        "timestamp": datetime.utcnow().isoformat(),
+        "top_traders": top_traders
     }
     
-    async with aiohttp.ClientSession() as session:
-        async with session.post(OPENROUTER_ENDPOINT, headers=HEADERS, json=payload) as response:
-            if response.status == 200:
-                result = await response.json()
-                return result["choices"][0]["message"]["content"]
-            else:
-                print(f"OpenRouter API error: {response.status}")
-                return ""
-
-def generate_trading_strategy_prompt(data: Dict[str, pd.DataFrame]) -> str:
-    """Generate prompt for LLM to create trading strategies."""
-    summary = ""
-    for token, df in data.items():
-        if not df.empty:
-            summary += f"\nToken: {token}\n"
-            summary += f"Latest Price: ${df['price'].iloc[-1]:.2f}\n"
-            summary += f"30-Day High: ${df['price'].max():.2f}\n"
-            summary += f"30-Day Low: ${df['price'].min():.2f}\n"
-            summary += f"30-Day Avg: ${df['price'].mean():.2f}\n"
+    with open("top_traders.json", "w") as f:
+        json.dump(output, f, indent=2)
     
-    prompt = f"""
-You are a crypto trading expert. Based on the following token data from Solana and Base ecosystems, generate three distinct trading strategies, including:
-1. Strategy description
-2. Entry and exit conditions
-3. Risk management rules
-4. Python code for backtesting the strategy using pandas
-
-Data:
-{summary}
-
-For each strategy, provide:
-- A clear explanation of the strategy
-- Specific technical indicators (e.g., SMA, RSI) if used
-- Entry/exit signals
-- Stop-loss and take-profit levels
-- Position sizing rules
-- Python code that takes a pandas DataFrame with 'price' column and returns a DataFrame with 'signal' (1 for buy, -1 for sell, 0 for hold) and 'returns'
-
-Ensure the strategies are practical and account for market volatility in Solana and Base tokens.
-"""
-    return prompt
-
-def backtest_strategy(df: pd.DataFrame, strategy_code: str) -> pd.DataFrame:
-    """Execute the provided strategy code and backtest it."""
-    try:
-        # Create a safe environment for executing strategy code
-        local_vars = {"df": df.copy(), "pd": pd}
-        exec(strategy_code, {}, local_vars)
-        
-        # Assume strategy_code defines a function 'generate_signals'
-        result_df = local_vars.get("result_df", df)
-        result_df["returns"] = result_df["price"].pct_change() * result_df["signal"].shift(1)
-        result_df["cumulative_returns"] = (1 + result_df["returns"]).cumprod()
-        return result_df
-    except Exception as e:
-        print(f"Backtesting error: {e}")
-        return pd.DataFrame()
-
-async def analyze_backtest_results(results: Dict[str, pd.DataFrame]) -> str:
-    """Analyze backtest results using LLM."""
-    summary = ""
-    for token, df in results.items():
-        if not df.empty and "cumulative_returns" in df.columns:
-            total_return = df["cumulative_returns"].iloc[-1] - 1
-            max_drawdown = (df["cumulative_returns"].cummax() - df["cumulative_returns"]).max()
-            sharpe_ratio = df["returns"].mean() / df["returns"].std() * (252 ** 0.5) if df["returns"].std() != 0 else 0
-            summary += f"\nToken: {token}\n"
-            summary += f"Total Return: {total_return:.2%}\n"
-            summary += f"Max Drawdown: {max_drawdown:.2%}\n"
-            summary += f"Sharpe Ratio: {sharpe_ratio:.2f}\n"
-    
-    prompt = f"""
-You are a financial analyst. Analyze the following backtest results and provide:
-1. Key insights on strategy performance
-2. Recommendations for improvement
-3. Risk assessment
-4. Suggestions for portfolio allocation
-
-Results:
-{summary}
-
-Provide a concise analysis and actionable recommendations.
-"""
-    return await call_openrouter_llm(prompt)
-
-async def main():
-    """Main function to orchestrate the workflow."""
-    # Step 1: Fetch token IDs from specified CoinGecko pages
-    token_ids = set()
-    for url in [TRENDING_URL, GAINERS_LOSERS_URL, AI_AGENTS_URL]:
-        ids = await get_token_ids(url)
-        token_ids.update(ids)
-    
-    # Step 2: Fetch historical data for each token
-    token_data = {}
-    for token_id in token_ids[:5]:  # Limit to 5 tokens for demonstration
-        df = await fetch_historical_data(token_id)
-        if not df.empty:
-            token_data[token_id] = df
-    
-    # Step 3: Generate trading strategies using LLM
-    prompt = generate_trading_strategy_prompt(token_data)
-    strategy_response = await call_openrouter_llm(prompt)
-    
-    # Step 4: Parse strategies (assume LLM returns JSON-like structure)
-    try:
-        strategies = json.loads(strategy_response)  # Adjust based on actual LLM output
-    except:
-        strategies = [{"name": "Default", "code": "# Fallback strategy\nresult_df = df.copy()\nresult_df['signal'] = 0"}]
-    
-    # Step 5: Backtest strategies
-    backtest_results = {}
-    for token, df in token_data.items():
-        backtest_results[token] = {}
-        for strategy in strategies:
-            result_df = backtest_strategy(df, strategy["code"])
-            backtest_results[token][strategy["name"]] = result_df
-    
-    # Step 6: Analyze backtest results
-    analysis = await analyze_backtest_results({f"{token}_{strat}": df for token, strats in backtest_results.items() for strat, df in strats.items()})
-    
-    # Step 7: Save results
-    with open("trading_analysis.json", "w") as f:
-        json.dump({"strategies": strategies, "backtest_results": analysis}, f)
-    
-    print("Trading strategies and analysis saved to trading_analysis.json")
+    print("Top traders saved to top_traders.json")
+    for trader in top_traders:
+        print(f"Trader: {trader['trader'][:8]}..., P/L: ${trader['total_pl_usd']:.2f}, Sharpe: {trader['sharpe_ratio']:.2f}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

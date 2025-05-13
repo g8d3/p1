@@ -13,3 +13,9 @@ https://raydium.io/launchpad/
 https://dexscreener.com/
 https://neo.bullx.io/
 https://swap.pump.fun/
+
+trading bots
+https://solanatradingbots.com/
+https://basetradingbots.com/
+https://bsctradingbots.com/
+https://trontradingbots.com/

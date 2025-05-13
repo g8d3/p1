@@ -18,4 +18,4 @@ trading bots
 https://solanatradingbots.com/
 https://basetradingbots.com/
 https://bsctradingbots.com/
-https://trontradingbots.com/\
+https://trontradingbots.com/

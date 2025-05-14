@@ -197,7 +197,7 @@ async def main():
     
     try:
         logger.info('Starting Nodriver browser...')
-        browser = await uc.start()
+        browser = await uc.start(no_sandbox=True)
         
         logger.info('Navigating to gmgn.ai...')
         max_retries = 3

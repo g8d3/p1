@@ -28,3 +28,22 @@ https://solanatradingbots.com/
 https://basetradingbots.com/
 https://bsctradingbots.com/
 https://trontradingbots.com/
+
+meme launchers
+https://pump.fun
+https://moon.it
+https://letsbonk.fun
+https://boop.fun
+https://time.fun
+https://daos.fun
+https://gofundmeme.io
+https://auto.fun
+https://believe.app
+https://mentat.fun
+https://app.virtuals.io
+https://dealr.fun
+https://www.xapple.app
+https://launch.meteora.ag
+https://indie.fun
+https://raydium.io/launchpad
+https://makenow.meme/en

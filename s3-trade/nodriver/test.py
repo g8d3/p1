@@ -1,3 +1,4 @@
+import nodriver as uc
 import nodriver
 
 async def main():

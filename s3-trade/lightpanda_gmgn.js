@@ -11,6 +11,7 @@ import sqlite3 from 'sqlite3';
 
   try {
     // Initialize SQLite database
+    console.log('Initializing database...');
     db = new sqlite3.Database('traders.db');
     db.run(`
       CREATE TABLE IF NOT EXISTS traders (
@@ -23,7 +24,7 @@ import sqlite3 from 'sqlite3';
     console.log('Connecting to Lightpanda CDP server...');
     browser = await puppeteer.connect({
       browserWSEndpoint: 'ws://127.0.0.1:9222',
-      defaultViewport: null, // Use browser's default viewport
+      defaultViewport: null,
     });
 
     // Verify connection
@@ -31,12 +32,15 @@ import sqlite3 from 'sqlite3';
     console.log(`Connected to browser: ${browserVersion}`);
 
     // Create a new browser context and page
+    console.log('Creating browser context and page...');
     context = await browser.createBrowserContext();
     page = await context.newPage();
 
-    // Set up request interception
+    // Attempt request interception (optional for testing)
     let xhrUrl = null;
+    let interceptionFailed = false;
     try {
+      console.log('Setting up request interception...');
       await page.setRequestInterception(true);
       page.on('request', request => {
         if (request.resourceType() === 'xhr') {
@@ -48,8 +52,24 @@ import sqlite3 from 'sqlite3';
         request.continue();
       });
     } catch (error) {
-      console.error('Failed to set up request interception:', error.message);
-      throw error;
+      console.warn('Request interception failed:', error.message);
+      interceptionFailed = true;
+    }
+
+    // Fallback: Capture XHR via client-side script if interception fails
+    if (interceptionFailed) {
+      console.log('Attempting fallback XHR capture...');
+      await page.evaluateOnNewDocument(() => {
+        const originalFetch = window.fetch;
+        window.fetch = async (...args) => {
+          const url = args[0];
+          if (url.includes('api') && url.includes('traders')) {
+            console.log('XHR URL:', url);
+            window.__xhrUrl = url; // Store in global variable
+          }
+          return originalFetch.apply(window, args);
+        };
+      });
     }
 
     // Navigate to the page
@@ -104,6 +124,7 @@ import sqlite3 from 'sqlite3';
     });
 
     // Save to SQLite
+    console.log('Saving to database...');
     const stmt = db.prepare('INSERT OR IGNORE INTO traders (address) VALUES (?)');
     traders.forEach(address => {
       stmt.run(address);
@@ -111,6 +132,11 @@ import sqlite3 from 'sqlite3';
     stmt.finalize();
 
     console.log(`Saved ${traders.length} trader addresses to database`);
+
+    // Retrieve XHR URL from fallback if used
+    if (interceptionFailed && !xhrUrl) {
+      xhrUrl = await page.evaluate(() => window.__xhrUrl || null);
+    }
 
     // Log XHR URL
     if (xhrUrl) {

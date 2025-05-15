@@ -3,6 +3,9 @@
 import puppeteer from 'puppeteer-core';
 import sqlite3 from 'sqlite3';
 
+// Helper function to replace waitForTimeout
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 (async () => {
   let browser = null;
   let context = null;
@@ -10,6 +13,9 @@ import sqlite3 from 'sqlite3';
   let db = null;
 
   try {
+    // Log Puppeteer version
+    console.log(`Using puppeteer-core version: ${puppeteer.version}`);
+
     // Initialize SQLite database
     console.log('Initializing database...');
     db = new sqlite3.Database('traders.db');
@@ -45,7 +51,7 @@ import sqlite3 from 'sqlite3';
     while (!navigationSuccess && retries < maxRetries) {
       try {
         console.log(`Navigation attempt ${retries + 1}/${maxRetries}`);
-        await page.waitForTimeout(2000); // Delay to stabilize session
+        await delay(2000); // Delay to stabilize session
         await page.goto('https://gmgn.ai/trade?chain=sol', {
           waitUntil: 'domcontentloaded',
           timeout: 30000,
@@ -70,7 +76,7 @@ import sqlite3 from 'sqlite3';
     const firstModal = await page.$('.css-pt4g3d');
     if (firstModal) {
       await firstModal.click();
-      await page.waitForTimeout(1000);
+      await delay(1000);
       console.log('Closed .css-pt4g3d modal');
     }
 
@@ -84,7 +90,7 @@ import sqlite3 from 'sqlite3';
       if (secondModalButton) {
         await secondModalButton.click();
         console.log(`Clicked pi-btn modal (${clickCount + 1}/${maxClicks})`);
-        await page.waitForTimeout(1000);
+        await delay(1000);
         clickCount++;
         tableVisible = await page.$('table') !== null;
       } else {
@@ -126,6 +132,7 @@ import sqlite3 from 'sqlite3';
 
   } catch (error) {
     console.error('Script failed:', error.message);
+    console.error('Error stack:', error.stack);
   } finally {
     // Clean up
     if (db) {

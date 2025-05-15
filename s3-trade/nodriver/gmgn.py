@@ -51,6 +51,12 @@ async def extract_traders(tab: uc.Tab) -> List[str]:
     """Extract Solana trader addresses from the table."""
     try:
         await tab.wait_for('table', timeout=10000)
+        table_content = await tab.evaluate('''() => {
+            const tables = document.querySelectorAll('table');
+            return Array.from(tables).map(table => table.outerHTML);
+        }''')
+        logger.debug(f'Table content: {table_content}')
+
         traders = await tab.evaluate('''() => {
             const rows = Array.from(document.querySelectorAll('table tbody tr'));
             return rows.map(row => {
@@ -58,6 +64,7 @@ async def extract_traders(tab: uc.Tab) -> List[str]:
                 return addressCell ? addressCell.textContent.trim() : null;
             }).filter(address => address && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address));
         }''')
+        logger.info(f'Extracted {len(traders)} trader addresses')
         return traders
     except Exception as e:
         logger.error(f'Error extracting traders: {e}')
@@ -94,18 +101,37 @@ async def capture_xhr_url(tab: uc.Tab) -> Optional[str]:
             logger.debug(f'Captured XHR/fetch request: {request.url}')
             await request.continue_request()
 
-    # Enable request interception
+    # Enable request interception before navigation
     try:
         await tab.send(uc.cdp.network.enable())
-        tab.intercept = on_intercept  # Set up interception handler
+        tab.intercept = on_intercept
 
-        # Wait for table to ensure XHR requests related to table data are captured
+        # Wait for table and extend wait for network requests
         await tab.wait_for('table', timeout=10000)
-        await asyncio.sleep(2)  # Additional wait to capture late XHRs
+        await asyncio.sleep(5)  # Extended wait for late XHRs
 
-        # Filter for likely table data URLs (e.g., containing 'api', 'traders', or similar)
+        # Fallback: Use JavaScript to capture network requests
+        if not xhr_urls:
+            logger.debug('No XHR URLs captured via interception, trying JavaScript fallback')
+            network_requests = await tab.evaluate('''() => {
+                const requests = [];
+                const originalFetch = window.fetch;
+                window.fetch = async (...args) => {
+                    requests.push(args[0]);
+                    return originalFetch.apply(window, args);
+                };
+                const originalXhrOpen = XMLHttpRequest.prototype.open;
+                XMLHttpRequest.prototype.open = function(method, url) {
+                    requests.push(url);
+                    return originalXhrOpen.apply(this, arguments);
+                };
+                return new Promise(resolve => setTimeout(() => resolve(requests), 2000));
+            }''')
+            xhr_urls.extend([str(url) for url in network_requests if isinstance(url, str)])
+
+        # Filter for likely table data URLs
         for url in xhr_urls:
-            if 'api' in url.lower() or 'traders' in url.lower():
+            if 'api' in url.lower() or 'traders' in url.lower() or 'trade' in url.lower():
                 logger.info(f'Likely table data XHR URL: {url}')
                 return url
         logger.warning(f'No relevant XHR URL found. Captured URLs: {xhr_urls}')
@@ -165,9 +191,13 @@ async def main():
         if tab:
             await tab.close()
             logger.info('Closed tab')
-        if browser:
+        if browser is not None:  # Check for None explicitly
             await browser.stop()
             logger.info('Closed browser')
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(main())
+    finally:
+        loop.close()

@@ -36,9 +36,33 @@ import sqlite3 from 'sqlite3';
     context = await browser.createBrowserContext();
     page = await context.newPage();
 
-    // Navigate to the page
+    // Retry navigation up to 3 times
     console.log('Navigating to gmgn.ai...');
-    await page.goto('https://gmgn.ai/trade?chain=sol', { waitUntil: 'networkidle2', timeout: 30000 });
+    let navigationSuccess = false;
+    let retries = 0;
+    const maxRetries = 3;
+
+    while (!navigationSuccess && retries < maxRetries) {
+      try {
+        console.log(`Navigation attempt ${retries + 1}/${maxRetries}`);
+        await page.waitForTimeout(2000); // Delay to stabilize session
+        await page.goto('https://gmgn.ai/trade?chain=sol', {
+          waitUntil: 'domcontentloaded',
+          timeout: 30000,
+        });
+        navigationSuccess = true;
+        console.log('Navigation successful');
+      } catch (error) {
+        console.warn(`Navigation attempt ${retries + 1} failed: ${error.message}`);
+        retries++;
+        if (retries === maxRetries) {
+          throw new Error(`Navigation failed after ${maxRetries} attempts: ${error.message}`);
+        }
+        // Recreate page if frame is detached
+        await page.close().catch(() => {});
+        page = await context.newPage();
+      }
+    }
 
     // Close modals
     console.log('Closing modals...');
@@ -97,7 +121,7 @@ import sqlite3 from 'sqlite3';
 
     console.log(`Saved ${traders.length} trader addresses to database`);
 
-    // Note: XHR URL capture skipped due to CDP issues
+    // Note: XHR URL capture skipped
     console.log('XHR URL capture skipped due to Lightpanda CDP limitations');
 
   } catch (error) {

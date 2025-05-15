@@ -36,42 +36,6 @@ import sqlite3 from 'sqlite3';
     context = await browser.createBrowserContext();
     page = await context.newPage();
 
-    // Attempt request interception (optional for testing)
-    let xhrUrl = null;
-    let interceptionFailed = false;
-    try {
-      console.log('Setting up request interception...');
-      await page.setRequestInterception(true);
-      page.on('request', request => {
-        if (request.resourceType() === 'xhr') {
-          if (request.url().includes('api') && request.url().includes('traders')) {
-            xhrUrl = request.url();
-            console.log('Found XHR URL:', xhrUrl);
-          }
-        }
-        request.continue();
-      });
-    } catch (error) {
-      console.warn('Request interception failed:', error.message);
-      interceptionFailed = true;
-    }
-
-    // Fallback: Capture XHR via client-side script if interception fails
-    if (interceptionFailed) {
-      console.log('Attempting fallback XHR capture...');
-      await page.evaluateOnNewDocument(() => {
-        const originalFetch = window.fetch;
-        window.fetch = async (...args) => {
-          const url = args[0];
-          if (url.includes('api') && url.includes('traders')) {
-            console.log('XHR URL:', url);
-            window.__xhrUrl = url; // Store in global variable
-          }
-          return originalFetch.apply(window, args);
-        };
-      });
-    }
-
     // Navigate to the page
     console.log('Navigating to gmgn.ai...');
     await page.goto('https://gmgn.ai/trade?chain=sol', { waitUntil: 'networkidle2', timeout: 30000 });
@@ -133,17 +97,8 @@ import sqlite3 from 'sqlite3';
 
     console.log(`Saved ${traders.length} trader addresses to database`);
 
-    // Retrieve XHR URL from fallback if used
-    if (interceptionFailed && !xhrUrl) {
-      xhrUrl = await page.evaluate(() => window.__xhrUrl || null);
-    }
-
-    // Log XHR URL
-    if (xhrUrl) {
-      console.log('API endpoint for table data:', xhrUrl);
-    } else {
-      console.log('No XHR URL found for table data');
-    }
+    // Note: XHR URL capture skipped due to CDP issues
+    console.log('XHR URL capture skipped due to Lightpanda CDP limitations');
 
   } catch (error) {
     console.error('Script failed:', error.message);

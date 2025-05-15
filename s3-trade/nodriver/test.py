@@ -1,4 +1,4 @@
-from nodriver import *
+import nodriver
 
 async def main():
 

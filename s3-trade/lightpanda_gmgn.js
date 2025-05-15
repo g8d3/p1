@@ -1,5 +1,18 @@
-const puppeteer = require('puppeteer-core');
-const sqlite3 = require('sqlite3').verbose();
+// const puppeteer = require('puppeteer-core');
+
+'use strict'
+
+import puppeteer from 'puppeteer-core';
+import sqlite3 from 'sqlite3';
+
+// use browserWSEndpoint to pass the Lightpanda's CDP server address.
+const browser = await puppeteer.connect({
+  browserWSEndpoint: "ws://127.0.0.1:9222",
+});
+
+// The rest of your script remains the same.
+const context = await browser.createBrowserContext();
+const page = await context.newPage();
 
 (async () => {
   // Initialize SQLite database

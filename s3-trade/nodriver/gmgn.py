@@ -55,6 +55,9 @@ async def extract_traders(tab: uc.Tab) -> List[str]:
             const tables = document.querySelectorAll('table');
             return Array.from(tables).map(table => table.outerHTML);
         }''')
+        if table_content is None:
+            logger.error('Table content evaluation returned None')
+            return []
         logger.debug(f'Table content: {table_content}')
 
         traders = await tab.evaluate('''() => {
@@ -64,10 +67,13 @@ async def extract_traders(tab: uc.Tab) -> List[str]:
                 return addressCell ? addressCell.textContent.trim() : null;
             }).filter(address => address && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address));
         }''')
+        if traders is None:
+            logger.error('Trader evaluation returned None')
+            return []
         logger.info(f'Extracted {len(traders)} trader addresses')
         return traders
     except Exception as e:
-        logger.error(f'Error extracting traders: {e}')
+        logger.error(f'Error extracting traders: {e}', exc_info=True)
         return []
 
 def save_traders_to_db(traders: List[str], db_path: str = 'traders.db'):
@@ -101,46 +107,88 @@ async def capture_xhr_url(tab: uc.Tab) -> Optional[str]:
             logger.debug(f'Captured XHR/fetch request: {request.url}')
             await request.continue_request()
 
-    # Enable request interception before navigation
+    # Enable request interception
     try:
+        logger.info('Enabling network interception')
         await tab.send(uc.cdp.network.enable())
         tab.intercept = on_intercept
 
         # Wait for table and extend wait for network requests
         await tab.wait_for('table', timeout=10000)
-        await asyncio.sleep(5)  # Extended wait for late XHRs
+        logger.info('Table visible, waiting for XHR requests')
+        await asyncio.sleep(15)  # Wait for at least one 12-second cycle
 
-        # Fallback: Use JavaScript to capture network requests
+        # Fallback: Use JavaScript to capture requests and responses
         if not xhr_urls:
             logger.debug('No XHR URLs captured via interception, trying JavaScript fallback')
-            network_requests = await tab.evaluate('''() => {
+            network_data = await tab.evaluate('''() => {
                 const requests = [];
                 const originalFetch = window.fetch;
                 window.fetch = async (...args) => {
-                    requests.push(args[0]);
-                    return originalFetch.apply(window, args);
+                    const response = await originalFetch.apply(window, args);
+                    try {
+                        const cloned = response.clone();
+                        const json = await cloned.json();
+                        requests.push({ url: args[0], response: JSON.stringify(json) });
+                    } catch (e) {
+                        requests.push({ url: args[0], response: null });
+                    }
+                    return response;
                 };
                 const originalXhrOpen = XMLHttpRequest.prototype.open;
                 XMLHttpRequest.prototype.open = function(method, url) {
-                    requests.push(url);
+                    const xhr = this;
+                    xhr.addEventListener('load', () => {
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+                            requests.push({ url: url, response: JSON.stringify(json) });
+                        } catch (e) {
+                            requests.push({ url: url, response: null });
+                        }
+                    });
                     return originalXhrOpen.apply(this, arguments);
                 };
-                return new Promise(resolve => setTimeout(() => resolve(requests), 2000));
+                return new Promise(resolve => setTimeout(() => resolve(requests), 15000));
             }''')
-            xhr_urls.extend([str(url) for url in network_requests if isinstance(url, str)])
+            if network_data is None:
+                logger.error('JavaScript evaluation for network requests returned None')
+                return None
 
-        # Filter for likely table data URLs
+            for item in network_data:
+                if isinstance(item, dict) and 'url' in item and 'response' in item:
+                    url = item['url']
+                    response = item.get('response')
+                    xhr_urls.append(url)
+                    logger.debug(f'JS captured request: {url}')
+                    # Check if response contains trader-like data
+                    if response:
+                        try:
+                            json_data = eval(response)  # Safely parse JSON string
+                            if isinstance(json_data, (list, dict)) and any(
+                                isinstance(v, str) and re.match(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$', v)
+                                for v in json_data.values() if isinstance(json_data, dict)
+                                or v for v in json_data if isinstance(json_data, list)
+                            ):
+                                logger.info(f'Found trader data in response for URL: {url}')
+                                return url
+                        except Exception as e:
+                            logger.debug(f'Error parsing response for {url}: {e}')
+
+        # Filter for likely table data URLs if no trader data found
         for url in xhr_urls:
-            if 'api' in url.lower() or 'traders' in url.lower() or 'trade' in url.lower():
-                logger.info(f'Likely table data XHR URL: {url}')
+            if any(keyword in url.lower() for keyword in ['api', 'traders', 'trade']):
+                logger.info(f'Likely table data XHR URL (keyword match): {url}')
                 return url
         logger.warning(f'No relevant XHR URL found. Captured URLs: {xhr_urls}')
         return None
     except Exception as e:
-        logger.error(f'Error capturing XHR URL: {e}')
+        logger.error(f'Error in capture_xhr_url: {e}', exc_info=True)
         return None
     finally:
-        await tab.send(uc.cdp.network.disable())
+        try:
+            await tab.send(uc.cdp.network.disable())
+        except Exception as e:
+            logger.debug(f'Error disabling network interception: {e}')
 
 async def main():
     """Main function to orchestrate the scraping process."""
@@ -191,13 +239,15 @@ async def main():
         if tab:
             await tab.close()
             logger.info('Closed tab')
-        if browser is not None:  # Check for None explicitly
+        if browser is not None:
             await browser.stop()
             logger.info('Closed browser')
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
         loop.run_until_complete(main())
     finally:
+        loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()

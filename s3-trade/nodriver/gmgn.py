@@ -85,30 +85,36 @@ def save_traders_to_db(traders: List[str], db_path: str = 'traders.db'):
         logger.info('Closed database')
 
 async def capture_xhr_url(tab: uc.Tab) -> Optional[str]:
-    """Capture the XHR URL used to fetch table data."""
+    """Capture the XHR URL used to fetch table data using request interception."""
     xhr_urls = []
-    
-    def on_request(event):
-        if event.resource_type == 'xhr':
-            xhr_urls.append(event.url)
-            logger.debug(f'Captured XHR request: {event.url}')
-    
-    tab.on('request', on_request)
-    
-    # Wait for table to ensure XHR requests related to table data are captured
+
+    async def on_intercept(request):
+        if request.resource_type in ('xhr', 'fetch'):
+            xhr_urls.append(request.url)
+            logger.debug(f'Captured XHR/fetch request: {request.url}')
+            await request.continue_request()
+
+    # Enable request interception
     try:
+        await tab.send(uc.cdp.network.enable())
+        tab.intercept = on_intercept  # Set up interception handler
+
+        # Wait for table to ensure XHR requests related to table data are captured
         await tab.wait_for('table', timeout=10000)
         await asyncio.sleep(2)  # Additional wait to capture late XHRs
+
         # Filter for likely table data URLs (e.g., containing 'api', 'traders', or similar)
         for url in xhr_urls:
             if 'api' in url.lower() or 'traders' in url.lower():
                 logger.info(f'Likely table data XHR URL: {url}')
                 return url
-        logger.warning('No relevant XHR URL found')
+        logger.warning(f'No relevant XHR URL found. Captured URLs: {xhr_urls}')
         return None
     except Exception as e:
         logger.error(f'Error capturing XHR URL: {e}')
         return None
+    finally:
+        await tab.send(uc.cdp.network.disable())
 
 async def main():
     """Main function to orchestrate the scraping process."""

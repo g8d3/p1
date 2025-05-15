@@ -1,18 +1,7 @@
-// const puppeteer = require('puppeteer-core');
-
 'use strict'
 
 import puppeteer from 'puppeteer-core';
 import sqlite3 from 'sqlite3';
-
-// use browserWSEndpoint to pass the Lightpanda's CDP server address.
-const browser = await puppeteer.connect({
-  browserWSEndpoint: "ws://127.0.0.1:9222",
-});
-
-// The rest of your script remains the same.
-const context = await browser.createBrowserContext();
-const page = await context.newPage();
 
 (async () => {
   // Initialize SQLite database
@@ -26,9 +15,14 @@ const page = await context.newPage();
     )
   `);
 
-  // Launch browser
-  const browser = await puppeteer.launch({ headless: false }); // Set to true for headless mode
-  const page = await browser.newPage();
+  // Connect to Lightpanda's CDP server
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: 'ws://127.0.0.1:9222',
+  });
+
+  // Create a new browser context and page
+  const context = await browser.createBrowserContext();
+  const page = await context.newPage();
 
   // Intercept network requests to find XHR
   let xhrUrl = null;
@@ -76,13 +70,17 @@ const page = await context.newPage();
 
     if (!tableVisible) {
       console.log('Table not visible after closing modals');
-      await browser.close();
+      await page.close();
+      await context.close();
+      await browser.disconnect();
       db.close();
       return;
     }
   } catch (error) {
     console.log('Error closing modals:', error.message);
-    await browser.close();
+    await page.close();
+    await context.close();
+    await browser.disconnect();
     db.close();
     return;
   }
@@ -115,7 +113,9 @@ const page = await context.newPage();
     console.log('No XHR URL found for table data');
   }
 
-  // Close database and browser
+  // Clean up
   db.close();
-  await browser.close();
+  await page.close();
+  await context.close();
+  await browser.disconnect();
 })();

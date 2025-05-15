@@ -9,14 +9,14 @@ from typing import List, Optional
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-async def close_modals(page: uc.Page) -> bool:
+async def close_modals(tab: uc.Tab) -> bool:
     """Close modals until the traders table is visible."""
     max_clicks = 6
     click_count = 0
 
     # Close .css-pt4g3d modal if present
     try:
-        first_modal = await page.select('.css-pt4g3d')
+        first_modal = await tab.select('.css-pt4g3d')
         if first_modal:
             await first_modal.click()
             await asyncio.sleep(1)
@@ -27,11 +27,11 @@ async def close_modals(page: uc.Page) -> bool:
     # Click button.pi-btn:nth-child(2) until table is visible or max clicks reached
     while click_count < max_clicks:
         try:
-            table = await page.select('table')
+            table = await tab.select('table')
             if table:
                 logger.info('Table is visible')
                 return True
-            second_modal_button = await page.select('button.pi-btn:nth-child(2)')
+            second_modal_button = await tab.select('button.pi-btn:nth-child(2)')
             if second_modal_button:
                 await second_modal_button.click()
                 logger.info(f'Clicked pi-btn modal ({click_count + 1}/{max_clicks})')
@@ -47,11 +47,11 @@ async def close_modals(page: uc.Page) -> bool:
     logger.error('Table not visible after closing modals')
     return False
 
-async def extract_traders(page: uc.Page) -> List[str]:
+async def extract_traders(tab: uc.Tab) -> List[str]:
     """Extract Solana trader addresses from the table."""
     try:
-        await page.wait_for('table', timeout=10000)
-        traders = await page.evaluate('''() => {
+        await tab.wait_for('table', timeout=10000)
+        traders = await tab.evaluate('''() => {
             const rows = Array.from(document.querySelectorAll('table tbody tr'));
             return rows.map(row => {
                 const addressCell = row.querySelector('td:first-child');
@@ -84,7 +84,7 @@ def save_traders_to_db(traders: List[str], db_path: str = 'traders.db'):
         conn.close()
         logger.info('Closed database')
 
-async def capture_xhr_url(page: uc.Page) -> Optional[str]:
+async def capture_xhr_url(tab: uc.Tab) -> Optional[str]:
     """Capture the XHR URL used to fetch table data."""
     xhr_urls = []
     
@@ -93,11 +93,11 @@ async def capture_xhr_url(page: uc.Page) -> Optional[str]:
             xhr_urls.append(event.url)
             logger.debug(f'Captured XHR request: {event.url}')
     
-    page.on('request', on_request)
+    tab.on('request', on_request)
     
     # Wait for table to ensure XHR requests related to table data are captured
     try:
-        await page.wait_for('table', timeout=10000)
+        await tab.wait_for('table', timeout=10000)
         await asyncio.sleep(2)  # Additional wait to capture late XHRs
         # Filter for likely table data URLs (e.g., containing 'api', 'traders', or similar)
         for url in xhr_urls:
@@ -113,7 +113,7 @@ async def capture_xhr_url(page: uc.Page) -> Optional[str]:
 async def main():
     """Main function to orchestrate the scraping process."""
     browser = None
-    page = None
+    tab = None
     
     try:
         logger.info('Starting Nodriver browser...')
@@ -123,7 +123,7 @@ async def main():
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                page = await browser.get('https://gmgn.ai/trade?chain=sol')
+                tab = await browser.get('https://gmgn.ai/trade?chain=sol')
                 await asyncio.sleep(2)  # Wait for page stabilization
                 logger.info('Navigation successful')
                 break
@@ -134,19 +134,19 @@ async def main():
                 await asyncio.sleep(2)
         
         # Close modals and check if table is visible
-        table_visible = await close_modals(page)
+        table_visible = await close_modals(tab)
         if not table_visible:
             raise Exception('Failed to make table visible')
         
         # Capture XHR URL
-        xhr_url = await capture_xhr_url(page)
+        xhr_url = await capture_xhr_url(tab)
         if xhr_url:
             logger.info(f'Found XHR URL for table data: {xhr_url}')
         else:
             logger.warning('Could not identify XHR URL for table data')
         
         # Extract and save trader addresses
-        traders = await extract_traders(page)
+        traders = await extract_traders(tab)
         if traders:
             save_traders_to_db(traders)
         else:
@@ -156,9 +156,9 @@ async def main():
         logger.error(f'Script failed: {e}', exc_info=True)
     
     finally:
-        if page:
-            await page.close()
-            logger.info('Closed page')
+        if tab:
+            await tab.close()
+            logger.info('Closed tab')
         if browser:
             await browser.stop()
             logger.info('Closed browser')

@@ -1,3 +1,11 @@
+text to app:
+https://app.emergent.sh/
+rork.app
+replit
+bolt new
+bolt diy
+lovable
+
 browsers and computer use for LLMs:
 https://github.com/omkarcloud/botasaurus
 https://github.com/lightpanda-io/browser

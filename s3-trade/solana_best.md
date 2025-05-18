@@ -1,4 +1,5 @@
 apps:
+auto social media
 coins launcher
 trading data
 dex

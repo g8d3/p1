@@ -1,3 +1,8 @@
+apps:
+coins launcher
+trading data
+dex
+
 text to app:
 https://app.emergent.sh/
 rork.app

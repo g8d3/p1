@@ -3,7 +3,19 @@ auto social media
 coins launcher
 trading data
 dex
+
 scheduler automation chrome extension: 
+https://chromewebstore.google.com/detail/automation-easy/jfgkndkiahelnemgbmbgchefkkhcailo?hl=en
+https://www.automa.site/
+https://chromewebstore.google.com/detail/axiom-browser-automation/cpgamigjcbffkaiciiepndmonbfdimbb
+https://github.com/AutomaApp/automa
+https://calendly.com/blog/scheduling-chrome-extension
+https://daily.dev/blog/automate-chrome-extension-for-community-engagement
+https://zapier.com/apps/acuity-scheduling/integrations/zapier-chrome-extension
+https://browserflow.app/
+https://calendly.com/integration/calendly-for-chrome
+https://marketplace.uipath.com/listings/scheduler-robot-pack
+
 text to app:
 https://app.emergent.sh/
 rork.app

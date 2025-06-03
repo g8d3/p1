@@ -1,0 +1,8 @@
+
+The goal of this conversation is to develop a web application that:
+1. **Fetches Cryptocurrency Data**: Uses the `ccxt` library to retrieve historical OHLCV (Open, High, Low, Close, Volume) data for a trading pair (e.g., BTC/USDT) from an exchange like Binance, allowing multiple users to select their preferred trading pairs and timeframes.
+2. **Checks for Duplicates**: Verifies if data already exists in QuestDB to minimize redundant API calls, ensuring efficient data management across user requests.
+3. **Saves to QuestDB**: Stores fetched data in a QuestDB table using the InfluxDB Line Protocol (ILP) for efficient ingestion, with data organized to support multi-user access (e.g., user-specific or shared datasets).
+4. **Real-Time Updates**: Uses WebSockets to capture real-time OHLCV updates from the exchange and save new data to QuestDB, avoiding duplicates, and delivers live updates to users via the web interface.
+5. **Multi-User Web App**: Implements a web application (e.g., using Flask, FastAPI, or Django) to allow multiple users to log in, configure data fetches (e.g., select symbols, timeframes), view historical and real-time data, and interact with results through a user-friendly interface, with proper user authentication and session management.
+6. **Resolves Issues**: Addresses integration of the `ccxt` library, `requests` for QuestDB queries (e.g., table creation, duplicate checks), and the `questdb` library for data ingestion, ensuring robust error handling and scalability for concurrent user access.

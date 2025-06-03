@@ -3,7 +3,7 @@ auto social media
 coins launcher
 trading data
 dex
-
+scheduler automation chrome extension: 
 text to app:
 https://app.emergent.sh/
 rork.app

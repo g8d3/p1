@@ -1,7 +1,7 @@
 import asyncio
 import ccxt.async_support as ccxt
 import pandas as pd
-from fastapi import FastAPI, WebSocket, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -39,9 +39,6 @@ class OHLCVRequest(BaseModel):
 QUESTDB_HOST = "localhost"
 QUESTDB_PORT = 9000
 QUESTDB_HTTP_PORT = 9009
-
-# WebSocket connections
-active_connections: Dict[str, List[WebSocket]] = {}
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -139,46 +136,6 @@ async def fetch_ohlcv(request: OHLCVRequest, username: str = Depends(get_current
         except Exception as e:
             print(f"Error in fetch_ohlcv: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error fetching OHLCV: {str(e)}")
-
-@app.websocket("/ws/ohlcv/{exchange}/{symbol}/{timeframe}")
-async def websocket_ohlcv(websocket: WebSocket, exchange: str, symbol: str, timeframe: str):
-    await websocket.accept()
-    if symbol not in active_connections:
-        active_connections[symbol] = []
-    active_connections[symbol].append(websocket)
-    
-    exchange_class = getattr(ccxt, exchange, None)
-    if not exchange_class:
-        await websocket.send_json({"error": f"Invalid exchange: {exchange}"})
-        await websocket.close()
-        return
-    async with exchange_class({"enableRateLimit": True}) as ex:
-        try:
-            while True:
-                try:
-                    data = await ex.watch_ohlcv(symbol, timeframe)
-                    latest = {
-                        "timestamp": int(data[-1][0]),
-                        "open": float(data[-1][1]),
-                        "high": float(data[-1][2]),
-                        "low": float(data[-1][3]),
-                        "close": float(data[-1][4]),
-                        "volume": float(data[-1][5])
-                    }
-                    if not await check_duplicate_ohlcv(symbol, timeframe, latest["timestamp"]):
-                        await save_to_questdb([latest], symbol, timeframe)
-                        for ws in active_connections[symbol]:
-                            await ws.send_json(latest)
-                except Exception as e:
-                    print(f"WebSocket inner error for {exchange}/{symbol}/{timeframe}: {str(e)}")
-                    await websocket.send_json({"error": f"WebSocket data fetch failed: {str(e)}"})
-                await asyncio.sleep(1)
-        except Exception as e:
-            print(f"WebSocket outer error for {exchange}/{symbol}/{timeframe}: {str(e)}")
-        finally:
-            active_connections[symbol].remove(websocket)
-            if not active_connections[symbol]:
-                del active_connections[symbol]
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index():

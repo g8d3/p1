@@ -13,7 +13,8 @@
 
     <script>
         $(document).ready(function () {
-            const token = localStorage.getItem('token') || '';
+            let token = localStorage.getItem('token') || '';
+            let pollInterval = null;
 
             function renderLogin() {
                 $('#app').html(`
@@ -43,6 +44,7 @@
 
                 $('#login-btn').click(handleLogin);
                 $('#register-btn').click(handleRegister);
+                if (pollInterval) clearInterval(pollInterval);
             }
 
             function renderDashboard() {
@@ -74,9 +76,7 @@
                             class="p-2 border rounded"
                         />
                         <button id="fetch-btn" class="bg-blue-500 text-white p-2 rounded">Fetch OHLCV</button>
-                    </div>
-                    <div class="mb-4">
-                        <span id="ws-status" class="text-red-500">WebSocket: Disconnected</span>
+                        <button id="logout-btn" class="bg-red-500 text-white p-2 rounded">Logout</button>
                     </div>
                     <div id="error" class="text-red-500 mb-4 hidden"></div>
                     <div class="overflow-x-auto">
@@ -97,7 +97,14 @@
                 `);
 
                 $('#fetch-btn').click(fetchOHLCV);
-                setupWebSocket();
+                $('#logout-btn').click(() => {
+                    localStorage.removeItem('token');
+                    token = '';
+                    if (pollInterval) clearInterval(pollInterval);
+                    renderLogin();
+                });
+                $('#exchange, #symbol, #timeframe').change(fetchOHLCV);
+                startPolling();
             }
 
             function handleLogin() {
@@ -105,7 +112,8 @@
                 const password = $('#password').val();
                 axios.post('/token', new URLSearchParams({ username, password }))
                     .then(response => {
-                        localStorage.setItem('token', response.data.access_token);
+                        token = response.data.access_token;
+                        localStorage.setItem('token', token);
                         renderDashboard();
                         fetchOHLCV();
                     })
@@ -129,18 +137,35 @@
             }
 
             function fetchOHLCV() {
+                if (!token) {
+                    $('#error').text('Please log in to fetch data').show();
+                    renderLogin();
+                    return;
+                }
                 const exchange = $('#exchange').val();
-                const symbol = $('#symbol').val();
+                const symbol = $('#symbol').val().trim().toUpperCase();
                 const timeframe = $('#timeframe').val();
                 const limit = $('#limit').val();
+                if (!symbol || !exchange || !timeframe) {
+                    $('#error').text('Invalid exchange, symbol, or timeframe').show();
+                    return;
+                }
                 axios.post('/fetch-ohlcv', { exchange, symbol, timeframe, limit }, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                    headers: { Authorization: `Bearer ${token}` }
                 })
                     .then(response => {
                         updateTable(response.data);
+                        $('#error').hide();
                     })
                     .catch(error => {
-                        $('#error').text('Fetch failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                        if (error.response?.status === 401) {
+                            $('#error').text('Session expired. Please log in again.').show();
+                            localStorage.removeItem('token');
+                            token = '';
+                            renderLogin();
+                        } else {
+                            $('#error').text('Fetch failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                        }
                     });
             }
 
@@ -161,50 +186,22 @@
                 });
             }
 
-            function setupWebSocket() {
-                const exchange = $('#exchange').val();
-                const symbol = $('#symbol').val();
-                const timeframe = $('#timeframe').val();
-                const ws = new WebSocket(`ws://${window.location.host}/ws/ohlcv/${exchange}/${symbol}/${timeframe}`);
-                ws.onopen = () => {
-                    $('#ws-status').text('WebSocket: Connected').removeClass('text-red-500').addClass('text-green-500');
-                };
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    const tbody = $('#ohlcv-table tbody');
-                    tbody.prepend(`
-                        <tr>
-                            <td class="p-2 border">${new Date(data.timestamp).toLocaleString()}</td>
-                            <td class="p-2 border">${data.open}</td>
-                            <td class="p-2 border">${data.high}</td>
-                            <td class="p-2 border">${data.low}</td>
-                            <td class="p-2 border">${data.close}</td>
-                            <td class="p-2 border">${data.volume}</td>
-                        </tr>
-                    `);
-                    if (tbody.children().length > 100) {
-                        tbody.children().last().remove();
-                    }
-                };
-                ws.onclose = () => {
-                    $('#ws-status').text('WebSocket: Disconnected').removeClass('text-green-500').addClass('text-red-500');
-                };
-                ws.onerror = (e) => {
-                    console.error('WebSocket error:', e);
-                    $('#error').text('WebSocket error occurred').show();
-                };
-
-                // Update WebSocket on input changes
-                $('#exchange, #symbol, #timeframe').change(() => {
-                    ws.close();
-                    setupWebSocket();
-                });
+            function startPolling() {
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = setInterval(fetchOHLCV, 10000); // Poll every 10 seconds
             }
 
-            // Initial render based on token
+            // Initial render
             if (token) {
-                renderDashboard();
-                fetchOHLCV();
+                axios.post('/fetch-ohlcv', { exchange: 'binance', symbol: 'BTC/USDT', timeframe: '1h', limit: 1 }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                    .then(() => renderDashboard())
+                    .catch(() => {
+                        localStorage.removeItem('token');
+                        token = '';
+                        renderLogin();
+                    });
             } else {
                 renderLogin();
             }

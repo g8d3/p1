@@ -1,0 +1,9 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+ccxt==4.3.0
+pandas==2.2.2
+aiohttp==3.10.5
+pyjwt==2.8.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+questdb==2.0.1

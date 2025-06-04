@@ -4,6 +4,7 @@ import pandas as pd
 from fastapi import FastAPI, WebSocket, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict
 import jwt
@@ -15,6 +16,7 @@ import json
 import uuid
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "your-secret-key"  # Replace with secure key
@@ -54,7 +56,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if username is None or username not in users_db:
             raise HTTPException(status_code=401, detail="Invalid authentication")
         return username
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        print(f"JWT decode error: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
 @app.post("/register")
@@ -84,9 +87,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def check_duplicate_ohlcv(symbol: str, timeframe: str, timestamp: int) -> bool:
     async with aiohttp.ClientSession() as session:
         query = f"SELECT count(*) FROM ohlcv WHERE symbol='{symbol}' AND timeframe='{timeframe}' AND timestamp={timestamp}"
-        async with session.get(f"http://{QUESTDB_HOST}:{QUESTDB_HTTP_PORT}/exec?query={query}") as resp:
-            result = await resp.json()
-            return result["dataset"][0][0] > 0
+        try:
+            async with session.get(f"http://{QUESTDB_HOST}:{QUESTDB_HTTP_PORT}/exec?query={query}") as resp:
+                result = await resp.json()
+                return result["dataset"][0][0] > 0
+        except Exception as e:
+            print(f"Error checking duplicates in QuestDB: {str(e)}")
+            return False
 
 async def save_to_questdb(ohlcv_data: List[Dict], symbol: str, timeframe: str):
     try:
@@ -111,7 +118,9 @@ async def save_to_questdb(ohlcv_data: List[Dict], symbol: str, timeframe: str):
 
 @app.post("/fetch-ohlcv")
 async def fetch_ohlcv(request: OHLCVRequest, username: str = Depends(get_current_user)):
-    exchange_class = getattr(ccxt, request.exchange)
+    exchange_class = getattr(ccxt, request.exchange, None)
+    if not exchange_class:
+        raise HTTPException(status_code=400, detail=f"Invalid exchange: {request.exchange}")
     async with exchange_class() as exchange:
         try:
             ohlcv = await exchange.fetch_ohlcv(request.symbol, request.timeframe, limit=request.limit)
@@ -128,6 +137,7 @@ async def fetch_ohlcv(request: OHLCVRequest, username: str = Depends(get_current
             await save_to_questdb(ohlcv_data, request.symbol, request.timeframe)
             return ohlcv_data
         except Exception as e:
+            print(f"Error in fetch_ohlcv: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error fetching OHLCV: {str(e)}")
 
 @app.websocket("/ws/ohlcv/{exchange}/{symbol}/{timeframe}")
@@ -137,26 +147,34 @@ async def websocket_ohlcv(websocket: WebSocket, exchange: str, symbol: str, time
         active_connections[symbol] = []
     active_connections[symbol].append(websocket)
     
-    exchange_class = getattr(ccxt, exchange)
+    exchange_class = getattr(ccxt, exchange, None)
+    if not exchange_class:
+        await websocket.send_json({"error": f"Invalid exchange: {exchange}"})
+        await websocket.close()
+        return
     async with exchange_class({"enableRateLimit": True}) as ex:
         try:
             while True:
-                data = await ex.watch_ohlcv(symbol, timeframe)
-                latest = {
-                    "timestamp": int(data[-1][0]),
-                    "open": float(data[-1][1]),
-                    "high": float(data[-1][2]),
-                    "low": float(data[-1][3]),
-                    "close": float(data[-1][4]),
-                    "volume": float(data[-1][5])
-                }
-                if not await check_duplicate_ohlcv(symbol, timeframe, latest["timestamp"]):
-                    await save_to_questdb([latest], symbol, timeframe)
-                    for ws in active_connections[symbol]:
-                        await ws.send_json(latest)
+                try:
+                    data = await ex.watch_ohlcv(symbol, timeframe)
+                    latest = {
+                        "timestamp": int(data[-1][0]),
+                        "open": float(data[-1][1]),
+                        "high": float(data[-1][2]),
+                        "low": float(data[-1][3]),
+                        "close": float(data[-1][4]),
+                        "volume": float(data[-1][5])
+                    }
+                    if not await check_duplicate_ohlcv(symbol, timeframe, latest["timestamp"]):
+                        await save_to_questdb([latest], symbol, timeframe)
+                        for ws in active_connections[symbol]:
+                            await ws.send_json(latest)
+                except Exception as e:
+                    print(f"WebSocket inner error for {exchange}/{symbol}/{timeframe}: {str(e)}")
+                    await websocket.send_json({"error": f"WebSocket data fetch failed: {str(e)}"})
                 await asyncio.sleep(1)
         except Exception as e:
-            print(f"WebSocket error: {e}")
+            print(f"WebSocket outer error for {exchange}/{symbol}/{timeframe}: {str(e)}")
         finally:
             active_connections[symbol].remove(websocket)
             if not active_connections[symbol]:

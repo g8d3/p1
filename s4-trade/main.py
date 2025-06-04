@@ -115,10 +115,12 @@ async def save_to_questdb(ohlcv_data: List[Dict], symbol: str, timeframe: str):
 
 @app.post("/fetch-ohlcv")
 async def fetch_ohlcv(request: OHLCVRequest, username: str = Depends(get_current_user)):
-    exchange_class = getattr(ccxt, request.exchange, None)
-    if not exchange_class:
-        raise HTTPException(status_code=400, detail=f"Invalid exchange: {request.exchange}")
-    async with exchange_class() as exchange:
+    try:
+        exchange_class = getattr(ccxt, request.exchange.lower(), None)
+        if not exchange_class:
+            raise HTTPException(status_code=400, detail=f"Invalid exchange: {request.exchange}")
+        exchange = exchange_class({"enableRateLimit": True})
+        print(f"Instantiated exchange: {request.exchange}")
         try:
             ohlcv = await exchange.fetch_ohlcv(request.symbol, request.timeframe, limit=request.limit)
             ohlcv_data = [
@@ -133,9 +135,11 @@ async def fetch_ohlcv(request: OHLCVRequest, username: str = Depends(get_current
             ]
             await save_to_questdb(ohlcv_data, request.symbol, request.timeframe)
             return ohlcv_data
-        except Exception as e:
-            print(f"Error in fetch_ohlcv: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error fetching OHLCV: {str(e)}")
+        finally:
+            await exchange.close()
+    except Exception as e:
+        print(f"Error in fetch_ohlcv: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching OHLCV: {str(e)}")
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index():

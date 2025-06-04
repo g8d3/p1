@@ -4,197 +4,211 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Data Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+<body class="bg-gray-100">
+    <div id="app" class="container mx-auto p-4"></div>
 
-        function App() {
-            const [token, setToken] = useState(localStorage.getItem('token') || '');
-            const [username, setUsername] = useState('');
-            const [password, setPassword] = useState('');
-            const [exchange, setExchange] = useState('binance');
-            const [symbol, setSymbol] = useState('BTC/USDT');
-            const [timeframe, setTimeframe] = useState('1h');
-            const [limit, setLimit] = useState(100);
-            const [ohlcvData, setOhlcvData] = useState([]);
-            const [wsData, setWsData] = useState(null);
-            const [isConnected, setIsConnected] = useState(false);
+    <script>
+        $(document).ready(function () {
+            const token = localStorage.getItem('token') || '';
 
-            useEffect(() => {
-                if (token) {
-                    const decoded = jwt_decode(token);
-                    setUsername(decoded.sub);
-                    fetchOHLCV();
-                }
-            }, [token]);
-
-            useEffect(() => {
-                let ws;
-                if (token) {
-                    ws = new WebSocket(`ws://${window.location.host}/ws/ohlcv/${exchange}/${symbol}/${timeframe}`);
-                    ws.onopen = () => setIsConnected(true);
-                    ws.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        setWsData(data);
-                        setOhlcvData(prev => [...prev.slice(-99), data]);
-                    };
-                    ws.onclose = () => setIsConnected(false);
-                }
-                return () => ws && ws.close();
-            }, [exchange, symbol, timeframe, token]);
-
-            const handleLogin = async () => {
-                try {
-                    const response = await axios.post('/token', new URLSearchParams({
-                        username,
-                        password
-                    }));
-                    setToken(response.data.access_token);
-                    localStorage.setItem('token', response.data.access_token);
-                } catch (error) {
-                    console.error('Login failed:', error);
-                }
-            };
-
-            const handleRegister = async () => {
-                try {
-                    await axios.post('/register', { username, password });
-                    alert('Registration successful! Please login.');
-                } catch (error) {
-                    console.error('Registration failed:', error);
-                }
-            };
-
-            const fetchOHLCV = async () => {
-                try {
-                    const response = await axios.post('/fetch-ohlcv', {
-                        exchange,
-                        symbol,
-                        timeframe,
-                        limit
-                    }, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    setOhlcvData(response.data);
-                } catch (error) {
-                    console.error('Fetch OHLCV failed:', error);
-                }
-            };
-
-            if (!token) {
-                return (
-                    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                            <h2 className="text-2xl font-bold mb-6 text-center">Login / Register</h2>
+            function renderLogin() {
+                $('#app').html(`
+                    <div class="flex items-center justify-center min-h-screen">
+                        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+                            <h2 class="text-2xl font-bold mb-6 text-center">Login / Register</h2>
                             <input
+                                id="username"
                                 type="text"
                                 placeholder="Username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full p-2 mb-4 border rounded"
+                                class="w-full p-2 mb-4 border rounded"
                             />
                             <input
+                                id="password"
                                 type="password"
                                 placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full p-2 mb-4 border rounded"
+                                class="w-full p-2 mb-4 border rounded"
                             />
-                            <div className="flex justify-between">
-                                <button onClick={handleLogin} className="bg-blue-500 text-white p-2 rounded">Login</button>
-                                <button onClick={handleRegister} className="bg-green-500 text-white p-2 rounded">Register</button>
+                            <div class="flex justify-between">
+                                <button id="login-btn" class="bg-blue-500 text-white p-2 rounded">Login</button>
+                                <button id="register-btn" class="bg-green-500 text-white p-2 rounded">Register</button>
                             </div>
+                            <div id="error" class="text-red-500 mt-4 hidden"></div>
                         </div>
                     </div>
-                );
+                `);
+
+                $('#login-btn').click(handleLogin);
+                $('#register-btn').click(handleRegister);
             }
 
-            return (
-                <div className="container mx-auto p-4">
-                    <h1 className="text-3xl font-bold mb-4">Crypto Data Dashboard</h1>
-                    <div className="mb-4">
-                        <select
-                            value={exchange}
-                            onChange={(e) => setExchange(e.target.value)}
-                            className="p-2 border rounded mr-2"
-                        >
+            function renderDashboard() {
+                $('#app').html(`
+                    <h1 class="text-3xl font-bold mb-4">Crypto Data Dashboard</h1>
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <select id="exchange" class="p-2 border rounded">
                             <option value="binance">Binance</option>
                             <option value="kraken">Kraken</option>
                         </select>
                         <input
+                            id="symbol"
                             type="text"
-                            value={symbol}
-                            onChange={(e) => setSymbol(e.target.value)}
+                            value="BTC/USDT"
                             placeholder="Symbol (e.g., BTC/USDT)"
-                            className="p-2 border rounded mr-2"
+                            class="p-2 border rounded"
                         />
-                        <select
-                            value={timeframe}
-                            onChange={(e) => setTimeframe(e.target.value)}
-                            className="p-2 border rounded mr-2"
-                        >
+                        <select id="timeframe" class="p-2 border rounded">
                             <option value="1m">1m</option>
                             <option value="5m">5m</option>
                             <option value="1h">1h</option>
                             <option value="1d">1d</option>
                         </select>
                         <input
+                            id="limit"
                             type="number"
-                            value={limit}
-                            onChange={(e) => setLimit(e.target.value)}
+                            value="100"
                             placeholder="Limit"
-                            className="p-2 border rounded mr-2"
+                            class="p-2 border rounded"
                         />
-                        <button
-                            onClick={fetchOHLCV}
-                            className="bg-blue-500 text-white p-2 rounded"
-                        >
-                            Fetch OHLCV
-                        </button>
+                        <button id="fetch-btn" class="bg-blue-500 text-white p-2 rounded">Fetch OHLCV</button>
                     </div>
-                    <div className="mb-4">
-                        <span className={isConnected ? "text-green-500" : "text-red-500"}>
-                            WebSocket: {isConnected ? "Connected" : "Disconnected"}
-                        </span>
+                    <div class="mb-4">
+                        <span id="ws-status" class="text-red-500">WebSocket: Disconnected</span>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white border">
+                    <div id="error" class="text-red-500 mb-4 hidden"></div>
+                    <div class="overflow-x-auto">
+                        <table id="ohlcv-table" class="min-w-full bg-white border">
                             <thead>
                                 <tr>
-                                    <th className="p-2 border">Timestamp</th>
-                                    <th className="p-2 border">Open</th>
-                                    <th className="p-2 border">High</th>
-                                    <th className="p-2 border">Low</th>
-                                    <th className="p-2 border">Close</th>
-                                    <th className="p-2 border">Volume</th>
+                                    <th class="p-2 border">Timestamp</th>
+                                    <th class="p-2 border">Open</th>
+                                    <th class="p-2 border">High</th>
+                                    <th class="p-2 border">Low</th>
+                                    <th class="p-2 border">Close</th>
+                                    <th class="p-2 border">Volume</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {ohlcvData.map((row, index) => (
-                                    <tr key={index}>
-                                        <td className="p-2 border">{new Date(row.timestamp).toLocaleString()}</td>
-                                        <td className="p-2 border">{row.open}</td>
-                                        <td className="p-2 border">{row.high}</td>
-                                        <td className="p-2 border">{row.low}</td>
-                                        <td className="p-2 border">{row.close}</td>
-                                        <td className="p-2 border">{row.volume}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
-                </div>
-            );
-        }
+                `);
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+                $('#fetch-btn').click(fetchOHLCV);
+                setupWebSocket();
+            }
+
+            function handleLogin() {
+                const username = $('#username').val();
+                const password = $('#password').val();
+                axios.post('/token', new URLSearchParams({ username, password }))
+                    .then(response => {
+                        localStorage.setItem('token', response.data.access_token);
+                        renderDashboard();
+                        fetchOHLCV();
+                    })
+                    .catch(error => {
+                        $('#error').text('Login failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                    });
+            }
+
+            function handleRegister() {
+                const username = $('#username').val();
+                const password = $('#password').val();
+                axios.post('/register', { username, password })
+                    .then(() => {
+                        alert('Registration successful! Please login.');
+                        $('#username').val('');
+                        $('#password').val('');
+                    })
+                    .catch(error => {
+                        $('#error').text('Registration failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                    });
+            }
+
+            function fetchOHLCV() {
+                const exchange = $('#exchange').val();
+                const symbol = $('#symbol').val();
+                const timeframe = $('#timeframe').val();
+                const limit = $('#limit').val();
+                axios.post('/fetch-ohlcv', { exchange, symbol, timeframe, limit }, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                })
+                    .then(response => {
+                        updateTable(response.data);
+                    })
+                    .catch(error => {
+                        $('#error').text('Fetch failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                    });
+            }
+
+            function updateTable(data) {
+                const tbody = $('#ohlcv-table tbody');
+                tbody.empty();
+                data.forEach((row, index) => {
+                    tbody.append(`
+                        <tr>
+                            <td class="p-2 border">${new Date(row.timestamp).toLocaleString()}</td>
+                            <td class="p-2 border">${row.open}</td>
+                            <td class="p-2 border">${row.high}</td>
+                            <td class="p-2 border">${row.low}</td>
+                            <td class="p-2 border">${row.close}</td>
+                            <td class="p-2 border">${row.volume}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function setupWebSocket() {
+                const exchange = $('#exchange').val();
+                const symbol = $('#symbol').val();
+                const timeframe = $('#timeframe').val();
+                const ws = new WebSocket(`ws://${window.location.host}/ws/ohlcv/${exchange}/${symbol}/${timeframe}`);
+                ws.onopen = () => {
+                    $('#ws-status').text('WebSocket: Connected').removeClass('text-red-500').addClass('text-green-500');
+                };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    const tbody = $('#ohlcv-table tbody');
+                    tbody.prepend(`
+                        <tr>
+                            <td class="p-2 border">${new Date(data.timestamp).toLocaleString()}</td>
+                            <td class="p-2 border">${data.open}</td>
+                            <td class="p-2 border">${data.high}</td>
+                            <td class="p-2 border">${data.low}</td>
+                            <td class="p-2 border">${data.close}</td>
+                            <td class="p-2 border">${data.volume}</td>
+                        </tr>
+                    `);
+                    if (tbody.children().length > 100) {
+                        tbody.children().last().remove();
+                    }
+                };
+                ws.onclose = () => {
+                    $('#ws-status').text('WebSocket: Disconnected').removeClass('text-green-500').addClass('text-red-500');
+                };
+                ws.onerror = (e) => {
+                    console.error('WebSocket error:', e);
+                    $('#error').text('WebSocket error occurred').show();
+                };
+
+                // Update WebSocket on input changes
+                $('#exchange, #symbol, #timeframe').change(() => {
+                    ws.close();
+                    setupWebSocket();
+                });
+            }
+
+            // Initial render based on token
+            if (token) {
+                renderDashboard();
+                fetchOHLCV();
+            } else {
+                renderLogin();
+            }
+        });
     </script>
 </body>
 </html>

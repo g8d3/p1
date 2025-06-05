@@ -24,6 +24,7 @@ bolt new
 bolt diy
 lovable
 https://a0.dev/
+https://www.rocket.new/
 
 browsers and computer use for LLMs:
 https://github.com/omkarcloud/botasaurus

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Code Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">AI Code Agent</h1>
+        <div class="mb-4">
+            <input id="user_id" type="text" placeholder="User ID" class="border p-2 mr-2">
+            <textarea id="prompt" placeholder="Enter your coding request" class="border p-2 w-full"></textarea>
+            <select id="llm_provider" class="border p-2 mr-2">
+                <option value="openai">OpenAI</option>
+                <option value="gemini">Gemini</option>
+                <option value="openrouter">OpenRouter</option>
+            </select>
+            <button onclick="sendPrompt()" class="bg-blue-500 text-white p-2 mt-2">Submit</button>
+        </div>
+        <div id="response" class="bg-white p-4 border"></div>
+        <div class="mt-4">
+            <h2 class="text-xl">Preferences</h2>
+            <input id="coding_style" type="text" placeholder="Coding Style" class="border p-2 mr-2">
+            <input id="test_framework" type="text" placeholder="Test Framework" class="border p-2 mr-2">
+            <input id="language" type="text" placeholder="Language" class="border p-2 mr-2">
+            <button onclick="updatePreferences()" class="bg-green-500 text-white p-2">Update Preferences</button>
+        </div>
+        <div class="mt-4">
+            <h2 class="text-xl">Conversations</h2>
+            <div id="conversations"></div>
+        </div>
+    </div>
+    <script>
+        async function sendPrompt() {
+            const user_id = document.getElementById('user_id').value || 'default_user';
+            const prompt = document.getElementById('prompt').value;
+            const llm_provider = document.getElementById('llm_provider').value;
+            await updatePreferences(); // Update preferences including LLM provider
+            const response = await fetch('/api/converse', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id, prompt})
+            });
+            const data = await response.json();
+            document.getElementById('response').innerHTML = `
+                <pre>Code:\n${data.code}</pre>
+                <pre>Test Code:\n${data.test_code}</pre>
+                <pre>Test Result:\n${data.test_result.test_result}</pre>
+                ${data.browser_result ? `<pre>Browser Test:\n${JSON.stringify(data.browser_result)}</pre>` : ''}
+            `;
+            loadConversations(user_id);
+        }
+
+        async function updatePreferences() {
+            const user_id = document.getElementById('user_id').value || 'default_user';
+            const preferences = {
+                coding_style: document.getElementById('coding_style').value,
+                test_framework: document.getElementById('test_framework').value,
+                language: document.getElementById('language').value,
+                llm_provider: document.getElementById('llm_provider').value
+            };
+            await fetch('/api/preferences', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id, preferences})
+            });
+            alert('Preferences updated');
+        }
+
+        async function loadConversations(user_id) {
+            const response = await fetch(`/api/conversations/${user_id}`);
+            const conversations = await response.json();
+            const convDiv = document.getElementById('conversations');
+            convDiv.innerHTML = conversations.map(conv => `
+                <div class="border p-2 mb-2">
+                    <p>${conv.timestamp}</p>
+                    <pre>${JSON.stringify(conv.content, null, 2)}</pre>
+                    <button onclick="deleteConversation('${conv.id}')" class="bg-red-500 text-white p-1">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteConversation(conv_id) {
+            await fetch(`/api/conversations/${conv_id}`, {method: 'DELETE'});
+            loadConversations(document.getElementById('user_id').value || 'default_user');
+        }
+    </script>
+</body>
+</html>

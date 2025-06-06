@@ -1,0 +1,6 @@
+flask
+selenium
+pytest
+openai
+google-cloud-aiplatform
+requests

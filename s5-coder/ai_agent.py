@@ -134,7 +134,7 @@ User prompt: {prompt}
         try:
             if llm_provider == 'openai' and self.openai_client:
                 response = self.openai_client.chat.completions.create(
-                    model="gpt-4o",
+                    model="gpt-4.1-2025-04-14",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
@@ -143,7 +143,7 @@ User prompt: {prompt}
                 content = response.choices[0].message.content
             elif llm_provider == 'gemini' and GOOGLE_API_KEY:
                 from vertexai.preview.language_models import CodeGenerationModel
-                model = CodeGenerationModel.from_pretrained("code-bison")
+                model = CodeGenerationModel.from_pretrained("gemini-2.5-flash-preview-05-20")
                 response = model.predict(system_prompt + "\n" + prompt, max_output_tokens=1500)
                 content = response.text
             elif llm_provider == 'openrouter' and OPENROUTER_API_KEY:
@@ -154,7 +154,7 @@ User prompt: {prompt}
                         'Content-Type': 'application/json'
                     },
                     json={
-                        'model': 'anthropic/claude-3.5-sonnet',
+                        'model': 'google/gemini-2.0-flash-001',
                         'messages': [
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": prompt}

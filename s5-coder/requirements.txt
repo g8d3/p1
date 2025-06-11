@@ -4,3 +4,4 @@ pytest
 openai
 google-cloud-aiplatform
 requests
+dspy

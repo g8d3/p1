@@ -1,0 +1,6 @@
+fastapi
+httpx
+clickhouse-connect
+python-jose[cryptography]
+python-dotenv
+pydantic

@@ -9,7 +9,7 @@ This FastAPI app fetches CoinGecko data, computes relevance scores, stores data 
 - JWT-secured API endpoints
 
 ## Quickstart
-1. Install dependencies: `pip install -r requirements.txt`
+1. Install dependencies: `uv pip install -r requirements.txt`
 2. Start ClickHouse (Docker recommended)
 3. Run: `uvicorn main:app --reload`
 

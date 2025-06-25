@@ -13,7 +13,7 @@
 // TODO: Implement each feature as described above, using the plan as a roadmap.
 
 import React, { useState } from "react";
-import { Layout, Typography } from "antd";
+import { Layout, Typography, Tabs, Form, Input, Button, List, Card } from "antd";
 import "antd/dist/reset.css";
 
 const { Header, Content, Footer } = Layout;
@@ -22,6 +22,11 @@ const { Title } = Typography;
 function App() {
   const [walletAddress, setWalletAddress] = useState("");
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("connections");
+  const [connections, setConnections] = useState([]);
+
+  // Connection form state
+  const [form] = Form.useForm();
 
   const connectWallet = async () => {
     setError("");
@@ -37,6 +42,11 @@ function App() {
     }
   };
 
+  const handleAddConnection = (values) => {
+    setConnections([...connections, values]);
+    form.resetFields();
+  };
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Header>
@@ -45,7 +55,6 @@ function App() {
         </Title>
       </Header>
       <Content style={{ padding: 24 }}>
-        {/* Web3 Auth, Connection Manager, Schema/Data/Query UI */}
         <div style={{ marginBottom: 24 }}>
           {walletAddress ? (
             <span style={{ color: 'green' }}>Connected: {walletAddress}</span>
@@ -56,16 +65,64 @@ function App() {
           )}
           {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
         </div>
-        <div style={{ marginBottom: 24 }}>
-          <strong>Schema Manager:</strong> <em>Coming soon...</em>
-        </div>
-        <div style={{ marginBottom: 24 }}>
-          <strong>Data Viewer:</strong> <em>Coming soon...</em>
-        </div>
-        <div style={{ marginBottom: 24 }}>
-          <strong>Query UI:</strong> <em>Coming soon...</em>
-        </div>
-        <p>Welcome! Please connect your Web3 wallet to begin.</p>
+        {walletAddress && (
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={[
+              {
+                key: "connections",
+                label: "Connection Manager",
+                children: (
+                  <Card title="Add ClickHouse Connection" style={{ marginBottom: 24 }}>
+                    <Form
+                      form={form}
+                      layout="inline"
+                      onFinish={handleAddConnection}
+                      style={{ marginBottom: 16 }}
+                    >
+                      <Form.Item name="name" rules={[{ required: true, message: 'Name required' }]}> <Input placeholder="Name" /> </Form.Item>
+                      <Form.Item name="host" rules={[{ required: true, message: 'Host required' }]}> <Input placeholder="Host" /> </Form.Item>
+                      <Form.Item name="port" rules={[{ required: true, message: 'Port required' }]}> <Input placeholder="Port" /> </Form.Item>
+                      <Form.Item name="user" rules={[{ required: true, message: 'User required' }]}> <Input placeholder="User" /> </Form.Item>
+                      <Form.Item name="password"> <Input.Password placeholder="Password" /> </Form.Item>
+                      <Form.Item>
+                        <Button type="primary" htmlType="submit">Add</Button>
+                      </Form.Item>
+                    </Form>
+                    <List
+                      header={<b>Saved Connections</b>}
+                      bordered
+                      dataSource={connections}
+                      renderItem={item => (
+                        <List.Item>
+                          <b>{item.name}</b> ({item.host}:{item.port}, user: {item.user})
+                        </List.Item>
+                      )}
+                      locale={{ emptyText: "No connections added yet." }}
+                    />
+                  </Card>
+                ),
+              },
+              {
+                key: "schema",
+                label: "Schema Manager",
+                children: <div>Schema Manager: <em>Coming soon...</em></div>,
+              },
+              {
+                key: "data",
+                label: "Data Viewer",
+                children: <div>Data Viewer: <em>Coming soon...</em></div>,
+              },
+              {
+                key: "query",
+                label: "Query UI",
+                children: <div>Query UI: <em>Coming soon...</em></div>,
+              },
+            ]}
+          />
+        )}
+        {!walletAddress && <p>Welcome! Please connect your Web3 wallet to begin.</p>}
       </Content>
       <Footer style={{ textAlign: "center" }}>
         ClickHouse Playground ©2025

@@ -35,7 +35,7 @@
 
 ## 3. Tech Stack
 - Frontend: HTML, JavaScript (React recommended), UI library (Ant Design or Material UI)
-- Browser DB: IndexedDB (with encryption, e.g., using CryptoJS)
+- Browser DB: IndexedDB or dexie (with encryption, e.g., using CryptoJS)
 - ClickHouse Client: clickhouse-js (browser version) or HTTP API
 - Web3: ethers.js or web3.js for wallet integration
 

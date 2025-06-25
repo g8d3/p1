@@ -12,7 +12,7 @@
 //
 // TODO: Implement each feature as described above, using the plan as a roadmap.
 
-import React from "react";
+import React, { useState } from "react";
 import { Layout, Typography } from "antd";
 import "antd/dist/reset.css";
 
@@ -20,6 +20,23 @@ const { Header, Content, Footer } = Layout;
 const { Title } = Typography;
 
 function App() {
+  const [walletAddress, setWalletAddress] = useState("");
+  const [error, setError] = useState("");
+
+  const connectWallet = async () => {
+    setError("");
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        setWalletAddress(accounts[0]);
+      } catch (err) {
+        setError("Wallet connection rejected.");
+      }
+    } else {
+      setError("MetaMask not detected. Please install MetaMask.");
+    }
+  };
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Header>
@@ -29,9 +46,15 @@ function App() {
       </Header>
       <Content style={{ padding: 24 }}>
         {/* Web3 Auth, Connection Manager, Schema/Data/Query UI */}
-        {/* Placeholder components for future implementation */}
         <div style={{ marginBottom: 24 }}>
-          <button style={{ padding: "8px 16px" }}>Connect Web3 Wallet</button>
+          {walletAddress ? (
+            <span style={{ color: 'green' }}>Connected: {walletAddress}</span>
+          ) : (
+            <button style={{ padding: "8px 16px" }} onClick={connectWallet}>
+              Connect Web3 Wallet
+            </button>
+          )}
+          {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
         </div>
         <div style={{ marginBottom: 24 }}>
           <strong>Schema Manager:</strong> <em>Coming soon...</em>

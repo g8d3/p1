@@ -35,7 +35,8 @@
 
 ## 3. Tech Stack
 - Frontend: HTML, JavaScript (React recommended), UI library (Ant Design or Material UI)
-- Browser DB: IndexedDB or dexie (with encryption, e.g., using CryptoJS)
+- Browser DB: IndexedDB or dexie (with encryption, e.g., using CryptoJS).  
+    - **Encryption Key:** The encryption key for browser storage can be derived from the user's Web3 wallet. For example, after authenticating with a wallet (e.g., MetaMask), the app can request the user to sign a message. The resulting signature or a key derived from the wallet's private key (using a key derivation function) can be used as the encryption/decryption key. This ensures only the authenticated wallet owner can access the stored data.
 - ClickHouse Client: clickhouse-js (browser version) or HTTP API
 - Web3: ethers.js or web3.js for wallet integration
 

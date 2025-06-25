@@ -1,3 +1,17 @@
+// ClickHouse Playground Plan (from plan.md)
+// 1. Web3 wallet authentication (MetaMask, WalletConnect, Privy)
+// 2. Encrypted connection manager for ClickHouse (IndexedDB, CryptoJS, key from wallet signature)
+// 3. Connection management: add/edit/remove/select ClickHouse DBs
+// 4. Schema management: list/create/edit/drop tables
+// 5. Data management: browse/insert/edit/delete records
+// 6. Query interface: run SQL, show results
+// 7. Security: encrypt sensitive data, validate/sanitize inputs
+// 8. Tech: React, Ant Design, ethers.js/web3.js, clickhouse-js/HTTP API
+// 9. Milestones: Auth → Encrypted DB → ClickHouse API → UI → Query → Test/Docs
+// 10. Future: roles, import/export, visualization, audit logs
+//
+// TODO: Implement each feature as described above, using the plan as a roadmap.
+
 import React from "react";
 import { Layout, Typography } from "antd";
 import "antd/dist/reset.css";

@@ -39,6 +39,9 @@
     - **Encryption Key:** The encryption key for browser storage can be derived from the user's Web3 wallet. For example, after authenticating with a wallet (e.g., MetaMask), the app can request the user to sign a message. The resulting signature or a key derived from the wallet's private key (using a key derivation function) can be used as the encryption/decryption key. This ensures only the authenticated wallet owner can access the stored data.
 - ClickHouse Client: clickhouse-js (browser version) or HTTP API
 - Web3: ethers.js or web3.js for wallet integration
+- Web3 Authentication Helpers:  
+    - [WalletConnect](https://walletconnect.com/) – enables users to connect with a wide range of wallets, not just MetaMask.  
+    - [Privy](https://privy.io/) – provides simplified wallet authentication and user management for web3 apps.
 
 ## 4. Security
 - Encrypt all sensitive data in browser storage.

@@ -77,15 +77,25 @@ function App() {
                   <Card title="Add ClickHouse Connection" style={{ marginBottom: 24 }}>
                     <Form
                       form={form}
-                      layout="inline"
+                      layout="vertical"
                       onFinish={handleAddConnection}
-                      style={{ marginBottom: 16 }}
+                      style={{ marginBottom: 16, maxWidth: 600 }}
                     >
-                      <Form.Item name="name" rules={[{ required: true, message: 'Name required' }]}> <Input placeholder="Name" /> </Form.Item>
-                      <Form.Item name="host" rules={[{ required: true, message: 'Host required' }]}> <Input placeholder="Host" /> </Form.Item>
-                      <Form.Item name="port" rules={[{ required: true, message: 'Port required' }]}> <Input placeholder="Port" /> </Form.Item>
-                      <Form.Item name="user" rules={[{ required: true, message: 'User required' }]}> <Input placeholder="User" /> </Form.Item>
-                      <Form.Item name="password"> <Input.Password placeholder="Password" /> </Form.Item>
+                      <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name required' }]} hasFeedback>
+                        <Input placeholder="Name" />
+                      </Form.Item>
+                      <Form.Item name="host" label="Host" rules={[{ required: true, message: 'Host required' }]} hasFeedback>
+                        <Input placeholder="Host" />
+                      </Form.Item>
+                      <Form.Item name="port" label="Port" rules={[{ required: true, message: 'Port required' }]} hasFeedback>
+                        <Input placeholder="Port" />
+                      </Form.Item>
+                      <Form.Item name="user" label="User" rules={[{ required: true, message: 'User required' }]} hasFeedback>
+                        <Input placeholder="User" />
+                      </Form.Item>
+                      <Form.Item name="password" label="Password" hasFeedback>
+                        <Input.Password placeholder="Password" />
+                      </Form.Item>
                       <Form.Item>
                         <Button type="primary" htmlType="submit">Add</Button>
                       </Form.Item>

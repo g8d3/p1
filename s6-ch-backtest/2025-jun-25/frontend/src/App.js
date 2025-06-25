@@ -14,7 +14,20 @@ function App() {
         </Title>
       </Header>
       <Content style={{ padding: 24 }}>
-        {/* TODO: Add Web3 Auth, Connection Manager, Schema/Data/Query UI */}
+        {/* Web3 Auth, Connection Manager, Schema/Data/Query UI */}
+        {/* Placeholder components for future implementation */}
+        <div style={{ marginBottom: 24 }}>
+          <button style={{ padding: "8px 16px" }}>Connect Web3 Wallet</button>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <strong>Schema Manager:</strong> <em>Coming soon...</em>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <strong>Data Viewer:</strong> <em>Coming soon...</em>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <strong>Query UI:</strong> <em>Coming soon...</em>
+        </div>
         <p>Welcome! Please connect your Web3 wallet to begin.</p>
       </Content>
       <Footer style={{ textAlign: "center" }}>

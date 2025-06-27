@@ -1,6 +1,8 @@
 import requests
 import os
-from cognee import CogneeLLM
+import asyncio
+import cognee
+from cognee.modules.search.types import SearchType
 
 docs_url = "https://docs.cognee.ai/llms-full.txt"
 docs_path = os.path.join(os.path.dirname(__file__), "cognee_docs.txt")
@@ -23,13 +25,21 @@ def load_docs():
 def main():
     download_docs()
     docs = load_docs()
-    agent = CogneeLLM(knowledge=docs)
     print("Cognee agent is ready. Type your question (or 'exit' to quit):")
-    while True:
-        query = input("You: ")
-        if query.strip().lower() in ("exit", "quit"): break
-        response = agent.ask(query)
-        print("Agent:", response)
+    async def chat_loop():
+        while True:
+            query = input("You: ")
+            if query.strip().lower() in ("exit", "quit"): break
+            results = await cognee.search(
+                query_text=query,
+                query_type=SearchType.INFORMATION
+            )
+            if results:
+                for result in results:
+                    print("Agent:", result)
+            else:
+                print("Agent: No answer found.")
+    asyncio.run(chat_loop())
 
 if __name__ == "__main__":
     main()

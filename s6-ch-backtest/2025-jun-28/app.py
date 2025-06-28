@@ -176,7 +176,7 @@ def delete_row():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return "Unknown DB type", 400
+            return render_template('partials/table_data.html', columns=[], rows=[], table=table, error="Unknown DB type")
         cur = conn.cursor()
         sql = f"DELETE FROM {table} WHERE {pk_col} = %s" if cred['type'] != 'sqlite' else f"DELETE FROM {table} WHERE {pk_col} = ?"
         cur.execute(sql, (pk_val,))
@@ -188,7 +188,8 @@ def delete_row():
         conn.close()
         return render_template('partials/table_data.html', columns=columns, rows=rows, table=table)
     except Exception as e:
-        return f"Error: {e}", 400
+        # Always return a valid partial with error message
+        return render_template('partials/table_data.html', columns=[], rows=[], table=table, error=str(e))
 
 @app.route('/create-table', methods=['POST'])
 def create_table():

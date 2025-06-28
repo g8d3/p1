@@ -110,15 +110,15 @@ def table_data():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return "Unknown DB type", 400
+            return render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error="Unknown DB type")
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM {table} LIMIT 20;")
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description]
         conn.close()
-        return render_template('partials/table_data.html', columns=columns, rows=rows, table=table)
+        return render_template('partials/table_data.html', columns=columns, rows=rows, table=table, idx=idx)
     except Exception as e:
-        return f"Error: {e}", 400
+        return render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error=str(e))
 
 @app.route('/insert-row', methods=['POST'])
 def insert_row():

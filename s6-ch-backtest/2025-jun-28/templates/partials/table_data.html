@@ -3,7 +3,7 @@
 <div style="color: red; font-weight: bold;">Error: {{ error }}</div>
 {% endif %}
 <form hx-post="/insert-row" hx-target="#table-data" hx-swap="outerHTML">
-    <input type="hidden" name="idx" value="{{ request.form.idx if request.form.idx else 0 }}">
+    <input type="hidden" name="idx" value="{{ idx }}">
     <input type="hidden" name="table" value="{{ table }}">
     {% for col in columns %}
         <input type="hidden" name="columns" value="{{ col }}">
@@ -24,7 +24,7 @@
             {% for cell in row %}<td>{{ cell }}</td>{% endfor %}
             <td>
                 <form hx-post="/delete-row" hx-target="#table-data" hx-swap="outerHTML" style="display:inline">
-                    <input type="hidden" name="idx" value="{{ request.form.idx if request.form.idx else 0 }}">
+                    <input type="hidden" name="idx" value="{{ idx }}">
                     <input type="hidden" name="table" value="{{ table }}">
                     <input type="hidden" name="pk_col" value="{{ columns[0] }}">
                     <input type="hidden" name="pk_val" value="{{ row[0] }}">

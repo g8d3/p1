@@ -58,7 +58,8 @@ def add_credential():
     }
     db_credentials.append(cred)
     save_credential(cred)
-    return render_template('partials/credentials.html', credentials=db_credentials)
+    html = render_template('partials/credentials.html', credentials=db_credentials)
+    return jsonify({'html': html, 'success': True})
 
 @app.route('/connect', methods=['POST'])
 def connect():
@@ -88,10 +89,11 @@ def connect():
             tables = [row[0] for row in cur.fetchall()]
             conn.close()
         else:
-            return "Unknown DB type", 400
-        return render_template('partials/tables.html', tables=tables, idx=idx)
+            return jsonify({'error': 'Unknown DB type'}), 400
+        html = render_template('partials/tables.html', tables=tables, idx=idx)
+        return jsonify({'html': html, 'success': True})
     except Exception as e:
-        return f"Error: {e}", 400
+        return jsonify({'error': str(e), 'html': ''}), 400
 
 @app.route('/table-data', methods=['POST'])
 def table_data():
@@ -110,15 +112,18 @@ def table_data():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error="Unknown DB type")
+            html = render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error="Unknown DB type")
+            return jsonify({'html': html, 'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM {table} LIMIT 20;")
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description]
         conn.close()
-        return render_template('partials/table_data.html', columns=columns, rows=rows, table=table, idx=idx)
+        html = render_template('partials/table_data.html', columns=columns, rows=rows, table=table, idx=idx)
+        return jsonify({'html': html, 'success': True})
     except Exception as e:
-        return render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error=str(e))
+        html = render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error=str(e))
+        return jsonify({'html': html, 'error': str(e)}), 400
 
 @app.route('/insert-row', methods=['POST'])
 def insert_row():
@@ -142,7 +147,7 @@ def insert_row():
             )
             placeholder = '%s'
         else:
-            return "Unknown DB type", 400
+            return jsonify({'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         placeholders = ','.join([placeholder for _ in columns])
         sql = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"
@@ -153,9 +158,10 @@ def insert_row():
         rows = cur.fetchall()
         columns2 = [desc[0] for desc in cur.description]
         conn.close()
-        return render_template('partials/table_data.html', columns=columns2, rows=rows, table=table)
+        html = render_template('partials/table_data.html', columns=columns2, rows=rows, table=table)
+        return jsonify({'html': html, 'success': True})
     except Exception as e:
-        return f"Error: {e}", 400
+        return jsonify({'error': str(e), 'html': ''}), 400
 
 @app.route('/delete-row', methods=['POST'])
 def delete_row():
@@ -176,7 +182,8 @@ def delete_row():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return render_template('partials/table_data.html', columns=[], rows=[], table=table, error="Unknown DB type")
+            html = render_template('partials/table_data.html', columns=[], rows=[], table=table, error="Unknown DB type")
+            return jsonify({'html': html, 'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         sql = f"DELETE FROM {table} WHERE {pk_col} = %s" if cred['type'] != 'sqlite' else f"DELETE FROM {table} WHERE {pk_col} = ?"
         cur.execute(sql, (pk_val,))
@@ -186,10 +193,11 @@ def delete_row():
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description]
         conn.close()
-        return render_template('partials/table_data.html', columns=columns, rows=rows, table=table)
+        html = render_template('partials/table_data.html', columns=columns, rows=rows, table=table)
+        return jsonify({'html': html, 'success': True})
     except Exception as e:
-        # Always return a valid partial with error message
-        return render_template('partials/table_data.html', columns=[], rows=[], table=table, error=str(e))
+        html = render_template('partials/table_data.html', columns=[], rows=[], table=table, error=str(e))
+        return jsonify({'html': html, 'error': str(e)}), 400
 
 @app.route('/create-table', methods=['POST'])
 def create_table():
@@ -209,15 +217,15 @@ def create_table():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return "Unknown DB type", 400
+            return jsonify({'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         sql = f"CREATE TABLE {table} ({columns})"
         cur.execute(sql)
         conn.commit()
         conn.close()
-        return "Table created successfully"
+        return jsonify({'success': True, 'message': 'Table created successfully'})
     except Exception as e:
-        return f"Error: {e}", 400
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/drop-table', methods=['POST'])
 def drop_table():
@@ -236,15 +244,15 @@ def drop_table():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return "Unknown DB type", 400
+            return jsonify({'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         sql = f"DROP TABLE {table}"
         cur.execute(sql)
         conn.commit()
         conn.close()
-        return "Table dropped successfully"
+        return jsonify({'success': True, 'message': 'Table dropped successfully'})
     except Exception as e:
-        return f"Error: {e}", 400
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/add-column', methods=['POST'])
 def add_column():
@@ -264,15 +272,15 @@ def add_column():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return "Unknown DB type", 400
+            return jsonify({'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         sql = f"ALTER TABLE {table} ADD COLUMN {column_def}"
         cur.execute(sql)
         conn.commit()
         conn.close()
-        return "Column added successfully"
+        return jsonify({'success': True, 'message': 'Column added successfully'})
     except Exception as e:
-        return f"Error: {e}", 400
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/drop-column', methods=['POST'])
 def drop_column():
@@ -292,17 +300,17 @@ def drop_column():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            return "Unknown DB type", 400
+            return jsonify({'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         if cred['type'] == 'sqlite':
-            return "SQLite does not support DROP COLUMN directly", 400
+            return jsonify({'error': 'SQLite does not support DROP COLUMN directly'}), 400
         sql = f"ALTER TABLE {table} DROP COLUMN {column}"
         cur.execute(sql)
         conn.commit()
         conn.close()
-        return "Column dropped successfully"
+        return jsonify({'success': True, 'message': 'Column dropped successfully'})
     except Exception as e:
-        return f"Error: {e}", 400
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

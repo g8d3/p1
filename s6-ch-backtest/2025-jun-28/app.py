@@ -85,5 +85,177 @@ def table_data():
     except Exception as e:
         return f"Error: {e}", 400
 
+@app.route('/insert-row', methods=['POST'])
+def insert_row():
+    idx = int(request.form['idx'])
+    table = request.form['table']
+    cred = db_credentials[idx]
+    columns = request.form.getlist('columns')
+    values = [request.form.get(col) for col in columns]
+    try:
+        if cred['type'] == 'sqlite':
+            conn = sqlite3.connect(cred['database'])
+        elif cred['type'] == 'postgres':
+            conn = psycopg2.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
+            )
+        elif cred['type'] == 'mysql':
+            conn = mysql.connector.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
+            )
+        else:
+            return "Unknown DB type", 400
+        cur = conn.cursor()
+        placeholders = ','.join(['%s' if cred['type'] != 'sqlite' else '?' for _ in columns])
+        sql = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"
+        cur.execute(sql, values)
+        conn.commit()
+        conn.close()
+        return "Row inserted successfully"
+    except Exception as e:
+        return f"Error: {e}", 400
+
+@app.route('/delete-row', methods=['POST'])
+def delete_row():
+    idx = int(request.form['idx'])
+    table = request.form['table']
+    pk_col = request.form['pk_col']
+    pk_val = request.form['pk_val']
+    cred = db_credentials[idx]
+    try:
+        if cred['type'] == 'sqlite':
+            conn = sqlite3.connect(cred['database'])
+        elif cred['type'] == 'postgres':
+            conn = psycopg2.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
+            )
+        elif cred['type'] == 'mysql':
+            conn = mysql.connector.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
+            )
+        else:
+            return "Unknown DB type", 400
+        cur = conn.cursor()
+        sql = f"DELETE FROM {table} WHERE {pk_col} = %s" if cred['type'] != 'sqlite' else f"DELETE FROM {table} WHERE {pk_col} = ?"
+        cur.execute(sql, (pk_val,))
+        conn.commit()
+        conn.close()
+        return "Row deleted successfully"
+    except Exception as e:
+        return f"Error: {e}", 400
+
+@app.route('/create-table', methods=['POST'])
+def create_table():
+    idx = int(request.form['idx'])
+    table = request.form['table']
+    columns = request.form['columns']  # e.g. "id INTEGER PRIMARY KEY, name TEXT"
+    cred = db_credentials[idx]
+    try:
+        if cred['type'] == 'sqlite':
+            conn = sqlite3.connect(cred['database'])
+        elif cred['type'] == 'postgres':
+            conn = psycopg2.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
+            )
+        elif cred['type'] == 'mysql':
+            conn = mysql.connector.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
+            )
+        else:
+            return "Unknown DB type", 400
+        cur = conn.cursor()
+        sql = f"CREATE TABLE {table} ({columns})"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+        return "Table created successfully"
+    except Exception as e:
+        return f"Error: {e}", 400
+
+@app.route('/drop-table', methods=['POST'])
+def drop_table():
+    idx = int(request.form['idx'])
+    table = request.form['table']
+    cred = db_credentials[idx]
+    try:
+        if cred['type'] == 'sqlite':
+            conn = sqlite3.connect(cred['database'])
+        elif cred['type'] == 'postgres':
+            conn = psycopg2.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
+            )
+        elif cred['type'] == 'mysql':
+            conn = mysql.connector.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
+            )
+        else:
+            return "Unknown DB type", 400
+        cur = conn.cursor()
+        sql = f"DROP TABLE {table}"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+        return "Table dropped successfully"
+    except Exception as e:
+        return f"Error: {e}", 400
+
+@app.route('/add-column', methods=['POST'])
+def add_column():
+    idx = int(request.form['idx'])
+    table = request.form['table']
+    column_def = request.form['column_def']  # e.g. "age INTEGER"
+    cred = db_credentials[idx]
+    try:
+        if cred['type'] == 'sqlite':
+            conn = sqlite3.connect(cred['database'])
+        elif cred['type'] == 'postgres':
+            conn = psycopg2.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
+            )
+        elif cred['type'] == 'mysql':
+            conn = mysql.connector.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
+            )
+        else:
+            return "Unknown DB type", 400
+        cur = conn.cursor()
+        sql = f"ALTER TABLE {table} ADD COLUMN {column_def}"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+        return "Column added successfully"
+    except Exception as e:
+        return f"Error: {e}", 400
+
+@app.route('/drop-column', methods=['POST'])
+def drop_column():
+    idx = int(request.form['idx'])
+    table = request.form['table']
+    column = request.form['column']
+    cred = db_credentials[idx]
+    try:
+        if cred['type'] == 'sqlite':
+            conn = sqlite3.connect(cred['database'])
+        elif cred['type'] == 'postgres':
+            conn = psycopg2.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
+            )
+        elif cred['type'] == 'mysql':
+            conn = mysql.connector.connect(
+                host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
+            )
+        else:
+            return "Unknown DB type", 400
+        cur = conn.cursor()
+        if cred['type'] == 'sqlite':
+            return "SQLite does not support DROP COLUMN directly", 400
+        sql = f"ALTER TABLE {table} DROP COLUMN {column}"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+        return "Column dropped successfully"
+    except Exception as e:
+        return f"Error: {e}", 400
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -139,8 +139,12 @@ def delete_row():
         sql = f"DELETE FROM {table} WHERE {pk_col} = %s" if cred['type'] != 'sqlite' else f"DELETE FROM {table} WHERE {pk_col} = ?"
         cur.execute(sql, (pk_val,))
         conn.commit()
+        # Fetch updated table data
+        cur.execute(f"SELECT * FROM {table} LIMIT 20;")
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]
         conn.close()
-        return "Row deleted successfully"
+        return render_template('partials/table_data.html', columns=columns, rows=rows, table=table)
     except Exception as e:
         return f"Error: {e}", 400
 

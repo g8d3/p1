@@ -2,11 +2,45 @@ from flask import Flask, render_template, request, jsonify
 import sqlite3
 import psycopg2
 import mysql.connector
+import os
 
 app = Flask(__name__)
 
+# Path for the credentials SQLite database
+CRED_DB_PATH = os.path.join(os.path.dirname(__file__), 'credentials.db')
+
 # In-memory store for credentials (for demo)
 db_credentials = []
+
+def init_cred_db():
+    conn = sqlite3.connect(CRED_DB_PATH)
+    cur = conn.cursor()
+    cur.execute('''CREATE TABLE IF NOT EXISTS credentials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT, host TEXT, port TEXT, user TEXT, password TEXT, database TEXT
+    )''')
+    conn.commit()
+    conn.close()
+
+def load_credentials():
+    conn = sqlite3.connect(CRED_DB_PATH)
+    cur = conn.cursor()
+    cur.execute('SELECT type, host, port, user, password, database FROM credentials')
+    creds = [dict(zip(['type','host','port','user','password','database'], row)) for row in cur.fetchall()]
+    conn.close()
+    return creds
+
+def save_credential(cred):
+    conn = sqlite3.connect(CRED_DB_PATH)
+    cur = conn.cursor()
+    cur.execute('INSERT INTO credentials (type, host, port, user, password, database) VALUES (?, ?, ?, ?, ?, ?)',
+                (cred['type'], cred['host'], cred['port'], cred['user'], cred['password'], cred['database']))
+    conn.commit()
+    conn.close()
+
+# Initialize and load credentials from the database
+init_cred_db()
+db_credentials = load_credentials()
 
 @app.route('/')
 def index():
@@ -23,6 +57,7 @@ def add_credential():
         'database': request.form['database']
     }
     db_credentials.append(cred)
+    save_credential(cred)
     return render_template('partials/credentials.html', credentials=db_credentials)
 
 @app.route('/connect', methods=['POST'])

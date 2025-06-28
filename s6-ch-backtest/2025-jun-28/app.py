@@ -130,23 +130,30 @@ def insert_row():
     try:
         if cred['type'] == 'sqlite':
             conn = sqlite3.connect(cred['database'])
+            placeholder = '?'
         elif cred['type'] == 'postgres':
             conn = psycopg2.connect(
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], dbname=cred['database']
             )
+            placeholder = '%s'
         elif cred['type'] == 'mysql':
             conn = mysql.connector.connect(
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
+            placeholder = '%s'
         else:
             return "Unknown DB type", 400
         cur = conn.cursor()
-        placeholders = ','.join(['%s' if cred['type'] != 'sqlite' else '?' for _ in columns])
+        placeholders = ','.join([placeholder for _ in columns])
         sql = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"
         cur.execute(sql, values)
         conn.commit()
+        # Fetch updated table data
+        cur.execute(f"SELECT * FROM {table} LIMIT 20;")
+        rows = cur.fetchall()
+        columns2 = [desc[0] for desc in cur.description]
         conn.close()
-        return "Row inserted successfully"
+        return render_template('partials/table_data.html', columns=columns2, rows=rows, table=table)
     except Exception as e:
         return f"Error: {e}", 400
 

@@ -1,0 +1,22 @@
+-- database: ./b.db
+
+CREATE TABLE financial_data_minute (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp TIMESTAMP NOT NULL,
+    change DECIMAL(10, 2),
+    volume BIGINT
+);
+
+CREATE TABLE financial_data_hourly (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp TIMESTAMP NOT NULL,
+    change DECIMAL(10, 2),
+    volume BIGINT
+);
+
+CREATE TABLE financial_data_daily (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp TIMESTAMP NOT NULL,
+    change DECIMAL(10, 2),
+    volume BIGINT
+);

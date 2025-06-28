@@ -1,0 +1,12 @@
+{% if tables %}
+<h2>Tables</h2>
+<ul>
+    {% for table in tables %}
+    <li>
+        <button hx-post="/table-data" hx-vals='{"idx": "{{ idx }}", "table": "{{ table }}"}' hx-target="#table-data" hx-swap="innerHTML">{{ table }}</button>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No tables found.</p>
+{% endif %}

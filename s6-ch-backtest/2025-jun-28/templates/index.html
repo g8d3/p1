@@ -87,8 +87,10 @@
         }
     });
 
-    // Initial render (if any)
-    renderCredentials([]);
+    // Initial render: fetch credentials from backend
+    fetch('/credentials')
+      .then(r => r.json())
+      .then(data => renderCredentials(data.credentials || []));
     renderTables([], '');
     </script>
 </body>

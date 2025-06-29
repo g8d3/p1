@@ -1,3 +1,7 @@
+# Endpoint to get credentials as JSON
+@app.route('/credentials', methods=['GET'])
+def get_credentials():
+    return jsonify({'credentials': db_credentials})
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 import psycopg2
@@ -63,7 +67,8 @@ def add_credential():
 
 @app.route('/connect', methods=['POST'])
 def connect():
-    idx = int(request.form['idx'])
+    data = request.json
+    idx = int(data['idx'])
     cred = db_credentials[idx]
     try:
         if cred['type'] == 'sqlite':

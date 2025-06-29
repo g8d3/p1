@@ -15,7 +15,7 @@
 </head>
 <body>
     <h1>Database Manager</h1>
-    <form hx-post="/add-credential" hx-target="#cred-list" hx-swap="outerHTML">
+    <form id="add-cred-form">
         <label>Type:
             <select name="type">
                 <option value="sqlite">SQLite</option>
@@ -33,11 +33,77 @@
     <div id="cred-list" class="cred-list">
         {% include 'partials/credentials.html' %}
     </div>
-    <div id="db-tables" class="table-list"></div>
+    <div id="db-tables" class="table-list">
+        {% include 'partials/tables.html' %}
+    </div>
     <div id="table-data" class="table-data"></div>
     <script>
-        document.body.addEventListener('htmx:beforeRequest', function(evt) {
-            console.log('[HTMX] Request:', evt.detail.requestConfig);
+    // Render credentials list from JSON
+    function renderCredentials(creds) {
+        const ul = document.getElementById('cred-list-ul');
+        ul.innerHTML = '';
+        if (!creds.length) {
+            ul.innerHTML = '<li>No credentials saved.</li>';
+            return;
+        }
+        creds.forEach((cred, idx) => {
+            const li = document.createElement('li');
+            li.innerHTML = `[${cred.type}] ${cred.user}@${cred.host}:${cred.port}/${cred.database} <button onclick="connectDB(${idx})">Connect</button>`;
+            ul.appendChild(li);
+        });
+    }
+
+    // Render tables list from JSON
+    function renderTables(tables, idx) {
+        const ul = document.getElementById('tables-list-ul');
+        const noMsg = document.getElementById('no-tables-msg');
+        ul.innerHTML = '';
+        if (!tables.length) {
+            noMsg.style.display = '';
+            return;
+        }
+        noMsg.style.display = 'none';
+        tables.forEach(table => {
+            const li = document.createElement('li');
+            li.innerHTML = `<button onclick="loadTableData('${table}', ${idx})">${table}</button> <button onclick="dropTable('${table}', ${idx})">Drop</button>`;
+            ul.appendChild(li);
+        });
+    }
+
+    // Add credential form submit
+    document.getElementById('add-cred-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = Object.fromEntries(new FormData(form));
+        const resp = await fetch('/add-credential', {
+            method: 'POST',
+            body: new URLSearchParams(data)
+        });
+        const json = await resp.json();
+        if (json.success) renderCredentials(json.credentials);
+    };
+
+    // Connect button
+    window.connectDB = async function(idx) {
+        const resp = await fetch('/connect', {
+            method: 'POST',
+            body: new URLSearchParams({idx})
+        });
+        const json = await resp.json();
+        if (json.success) {
+            document.getElementById('table-idx').value = idx;
+            renderTables(json.tables, idx);
+        }
+    };
+
+    // Table actions (placeholders)
+    window.loadTableData = function(table, idx) { alert('Implement table data load for ' + table); };
+    window.dropTable = function(table, idx) { alert('Implement drop table for ' + table); };
+
+    // Initial render (if any)
+    renderCredentials([]);
+    renderTables([], '');
+    </script>
         });
         document.body.addEventListener('htmx:afterRequest', function(evt) {
             console.log('[HTMX] Response:', evt.detail.xhr.status, evt.detail.xhr.responseText.slice(0, 200));

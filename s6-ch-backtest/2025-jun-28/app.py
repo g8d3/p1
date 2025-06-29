@@ -1,3 +1,11 @@
+from flask import Flask, render_template, request, jsonify
+import sqlite3
+import psycopg2
+import mysql.connector
+import os
+
+app = Flask(__name__)
+
 # Endpoint to get credentials as JSON
 @app.route('/credentials', methods=['GET'])
 def get_credentials():

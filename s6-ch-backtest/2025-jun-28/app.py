@@ -9,7 +9,7 @@ app = Flask(__name__)
 # Endpoint to get credentials as JSON
 @app.route('/credentials', methods=['GET'])
 def get_credentials():
-    return jsonify({'credentials': db_credentials})
+    return render_template('partials/credentials.html', credentials=db_credentials)
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 import psycopg2
@@ -71,7 +71,8 @@ def add_credential():
     }
     db_credentials.append(cred)
     save_credential(cred)
-    return jsonify({'credentials': db_credentials, 'success': True})
+    # Return updated credentials partial for htmx swap
+    return render_template('partials/credentials.html', credentials=db_credentials)
 
 @app.route('/connect', methods=['POST'])
 def connect():

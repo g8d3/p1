@@ -48,13 +48,14 @@ def index():
 
 @app.route('/add-credential', methods=['POST'])
 def add_credential():
+    data = request.json
     cred = {
-        'type': request.form['type'],
-        'host': request.form['host'],
-        'port': request.form['port'],
-        'user': request.form['user'],
-        'password': request.form['password'],
-        'database': request.form['database']
+        'type': data['type'],
+        'host': data['host'],
+        'port': data['port'],
+        'user': data['user'],
+        'password': data['password'],
+        'database': data['database']
     }
     db_credentials.append(cred)
     save_credential(cred)

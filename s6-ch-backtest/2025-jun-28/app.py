@@ -44,7 +44,7 @@ db_credentials = load_credentials()
 
 @app.route('/')
 def index():
-    return render_template('index.html', credentials=db_credentials)
+    return render_template('index.html')
 
 @app.route('/add-credential', methods=['POST'])
 def add_credential():
@@ -58,8 +58,7 @@ def add_credential():
     }
     db_credentials.append(cred)
     save_credential(cred)
-    html = render_template('partials/credentials.html', credentials=db_credentials)
-    return jsonify({'html': html, 'success': True})
+    return jsonify({'credentials': db_credentials, 'success': True})
 
 @app.route('/connect', methods=['POST'])
 def connect():
@@ -90,10 +89,9 @@ def connect():
             conn.close()
         else:
             return jsonify({'error': 'Unknown DB type'}), 400
-        html = render_template('partials/tables.html', tables=tables, idx=idx)
-        return jsonify({'html': html, 'success': True})
+        return jsonify({'tables': tables, 'idx': idx, 'success': True})
     except Exception as e:
-        return jsonify({'error': str(e), 'html': ''}), 400
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/table-data', methods=['POST'])
 def table_data():

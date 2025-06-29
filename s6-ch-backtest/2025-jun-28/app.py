@@ -110,18 +110,15 @@ def table_data():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            html = render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error="Unknown DB type")
-            return jsonify({'html': html, 'error': 'Unknown DB type'}), 400
+            return jsonify({'columns': [], 'rows': [], 'table': table, 'idx': idx, 'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM {table} LIMIT 20;")
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description]
         conn.close()
-        html = render_template('partials/table_data.html', columns=columns, rows=rows, table=table, idx=idx)
-        return jsonify({'html': html, 'success': True})
+        return jsonify({'columns': columns, 'rows': rows, 'table': table, 'idx': idx, 'success': True})
     except Exception as e:
-        html = render_template('partials/table_data.html', columns=[], rows=[], table=table, idx=idx, error=str(e))
-        return jsonify({'html': html, 'error': str(e)}), 400
+        return jsonify({'columns': [], 'rows': [], 'table': table, 'idx': idx, 'error': str(e)}), 400
 
 @app.route('/insert-row', methods=['POST'])
 def insert_row():
@@ -156,10 +153,9 @@ def insert_row():
         rows = cur.fetchall()
         columns2 = [desc[0] for desc in cur.description]
         conn.close()
-        html = render_template('partials/table_data.html', columns=columns2, rows=rows, table=table)
-        return jsonify({'html': html, 'success': True})
+        return jsonify({'columns': columns2, 'rows': rows, 'table': table, 'idx': idx, 'success': True})
     except Exception as e:
-        return jsonify({'error': str(e), 'html': ''}), 400
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/delete-row', methods=['POST'])
 def delete_row():
@@ -180,8 +176,7 @@ def delete_row():
                 host=cred['host'], port=cred['port'], user=cred['user'], password=cred['password'], database=cred['database']
             )
         else:
-            html = render_template('partials/table_data.html', columns=[], rows=[], table=table, error="Unknown DB type")
-            return jsonify({'html': html, 'error': 'Unknown DB type'}), 400
+            return jsonify({'columns': [], 'rows': [], 'table': table, 'idx': idx, 'error': 'Unknown DB type'}), 400
         cur = conn.cursor()
         sql = f"DELETE FROM {table} WHERE {pk_col} = %s" if cred['type'] != 'sqlite' else f"DELETE FROM {table} WHERE {pk_col} = ?"
         cur.execute(sql, (pk_val,))
@@ -191,11 +186,9 @@ def delete_row():
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description]
         conn.close()
-        html = render_template('partials/table_data.html', columns=columns, rows=rows, table=table)
-        return jsonify({'html': html, 'success': True})
+        return jsonify({'columns': columns, 'rows': rows, 'table': table, 'idx': idx, 'success': True})
     except Exception as e:
-        html = render_template('partials/table_data.html', columns=[], rows=[], table=table, error=str(e))
-        return jsonify({'html': html, 'error': str(e)}), 400
+        return jsonify({'columns': [], 'rows': [], 'table': table, 'idx': idx, 'error': str(e)}), 400
 
 @app.route('/create-table', methods=['POST'])
 def create_table():

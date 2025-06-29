@@ -31,30 +31,15 @@
         <label>Database/File: <input name="database"></label>
         <button type="submit">Save Credential</button>
     </form>
-    <div id="cred-list" class="cred-list">
-        {% include 'partials/credentials.html' %}
+    <div id="cred-list" class="cred-list" hx-get="/credentials" hx-trigger="load, submit from:#add-cred-form">
+        <!-- Credentials will be loaded here by htmx -->
     </div>
     <div id="db-tables" class="table-list">
         {% include 'partials/tables.html' %}
     </div>
     <div id="table-data" class="table-data"></div>
     <script>
-    // Render credentials list from JSON
-    function renderCredentials(creds) {
-        const ul = document.getElementById('cred-list-ul');
-        ul.innerHTML = '';
-        if (!creds.length) {
-            ul.innerHTML = '<li>No credentials saved.</li>';
-            return;
-        }
-        creds.forEach((cred, idx) => {
-            const li = document.createElement('li');
-            li.innerHTML = `[${cred.type}] ${cred.user}@${cred.host}:${cred.port}/${cred.database} <button hx-post="/connect" hx-ext="json-enc" hx-vals='{"idx": "${idx}"}' hx-target="#db-tables" hx-swap="none">Connect</button>`;
-            ul.appendChild(li);
-        });
-    }
-
-    // Render tables list from JSON
+    // Render tables list from JSON (keep this for now)
     function renderTables(tables, idx) {
         const ul = document.getElementById('tables-list-ul');
         const noMsg = document.getElementById('no-tables-msg');
@@ -70,27 +55,6 @@
             ul.appendChild(li);
         });
     }
-
-    // htmx afterOnLoad event for JSON responses
-    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
-        try {
-            const json = JSON.parse(evt.detail.xhr.responseText);
-            if (json.credentials) {
-                renderCredentials(json.credentials);
-            }
-            if (json.tables) {
-                document.getElementById('table-idx').value = json.idx;
-                renderTables(json.tables, json.idx);
-            }
-        } catch (e) {
-            // Not JSON, fallback to default
-        }
-    });
-
-    // Initial render: fetch credentials from backend
-    fetch('/credentials')
-      .then(r => r.json())
-      .then(data => renderCredentials(data.credentials || []));
     renderTables([], '');
     </script>
 </body>

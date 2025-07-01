@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego de Verbos Frasales</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center mb-4">Juego de Verbos Frasales</h1>
+    <p class="text-center mb-4">Nivel: <span id="level">1</span></p>
+    <p class="text-center mb-4">Puntuación: <span id="score">0</span></p>
+    <div id="gameArea" class="grid grid-cols-2 gap-4">
+      <!-- Phrasal verbs and translations will be inserted here -->
+    </div>
+    <p id="message" class="text-center mt-4 text-red-500 hidden"></p>
+    <button id="restart" class="mt-4 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 hidden">Reiniciar Juego</button>
+  </div>
+
+  <script>
+    const phrasalVerbs = {
+      A: [
+        { verb: "add up", translation: "sumar, tener sentido" },
+        { verb: "ask out", translation: "invitar a salir" },
+        { verb: "act up", translation: "portarse mal" },
+        { verb: "agree with", translation: "estar de acuerdo con" },
+        { verb: "aim at", translation: "apuntar a" }
+      ],
+      B: [
+        { verb: "back up", translation: "hacer copia de seguridad" },
+        { verb: "break down", translation: "descomponerse, averiarse" },
+        { verb: "bring up", translation: "criar, mencionar" },
+        { verb: "blow up", translation: "explotar, inflar" },
+        { verb: "build on", translation: "construir sobre" }
+      ],
+      C: [
+        { verb: "call off", translation: "cancelar" },
+        { verb: "carry on", translation: "continuar" },
+        { verb: "catch up", translation: "ponerse al día" },
+        { verb: "check in", translation: "registrarse" },
+        { verb: "clear up", translation: "aclarar, limpiar" }
+      ],
+      D: [
+        { verb: "drop off", translation: "dejar, disminuir" },
+        { verb: "dress up", translation: "vestirse elegantemente" },
+        { verb: "deal with", translation: "lidiar con" },
+        { verb: "do over", translation: "repetir, rehacer" },
+        { verb: "draw up", translation: "redactar, preparar" }
+      ],
+      E: [
+        { verb: "eat out", translation: "comer fuera" },
+        { verb: "end up", translation: "terminar, acabar" },
+        { verb: "even out", translation: "nivelar, equilibrar" },
+        { verb: "explain away", translation: "justificar, explicar" },
+        { verb: "escape from", translation: "escaparse de" }
+      ]
+    };
+
+    let currentLevel = 1;
+    let score = 0;
+    let selectedVerb = null;
+    let selectedTranslation = null;
+    let currentVerbs = [];
+    let currentLetter = 'A';
+
+    const gameArea = document.getElementById('gameArea');
+    const levelDisplay = document.getElementById('level');
+    const scoreDisplay = document.getElementById('score');
+    const messageDisplay = document.getElementById('message');
+    const restartButton = document.getElementById('restart');
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function startLevel() {
+      gameArea.innerHTML = '';
+      messageDisplay.classList.add('hidden');
+      restartButton.classList.add('hidden');
+      
+      // Select verbs for the current level
+      currentVerbs = shuffle([...phrasalVerbs[currentLetter]]).slice(0, currentLevel);
+      
+      // Create verb and translation cards
+      const allOptions = [];
+      currentVerbs.forEach(verb => {
+        allOptions.push({ text: verb.verb, type: 'verb', match: verb.translation });
+        allOptions.push({ text: verb.translation, type: 'translation', match: verb.verb });
+      });
+      
+      shuffle(allOptions).forEach(option => {
+        const card = document.createElement('div');
+        card.className = `p-4 border rounded-lg cursor-pointer hover:bg-gray-200 text-center ${
+          option.type === 'verb' ? 'bg-blue-100' : 'bg-green-100'
+        }`;
+        card.textContent = option.text;
+        card.dataset.type = option.type;
+        card.dataset.match = option.match;
+        card.addEventListener('click', () => selectCard(card));
+        gameArea.appendChild(card);
+      });
+    }
+
+    function selectCard(card) {
+      if (card.classList.contains('bg-gray-300')) return; // Prevent re-selecting matched cards
+
+      if (card.dataset.type === 'verb') {
+        if (selectedVerb) selectedVerb.classList.remove('border-blue-500');
+        selectedVerb = card;
+        selectedVerb.classList.add('border-blue-500');
+      } else {
+        if (selectedTranslation) selectedTranslation.classList.remove('border-green-500');
+        selectedTranslation = card;
+        selectedTranslation.classList.add('border-green-500');
+      }
+
+      if (selectedVerb && selectedTranslation) {
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      if (selectedVerb.dataset.match === selectedTranslation.textContent &&
+          selectedTranslation.dataset.match === selectedVerb.textContent) {
+        // Correct match
+        selectedVerb.classList.add('bg-gray-300');
+        selectedTranslation.classList.add('bg-gray-300');
+        score += 10;
+        scoreDisplay.textContent = score;
+        selectedVerb = null;
+        selectedTranslation = null;
+
+        // Check if all pairs are matched
+        if (gameArea.querySelectorAll('.bg-gray-300').length === currentVerbs.length * 2) {
+          if (currentLevel < 5) {
+            currentLevel++;
+            levelDisplay.textContent = currentLevel;
+            currentLetter = String.fromCharCode(currentLetter.charCodeAt(0) + 1); // Move to next letter
+            setTimeout(startLevel, 1000);
+          } else {
+            messageDisplay.textContent = '¡Felicidades! Has completado todos los niveles.';
+            messageDisplay.classList.remove('hidden', 'text-red-500');
+            messageDisplay.classList.add('text-green-500');
+            restartButton.classList.remove('hidden');
+          }
+        }
+      } else {
+        // Incorrect match
+        messageDisplay.textContent = '¡Incorrecto! El juego se reiniciará.';
+        messageDisplay.classList.remove('hidden');
+        restartButton.classList.remove('hidden');
+        gameArea.querySelectorAll('div').forEach(card => card.classList.add('pointer-events-none'));
+      }
+    }
+
+    restartButton.addEventListener('click', () => {
+      currentLevel = 1;
+      score = 0;
+      currentLetter = 'A';
+      levelDisplay.textContent = currentLevel;
+      scoreDisplay.textContent = score;
+      startLevel();
+    });
+
+    // Start the game
+    startLevel();
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+name: Automated Testing Platform 🧪
+
+entities:
+  User 👤:
+    authenticable: true
+    properties:
+      - name: { type: string, validation: { required: true, minLength: 3 } }
+      - email: { type: email, validation: { required: true } }
+    policies:
+      signup: 
+        - access: public
+      create:
+        - { access: restricted, allow: Admin }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - access: admin
+    validation:
+      name: { minLength: 3, isNotEmpty: true }
+      email: { isEmail: true, isNotEmpty: true }
+
+  LLMConfig ⚙️:
+    properties:
+      - name: { type: string, validation: { required: true, minLength: 3 } }
+      - model: { type: string, validation: { required: true } }
+      - apiKey: { type: password, validation: { required: true } }
+      - provider: { type: string, validation: { required: true } }
+    belongsTo:
+      - User
+    policies:
+      create:
+        - { access: restricted, allow: User, condition: self }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+    validation:
+      name: { minLength: 3, isNotEmpty: true }
+      model: { isNotEmpty: true }
+      apiKey: { isNotEmpty: true }
+      provider: { isNotEmpty: true }
+
+  URL 🌐:
+    properties:
+      - url: { type: link, validation: { required: true } }
+      - description: { type: text, validation: { isOptional: true, maxLength: 500 } }
+    belongsTo:
+      - User
+    policies:
+      create:
+        - { access: restricted, allow: User, condition: self }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+    validation:
+      url: { isNotEmpty: true }
+
+  TestCase 🧪:
+    properties:
+      - name: { type: string, validation: { required: true, minLength: 3 } }
+      - testScript: { type: file, validation: { required: true } }
+      - details: { type: text, validation: { isOptional: true, maxLength: 1000 } }
+      - status: { type: choice, options: { values: [draft, generated, executed], sequential: true }, default: draft }
+    belongsTo:
+      - User
+      - URL
+      - LLMConfig
+    policies:
+      create:
+        - { access: restricted, allow: User, condition: self }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+    validation:
+      name: { minLength: 3, isNotEmpty: true }
+      testScript: { isNotEmpty: true }
+    hooks:
+      afterCreate:
+        - { url: 'https://my-testing-service.com/generate-test', method: 'POST', headers: { authorization: 'Bearer ${TEST_SERVICE_KEY}' } }
+    middlewares:
+      beforeCreate:
+        - handler: generateTestScript
+
+  TestResult 📊:
+    properties:
+      - result: { type: choice, options: { values: [passed, failed, error] }, validation: { required: true } }
+      - output: { type: text, validation: { isOptional: true } }
+      - screenshot: { type: image, options: { sizes: { thumbnail: { width: 100, height: 100 }, full: { width: 1920 } } }, validation: { isOptional: true } }
+      - executedAt: { type: timestamp, validation: { required: true } }
+    belongsTo:
+      - TestCase
+      - User
+    policies:
+      create:
+        - { access: restricted, allow: User, condition: self }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - access: admin
+      delete:
+        - access: admin
+    validation:
+      result: { isNotEmpty: true }
+      executedAt: { isNotEmpty: true }
+    hooks:
+      afterCreate:
+        - { url: 'https://my-notification-service.com/notify', method: 'POST', headers: { authorization: 'Bearer ${NOTIFY_KEY}' } }
+
+  TestSchedule ⏰:
+    properties:
+      - frequency: { type: choice, options: { values: [hourly, daily, weekly], sequential: true }, validation: { required: true } }
+      - nextRun: { type: timestamp, validation: { required: true } }
+      - active: { type: boolean, default: true }
+    belongsTo:
+      - TestCase
+      - User
+    policies:
+      create:
+        - { access: restricted, allow: User, condition: self }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+    validation:
+      frequency: { isNotEmpty: true }
+      nextRun: { isNotEmpty: true }
+
+settings:
+  rateLimits:
+    - { name: 'short', limit: 5, ttl: 1000 } # 5 requests per second
+    - { name: 'medium', limit: 100, ttl: 60000 } # 100 requests per minute

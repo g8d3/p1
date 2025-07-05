@@ -2,7 +2,7 @@ import AdminJS from 'adminjs';
 import AdminJSExpress from '@adminjs/express';
 import AdminJSSequelize from '@adminjs/sequelize';
 import express from 'express';
-import { Sequelize } from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 // Register Sequelize adapter
 AdminJS.registerAdapter(AdminJSSequelize);
@@ -24,13 +24,30 @@ async function initialize() {
     await sequelize.authenticate();
     console.log('Database connection successful');
 
-    // Fetch table names directly
+    // Fetch table names
     const [tables] = await sequelize.query('SELECT name FROM sqlite_master WHERE type="table" AND name NOT LIKE "sqlite_%"');
     console.log('Table names:', tables.map(t => t.name));
 
-    // Force model inference for each table
+    // Dynamically infer table schemas
     for (const table of tables) {
-      sequelize.define(table.name, {}, { tableName: table.name });
+      const [columns] = await sequelize.query(`PRAGMA table_info(${table.name})`);
+      const attributes = {};
+      columns.forEach(col => {
+        // Map SQLite types to Sequelize types
+        const typeMap = {
+          INTEGER: DataTypes.INTEGER,
+          TEXT: DataTypes.STRING,
+          REAL: DataTypes.FLOAT,
+          BLOB: DataTypes.BLOB,
+          NULL: DataTypes.STRING, // Fallback for NULL type
+        };
+        attributes[col.name] = {
+          type: typeMap[col.type] || DataTypes.STRING,
+          primaryKey: col.pk === 1,
+          allowNull: col.notnull === 0,
+        };
+      });
+      sequelize.define(table.name, attributes, { tableName: table.name, timestamps: false });
     }
 
     // Sync database

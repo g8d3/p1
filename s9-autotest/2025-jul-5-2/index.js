@@ -18,21 +18,46 @@ const sequelize = new Sequelize({
 
 // Initialize AdminJS with inferred models
 async function initialize() {
-  await sequelize.sync({ force: false });
-  const adminJs = new AdminJS({
-    databases: [sequelize],
-    rootPath: '/admin',
-    resources: Object.values(sequelize.models).map(model => ({
-      resource: model,
-      options: { navigation: { icon: 'Database' } }, // Ensure resources are visible in sidebar
-    })),
-  });
+  try {
+    // Sync database and infer models
+    await sequelize.sync({ force: false });
+    
+    // Debug: Log inferred models
+    console.log('Inferred models:', Object.keys(sequelize.models));
 
-  // Set up AdminJS router
-  app.use(adminJs.options.rootPath, AdminJSExpress.buildRouter(adminJs));
+    // Initialize AdminJS
+    const adminJs = new AdminJS({
+      databases: [sequelize],
+      rootPath: '/admin',
+      resources: Object.values(sequelize.models).map(model => ({
+        resource: model,
+        options: { 
+          navigation: { icon: 'Database', name: model.name },
+          // Ensure all CRUD actions are enabled
+          actions: {
+            list: { isVisible: true },
+            new: { isVisible: true },
+            edit: { isVisible: true },
+            delete: { isVisible: true },
+            show: { isVisible: true },
+          },
+        },
+      })),
+      // Optional: Customize branding for clarity
+      branding: {
+        companyName: 'SQLite Admin',
+        softwareBrothers: false,
+      },
+    });
 
-  // Start server
-  app.listen(3000, () => console.log('AdminJS at http://localhost:3000/admin'));
+    // Set up AdminJS router
+    app.use(adminJs.options.rootPath, AdminJSExpress.buildRouter(adminJs));
+
+    // Start server
+    app.listen(3000, () => console.log('AdminJS at http://localhost:3000/admin'));
+  } catch (err) {
+    console.error('Error:', err);
+  }
 }
 
-initialize().catch(err => console.error('Error:', err));
+initialize();

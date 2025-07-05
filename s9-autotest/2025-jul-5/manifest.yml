@@ -5,7 +5,6 @@ entities:
     authenticable: true
     properties:
       - name: { type: string, validation: { required: true, minLength: 3 } }
-      - email: { type: email, validation: { required: true } }
     policies:
       signup: 
         - access: public

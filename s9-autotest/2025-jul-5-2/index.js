@@ -13,7 +13,7 @@ const app = express();
 // Connect to SQLite database
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: './database.db', // Path to your SQLite database
+  storage: './db/a.db', // Path to your SQLite database
 });
 
 // Automatically infer models from the database

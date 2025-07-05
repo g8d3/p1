@@ -6,3 +6,4 @@ data schema file for app where:
 - system asks LLMs to generate tests according UI, additionally user can give details on what to test
 - tests are run and results are saved, tests can be run mulltiple times and also scheduled
 
+should work with clickhouse

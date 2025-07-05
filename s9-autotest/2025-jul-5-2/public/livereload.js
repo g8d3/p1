@@ -1,3 +1,1 @@
-document.write(
-  '<script src="http://localhost:35729/livereload.js"></script>'
-);
+document.write('<script src="http://localhost:35729/livereload.js"></script>')

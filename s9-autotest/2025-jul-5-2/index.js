@@ -14,16 +14,25 @@ const app = express();
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: './db/a.db',
+  logging: console.log, // Enable Sequelize query logging
 });
 
 // Initialize AdminJS with inferred models
 async function initialize() {
   try {
-    // Sync database and infer models
-    await sequelize.sync({ force: true });
-    await sequelize.sync({ alter: true });
-    // Debug: Log inferred models
+    // Test database connection
+    await sequelize.authenticate();
+    console.log('Database connection successful');
+
+    // Sync database without dropping tables
+    await sequelize.sync({ force: false });
     console.log('Inferred models:', Object.keys(sequelize.models));
+
+    // Check if models are empty and log table names manually
+    if (Object.keys(sequelize.models).length === 0) {
+      const tables = await sequelize.query('SELECT name FROM sqlite_master WHERE type="table";');
+      console.log('Database tables:', tables[0].map(t => t.name));
+    }
 
     // Initialize AdminJS
     const adminJs = new AdminJS({
@@ -31,19 +40,11 @@ async function initialize() {
       rootPath: '/admin',
       resources: Object.values(sequelize.models).map(model => ({
         resource: model,
-        options: { 
+        options: {
           navigation: { icon: 'Database', name: model.name },
-          // Ensure all CRUD actions are enabled
-          actions: {
-            list: { isVisible: true },
-            new: { isVisible: true },
-            edit: { isVisible: true },
-            delete: { isVisible: true },
-            show: { isVisible: true },
-          },
+          actions: { list: true, new: true, edit: true, delete: true, show: true },
         },
       })),
-      // Optional: Customize branding for clarity
       branding: {
         companyName: 'SQLite Admin',
         softwareBrothers: false,
@@ -56,7 +57,7 @@ async function initialize() {
     // Start server
     app.listen(3000, () => console.log('AdminJS at http://localhost:3000/admin'));
   } catch (err) {
-    console.error('Error:', err);
+    console.error('Error:', err.message);
   }
 }
 

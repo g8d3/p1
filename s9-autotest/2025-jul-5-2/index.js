@@ -13,7 +13,7 @@ const app = express();
 // Connect to SQLite database
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: './database.db',
+  storage: './db/a.db',
 });
 
 // Initialize AdminJS with inferred models

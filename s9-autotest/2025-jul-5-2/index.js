@@ -14,7 +14,7 @@ const app = express();
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: './db/a.db',
-  logging: console.log,
+  logging: false, // Disable logging for cleaner output
 });
 
 // Initialize AdminJS with inferred models
@@ -33,13 +33,13 @@ async function initialize() {
       const [columns] = await sequelize.query(`PRAGMA table_info(${table.name})`);
       const attributes = {};
       columns.forEach(col => {
-        // Map SQLite types to Sequelize types
         const typeMap = {
           INTEGER: DataTypes.INTEGER,
           TEXT: DataTypes.STRING,
           REAL: DataTypes.FLOAT,
           BLOB: DataTypes.BLOB,
-          NULL: DataTypes.STRING, // Fallback for NULL type
+          NULL: DataTypes.STRING,
+          DATETIME: DataTypes.DATE,
         };
         attributes[col.name] = {
           type: typeMap[col.type] || DataTypes.STRING,
@@ -63,6 +63,11 @@ async function initialize() {
         options: {
           navigation: { icon: 'Database', name: model.name },
           actions: { list: true, new: true, edit: true, delete: true, show: true },
+          // Hide createdAt/updatedAt if not in schema
+          properties: {
+            createdAt: { isVisible: false },
+            updatedAt: { isVisible: false },
+          },
         },
       })),
       branding: {
@@ -73,6 +78,9 @@ async function initialize() {
 
     // Set up AdminJS router
     app.use(adminJs.options.rootPath, AdminJSExpress.buildRouter(adminJs));
+
+    // Serve static files for LiveReload
+    app.use(express.static('public'));
 
     // Start server
     app.listen(3000, () => console.log('AdminJS at http://localhost:3000/admin'));

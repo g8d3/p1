@@ -14,7 +14,7 @@ const app = express();
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: './db/a.db',
-  logging: console.log, // Enable query logging
+  logging: console.log,
 });
 
 // Initialize AdminJS with inferred models
@@ -24,11 +24,16 @@ async function initialize() {
     await sequelize.authenticate();
     console.log('Database connection successful');
 
-    // Fetch table schemas manually
-    const tables = await sequelize.getQueryInterface().showAllSchemas();
-    console.log('Table schemas:', tables.map(t => t.tableName));
+    // Fetch table names directly
+    const [tables] = await sequelize.query('SELECT name FROM sqlite_master WHERE type="table" AND name NOT LIKE "sqlite_%"');
+    console.log('Table names:', tables.map(t => t.name));
 
-    // Sync database without dropping tables
+    // Force model inference for each table
+    for (const table of tables) {
+      sequelize.define(table.name, {}, { tableName: table.name });
+    }
+
+    // Sync database
     await sequelize.sync({ force: false });
     console.log('Inferred models:', Object.keys(sequelize.models));
 

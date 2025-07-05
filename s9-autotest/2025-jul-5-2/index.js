@@ -1,8 +1,9 @@
-const AdminJS = require('adminjs');
-const AdminJSExpress = require('@adminjs/express');
-const AdminJSSequelize = require('@adminjs/sequelize');
-const express = require('express');
-const { Sequelize } = require('sequelize');
+// Use dynamic imports for ESM compatibility
+import AdminJS from 'adminjs';
+import AdminJSExpress from '@adminjs/express';
+import AdminJSSequelize from '@adminjs/sequelize';
+import express from 'express';
+import { Sequelize } from 'sequelize';
 
 // Register Sequelize adapter for AdminJS
 AdminJS.registerAdapter(AdminJSSequelize);
@@ -21,7 +22,7 @@ async function initialize() {
   try {
     // Sync all defined models or infer them from the database
     await sequelize.sync({ force: false }); // force: false ensures existing tables are not dropped
-    
+
     // Get all models from the database
     const models = sequelize.models;
 
@@ -29,10 +30,9 @@ async function initialize() {
     const adminJs = new AdminJS({
       databases: [sequelize],
       rootPath: '/admin',
-      // Optionally, specify resources if you want to customize
       resources: Object.values(models).map(model => ({
         resource: model,
-        options: { /* Customize model display, e.g., navigation, properties */ },
+        options: {}, // Add customization here if needed
       })),
     });
 

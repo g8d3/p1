@@ -20,7 +20,7 @@ const sequelize = new Sequelize({
 async function initialize() {
   try {
     // Sync database and infer models
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: true });
     
     // Debug: Log inferred models
     console.log('Inferred models:', Object.keys(sequelize.models));

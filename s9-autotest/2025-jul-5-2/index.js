@@ -3,12 +3,16 @@ import AdminJSExpress from '@adminjs/express';
 import AdminJSSequelize from '@adminjs/sequelize';
 import express from 'express';
 import { Sequelize, DataTypes } from 'sequelize';
+import livereload from 'connect-livereload';
 
 // Register Sequelize adapter
 AdminJS.registerAdapter(AdminJSSequelize);
 
 // Initialize Express app
 const app = express();
+
+// Apply LiveReload middleware
+app.use(livereload({ port: 35729 }));
 
 // Connect to SQLite database
 const sequelize = new Sequelize({
@@ -83,11 +87,6 @@ async function initialize() {
 
     // Serve static files for LiveReload
     app.use(express.static('public'));
-
-    // Add LiveReload server
-    const livereload = require('livereload');
-    const lrserver = livereload.createServer();
-    lrserver.watch(['./public', './index.js']);
 
     // Start server
     app.listen(3000, () => console.log('AdminJS at http://localhost:3000/admin'));

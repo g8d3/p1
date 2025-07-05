@@ -14,7 +14,7 @@ const app = express();
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: './db/a.db',
-  logging: console.log, // Enable Sequelize query logging
+  logging: console.log, // Enable query logging
 });
 
 // Initialize AdminJS with inferred models
@@ -24,15 +24,13 @@ async function initialize() {
     await sequelize.authenticate();
     console.log('Database connection successful');
 
+    // Fetch table schemas manually
+    const tables = await sequelize.getQueryInterface().showAllSchemas();
+    console.log('Table schemas:', tables.map(t => t.tableName));
+
     // Sync database without dropping tables
     await sequelize.sync({ force: false });
     console.log('Inferred models:', Object.keys(sequelize.models));
-
-    // Check if models are empty and log table names manually
-    if (Object.keys(sequelize.models).length === 0) {
-      const tables = await sequelize.query('SELECT name FROM sqlite_master WHERE type="table";');
-      console.log('Database tables:', tables[0].map(t => t.name));
-    }
 
     // Initialize AdminJS
     const adminJs = new AdminJS({

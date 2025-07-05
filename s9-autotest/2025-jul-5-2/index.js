@@ -82,6 +82,11 @@ async function initialize() {
     // Serve static files for LiveReload
     app.use(express.static('public'));
 
+    // Add LiveReload server
+    const livereload = require('livereload');
+    const lrserver = livereload.createServer();
+    lrserver.watch(['./public', './index.js']);
+    
     // Start server
     app.listen(3000, () => console.log('AdminJS at http://localhost:3000/admin'));
   } catch (err) {

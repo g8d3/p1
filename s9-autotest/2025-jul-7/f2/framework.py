@@ -10,58 +10,6 @@ from sqlalchemy import inspect, create_engine, MetaData
 # This instance will be initialized with the Flask app later.
 db = SQLAlchemy()
 
-def create_sample_db(db_path):
-    """
-    Creates a sample SQLite database with 'users' and 'products' tables
-    and populates them with some initial data.
-    This function is useful for testing the dynamic admin interface.
-    """
-    # Remove existing database file if it exists to ensure a fresh start
-    if os.path.exists(db_path):
-        os.remove(db_path)
-        print(f"Removed existing database: {db_path}")
-
-    # Create a temporary Flask app context to initialize SQLAlchemy and create tables
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-
-    with app.app_context():
-        # Define simple SQLAlchemy models for demonstration purposes
-        class User(db.Model):
-            __tablename__ = 'users' # Explicitly set table name
-            id = db.Column(db.Integer, primary_key=True)
-            name = db.Column(db.String(80), unique=True, nullable=False)
-            email = db.Column(db.String(120), unique=True, nullable=False)
-
-            def __repr__(self):
-                return f'<User {self.name}>'
-
-        class Product(db.Model):
-            __tablename__ = 'products' # Explicitly set table name
-            id = db.Column(db.Integer, primary_key=True)
-            name = db.Column(db.String(80), unique=True, nullable=False)
-            price = db.Column(db.Float, nullable=False)
-
-            def __repr__(self):
-                return f'<Product {self.name}>'
-
-        # Create all defined tables in the database
-        db.create_all()
-
-        # Add some sample data to the tables
-        user1 = User(name='Alice', email='alice@example.com')
-        user2 = User(name='Bob', email='bob@example.com')
-        product1 = Product(name='Laptop', price=1200.00)
-        product2 = Product(name='Mouse', price=25.50)
-        product3 = Product(name='Keyboard', price=75.00)
-
-        db.session.add_all([user1, user2, product1, product2, product3])
-        db.session.commit()
-    print(f"Sample database '{db_path}' created and populated successfully.")
-
-
 def init(db_url):
     """
     Initializes a Flask application with Flask-Admin, connecting to the

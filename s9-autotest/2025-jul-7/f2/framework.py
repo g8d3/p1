@@ -5,6 +5,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy import inspect, create_engine, MetaData
+from sqlalchemy.orm import RelationshipProperty # Import RelationshipProperty to identify relationship properties
 
 # Initialize SQLAlchemy instance globally.
 # This instance will be initialized with the Flask app later.
@@ -14,7 +15,8 @@ def init(db_url):
     """
     Initializes a Flask application with Flask-Admin, connecting to the
     specified database URL. It dynamically creates admin views for all
-    tables found in the database schema.
+    tables found in the database schema, ensuring relationship columns
+    and inputs are properly displayed.
 
     Args:
         db_url (str): The SQLAlchemy database connection string (e.g., 'sqlite:///a.db').
@@ -51,10 +53,35 @@ def init(db_url):
                 try:
                     # Get the dynamically mapped class for the current table
                     mapped_class = Base.classes[table_name]
+                    # Use SQLAlchemy's inspect to get details about the mapped class
+                    inspector = inspect(mapped_class)
+
+                    # Get all column keys (e.g., 'id', 'name', 'user_id')
+                    column_keys = [c.key for c in inspector.columns]
+
+                    # Get all relationship property keys (e.g., 'user', 'posts')
+                    # We check for RelationshipProperty type to identify actual relationships
+                    relationship_keys = [p.key for p in inspector.iterate_properties if isinstance(p, RelationshipProperty)]
+
+                    # Combine all column keys and relationship keys.
+                    # This ensures that both regular database columns and the
+                    # dynamically created relationship attributes are included
+                    # in the Flask-Admin views.
+                    # We use a list comprehension to avoid adding duplicate keys
+                    # if a relationship key somehow matched a column key (unlikely).
+                    all_display_and_form_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
+
                     # Add a ModelView for the mapped class.
-                    # The name in the admin interface will be the capitalized table name.
-                    admin.add_view(ModelView(mapped_class, db.session, name=table_name.capitalize()))
-                    print(f"  - Successfully added view for table: '{table_name}'")
+                    # We explicitly set column_list and form_columns to ensure
+                    # relationships are displayed and have input fields.
+                    admin.add_view(ModelView(
+                        mapped_class,
+                        db.session,
+                        name=table_name.capitalize(),
+                        column_list=all_display_and_form_columns, # For displaying columns in the list view
+                        form_columns=all_display_and_form_columns # For displaying inputs in create/edit forms
+                    ))
+                    print(f"  - Successfully added view for table: '{table_name}' with columns: {all_display_and_form_columns}")
                 except KeyError:
                     print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping.")
                 except Exception as e:
@@ -71,4 +98,3 @@ def init(db_url):
     print("Press Ctrl+C to stop the server.")
     print("---------------------------------------------------------")
     app.run(debug=True)
-

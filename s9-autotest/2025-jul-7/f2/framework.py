@@ -27,11 +27,10 @@ def init(db_url):
     print(f"Framework base directory: {base_dir}")
 
     # Let SQLAlchemy handle the DB URL as provided
-    app_db_uri = db_url
-    print(f"Using DB URI: {app_db_uri}")
+    print(f"Using DB URI: {db_url}")
 
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = app_db_uri
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     # A secret key is required for Flask sessions, which Flask-Admin uses.
     app.config['SECRET_KEY'] = 'your_super_secret_key_here_please_change_this_in_production'
@@ -48,7 +47,7 @@ def init(db_url):
         try:
             # Reflect the database schema. This populates db.metadata with table information.
             db.metadata.reflect(bind=db.engine)
-            print(f"Successfully reflected database schema from: {app_db_uri}")
+            print(f"Successfully reflected database schema from: {db_url}")
             print(f"Tables found in db.metadata after reflection: {list(db.metadata.tables.keys())}")
 
             # Use automap_base to create Python classes from the reflected database tables.

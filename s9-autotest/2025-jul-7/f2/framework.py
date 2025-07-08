@@ -26,20 +26,9 @@ def init(db_url):
     base_dir = os.path.abspath(os.path.dirname(__file__))
     print(f"Framework base directory: {base_dir}")
 
-    # For SQLite, ensure the database path is absolute
-    if db_url.startswith('sqlite:///'):
-        # Extract just the filename from the db_url (e.g., 'app_data.db')
-        db_filename = db_url.replace('sqlite:///', '')
-        # Construct the absolute path to the database file
-        absolute_db_path = os.path.join(base_dir, db_filename)
-        # Update the db_url to use the absolute path
-        app_db_uri = f'sqlite:///{absolute_db_path}'
-        print(f"Using absolute SQLite DB URI: {app_db_uri}")
-    else:
-        # For other databases (PostgreSQL, MySQL, etc.), use the URL as provided
-        app_db_uri = db_url
-        print(f"Using provided DB URI: {app_db_uri}")
-
+    # Let SQLAlchemy handle the DB URL as provided
+    app_db_uri = db_url
+    print(f"Using DB URI: {app_db_uri}")
 
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = app_db_uri

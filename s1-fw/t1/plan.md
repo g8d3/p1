@@ -1,4 +1,4 @@
 ---
 description: 'Description of the custom chat mode.'
-tools: [ 'tool1', 'tool2' ]
+tools: ['changes', 'codebase', 'editFiles', 'extensions', 'fetch', 'findTestFiles', 'githubRepo', 'new', 'openSimpleBrowser', 'problems', 'runCommands', 'runNotebooks', 'runTasks', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI', 'playwright-brave']
 ---

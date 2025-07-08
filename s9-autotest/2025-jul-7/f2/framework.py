@@ -41,55 +41,65 @@ def init(db_url):
             # Reflect the database schema. This populates db.metadata with table information.
             db.metadata.reflect(bind=db.engine)
             print(f"Successfully reflected database schema from: {db_url}")
+            print(f"Tables found in db.metadata after reflection: {list(db.metadata.tables.keys())}")
 
             # Use automap_base to create Python classes from the reflected database tables.
             Base = automap_base(metadata=db.metadata)
             # Prepare the automap base, mapping tables to classes
             Base.prepare(db.engine, reflect=True)
+            print(f"Classes mapped by automap_base: {list(Base.classes.keys())}")
+
 
             # Iterate through all reflected tables and add them as ModelViews to Flask-Admin
             print("Attempting to add admin views for detected tables:")
-            for table_name in db.metadata.tables.keys():
-                try:
-                    # Get the dynamically mapped class for the current table
-                    mapped_class = Base.classes[table_name]
-                    # Use SQLAlchemy's inspect to get details about the mapped class
-                    inspector = inspect(mapped_class)
+            if not db.metadata.tables:
+                print("  - No tables were reflected from the database. Please ensure your database has tables.")
+            else:
+                for table_name in db.metadata.tables.keys():
+                    try:
+                        # Get the dynamically mapped class for the current table
+                        mapped_class = Base.classes[table_name]
+                        print(f"  - Processing table: '{table_name}'")
+                        # Use SQLAlchemy's inspect to get details about the mapped class
+                        inspector = inspect(mapped_class)
 
-                    # Get all column keys (e.g., 'id', 'name', 'user_id')
-                    column_keys = [c.key for c in inspector.columns]
+                        # Get all column keys (e.g., 'id', 'name', 'user_id')
+                        column_keys = [c.key for c in inspector.columns]
+                        print(f"    - Columns detected for '{table_name}': {column_keys}")
 
-                    # Get all relationship property keys (e.g., 'user', 'posts')
-                    # We check for RelationshipProperty type to identify actual relationships
-                    relationship_keys = [p.key for p in inspector.iterate_properties if isinstance(p, RelationshipProperty)]
+                        # Get all relationship property keys (e.g., 'user', 'posts')
+                        # We check for RelationshipProperty type to identify actual relationships
+                        relationship_keys = [p.key for p in inspector.iterate_properties if isinstance(p, RelationshipProperty)]
+                        print(f"    - Relationships detected for '{table_name}': {relationship_keys}")
 
-                    # Combine all column keys and relationship keys.
-                    # This ensures that both regular database columns and the
-                    # dynamically created relationship attributes are included
-                    # in the Flask-Admin views.
-                    # We use a list comprehension to avoid adding duplicate keys
-                    # if a relationship key somehow matched a column key (unlikely).
-                    all_display_and_form_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
 
-                    # Add a ModelView for the mapped class.
-                    # We explicitly set column_list and form_columns to ensure
-                    # relationships are displayed and have input fields.
-                    admin.add_view(ModelView(
-                        mapped_class,
-                        db.session,
-                        name=table_name.capitalize(),
-                        column_list=all_display_and_form_columns, # For displaying columns in the list view
-                        form_columns=all_display_and_form_columns # For displaying inputs in create/edit forms
-                    ))
-                    print(f"  - Successfully added view for table: '{table_name}' with columns: {all_display_and_form_columns}")
-                except KeyError:
-                    print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping.")
-                except Exception as e:
-                    print(f"  - Error adding view for table '{table_name}': {e}")
+                        # Combine all column keys and relationship keys.
+                        # This ensures that both regular database columns and the
+                        # dynamically created relationship attributes are included
+                        # in the Flask-Admin views.
+                        # We use a list comprehension to avoid adding duplicate keys
+                        # if a relationship key somehow matched a column key (unlikely).
+                        all_display_and_form_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
+
+                        # Add a ModelView for the mapped class.
+                        # We explicitly set column_list and form_columns to ensure
+                        # relationships are displayed and have input fields.
+                        admin.add_view(ModelView(
+                            mapped_class,
+                            db.session,
+                            name=table_name.capitalize(),
+                            column_list=all_display_and_form_columns, # For displaying columns in the list view
+                            form_columns=all_display_and_form_columns # For displaying inputs in create/edit forms
+                        ))
+                        print(f"  - Successfully added view for table: '{table_name}' with columns: {all_display_and_form_columns}")
+                    except KeyError:
+                        print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping. This usually means the table exists but wasn't mapped by automap_base.")
+                    except Exception as e:
+                        print(f"  - Error adding view for table '{table_name}': {e}")
 
         except Exception as e:
             print(f"Error reflecting database or adding views: {e}")
-            print("Please ensure the database URL is correct and the database exists.")
+            print("Please ensure the database URL is correct and the database exists and contains tables.")
 
     # Start the Flask development server.
     # debug=True enables debug mode, which provides helpful error messages and auto-reloads.

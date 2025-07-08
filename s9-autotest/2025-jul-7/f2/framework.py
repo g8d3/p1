@@ -16,7 +16,7 @@ def init(db_url):
     Initializes a Flask application with Flask-Admin, connecting to the
     specified database URL. It dynamically creates admin views for all
     tables found in the database schema, ensuring relationship columns
-    and inputs are properly displayed.
+    and inputs are properly displayed, compatible with Flask-Admin 1.6.1.
 
     Args:
         db_url (str): The SQLAlchemy database connection string (e.g., 'sqlite:///a.db').
@@ -91,35 +91,29 @@ def init(db_url):
                         relationship_keys = [p.key for p in inspector.iterate_properties if isinstance(p, RelationshipProperty)]
                         print(f"    - Relationships detected for '{table_name}': {relationship_keys}")
 
-
                         # Combine all column keys and relationship keys.
-                        # This ensures that both regular database columns and the
-                        # dynamically created relationship attributes are included
-                        # in the Flask-Admin views.
-                        # We use a list comprehension to avoid adding duplicate keys
-                        # if a relationship key somehow matched a column key (unlikely).
                         all_display_and_form_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
 
-                        # Add a ModelView for the mapped class.
-                        # We explicitly set column_list and form_columns to ensure
-                        # relationships are displayed and have input fields.
-                        admin.add_view(ModelView(
+                        # --- FIX for Flask-Admin 1.6.1 Compatibility ---
+                        # For older Flask-Admin versions, column_list and form_columns are attributes
+                        # of the ModelView class, not constructor arguments.
+                        # We create a dynamic ModelView class for each table.
+                        class DynamicModelView(ModelView):
+                            # Set column_list and form_columns as class attributes
+                            column_list = all_display_and_form_columns
+                            form_columns = all_display_and_form_columns
+
+                        # Add the dynamically created ModelView class
+                        admin.add_view(DynamicModelView(
                             mapped_class,
                             db.session,
-                            name=table_name.capitalize(),
-                            column_list=all_display_and_form_columns, # For displaying columns in the list view
-                            form_columns=all_display_and_form_columns # For displaying inputs in create/edit forms
+                            name=table_name.capitalize()
                         ))
+                        # --- END FIX ---
+
                         print(f"  - Successfully added view for table: '{table_name}' with columns: {all_display_and_form_columns}")
                     except KeyError:
                         print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping. This usually means the table exists but wasn't mapped by automap_base.")
-                    except TypeError as e:
-                        # Specifically catch TypeError for unexpected keyword arguments
-                        if "unexpected keyword argument 'column_list'" in str(e) or "unexpected keyword argument 'form_columns'" in str(e):
-                            print(f"  - ERROR: Flask-Admin ModelView for table '{table_name}' failed to initialize due to unexpected keyword arguments (column_list/form_columns).")
-                            print(f"    This strongly suggests your 'flask-admin' package is outdated. Please upgrade it using: pip install --upgrade flask-admin")
-                        else:
-                            print(f"  - Error adding view for table '{table_name}': {e}")
                     except Exception as e:
                         print(f"  - Error adding view for table '{table_name}': {e}")
 

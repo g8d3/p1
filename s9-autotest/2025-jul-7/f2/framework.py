@@ -94,19 +94,24 @@ def init(db_url):
                         # For column_list (display in table view), include both columns and relationships
                         all_display_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
 
-                        # For form_columns (inputs in create/edit forms), initially include only direct columns.
-                        # Flask-Admin usually handles simple relationships automatically if the foreign key is present.
-                        # Including relationship names directly in form_columns can cause issues in older versions.
+                        # For form_columns (inputs in create/edit forms), include only direct columns.
+                        # Flask-Admin usually handles simple foreign key columns automatically.
                         all_form_columns = column_keys
 
+                        # Explicitly exclude relationship names from the form altogether
+                        # This is to prevent the 'AttributeError: 'tuple' object has no attribute 'items''
+                        # which can occur when Flask-Admin 1.6.1 tries to build form fields for relationship objects.
+                        form_excluded_columns = relationship_keys
+
                         # --- FIX for Flask-Admin 1.6.1 Compatibility ---
-                        # For older Flask-Admin versions, column_list and form_columns are attributes
-                        # of the ModelView class, not constructor arguments.
+                        # For older Flask-Admin versions, column_list, form_columns, and form_excluded_columns
+                        # are attributes of the ModelView class, not constructor arguments.
                         # We create a dynamic ModelView class for each table.
                         class DynamicModelView(ModelView):
                             # Set column_list and form_columns as class attributes
                             column_list = all_display_columns
-                            form_columns = all_form_columns # Use the more restricted list for forms
+                            form_columns = all_form_columns
+                            form_excluded_columns = form_excluded_columns # Add this line
 
                         # Add the dynamically created ModelView class
                         admin.add_view(DynamicModelView(
@@ -116,7 +121,7 @@ def init(db_url):
                         ))
                         # --- END FIX ---
 
-                        print(f"  - Successfully added view for table: '{table_name}' for display: {all_display_columns} and form: {all_form_columns}")
+                        print(f"  - Successfully added view for table: '{table_name}' for display: {all_display_columns}, form: {all_form_columns}, and excluded: {form_excluded_columns}")
                     except KeyError:
                         print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping. This usually means the table exists but wasn't mapped by automap_base.")
                     except Exception as e:

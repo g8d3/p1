@@ -91,8 +91,13 @@ def init(db_url):
                         relationship_keys = [p.key for p in inspector.iterate_properties if isinstance(p, RelationshipProperty)]
                         print(f"    - Relationships detected for '{table_name}': {relationship_keys}")
 
-                        # Combine all column keys and relationship keys.
-                        all_display_and_form_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
+                        # For column_list (display in table view), include both columns and relationships
+                        all_display_columns = column_keys + [key for key in relationship_keys if key not in column_keys]
+
+                        # For form_columns (inputs in create/edit forms), initially include only direct columns.
+                        # Flask-Admin usually handles simple relationships automatically if the foreign key is present.
+                        # Including relationship names directly in form_columns can cause issues in older versions.
+                        all_form_columns = column_keys
 
                         # --- FIX for Flask-Admin 1.6.1 Compatibility ---
                         # For older Flask-Admin versions, column_list and form_columns are attributes
@@ -100,8 +105,8 @@ def init(db_url):
                         # We create a dynamic ModelView class for each table.
                         class DynamicModelView(ModelView):
                             # Set column_list and form_columns as class attributes
-                            column_list = all_display_and_form_columns
-                            form_columns = all_display_and_form_columns
+                            column_list = all_display_columns
+                            form_columns = all_form_columns # Use the more restricted list for forms
 
                         # Add the dynamically created ModelView class
                         admin.add_view(DynamicModelView(
@@ -111,7 +116,7 @@ def init(db_url):
                         ))
                         # --- END FIX ---
 
-                        print(f"  - Successfully added view for table: '{table_name}' with columns: {all_display_and_form_columns}")
+                        print(f"  - Successfully added view for table: '{table_name}' for display: {all_display_columns} and form: {all_form_columns}")
                     except KeyError:
                         print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping. This usually means the table exists but wasn't mapped by automap_base.")
                     except Exception as e:

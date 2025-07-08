@@ -20,10 +20,29 @@ def init(db_url):
 
     Args:
         db_url (str): The SQLAlchemy database connection string (e.g., 'sqlite:///a.db').
+                      This will be converted to an absolute path for SQLite.
     """
-    custom_instance_path = os.path.abspath(os.getcwd())
-    app = Flask(__name__, instance_path=custom_instance_path)
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    # Get the directory where this framework.py file is located
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    print(f"Framework base directory: {base_dir}")
+
+    # For SQLite, ensure the database path is absolute
+    if db_url.startswith('sqlite:///'):
+        # Extract just the filename from the db_url (e.g., 'app_data.db')
+        db_filename = db_url.replace('sqlite:///', '')
+        # Construct the absolute path to the database file
+        absolute_db_path = os.path.join(base_dir, db_filename)
+        # Update the db_url to use the absolute path
+        app_db_uri = f'sqlite:///{absolute_db_path}'
+        print(f"Using absolute SQLite DB URI: {app_db_uri}")
+    else:
+        # For other databases (PostgreSQL, MySQL, etc.), use the URL as provided
+        app_db_uri = db_url
+        print(f"Using provided DB URI: {app_db_uri}")
+
+
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = app_db_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     # A secret key is required for Flask sessions, which Flask-Admin uses.
     app.config['SECRET_KEY'] = 'your_super_secret_key_here_please_change_this_in_production'
@@ -40,7 +59,7 @@ def init(db_url):
         try:
             # Reflect the database schema. This populates db.metadata with table information.
             db.metadata.reflect(bind=db.engine)
-            print(f"Successfully reflected database schema from: {db_url}")
+            print(f"Successfully reflected database schema from: {app_db_uri}")
             print(f"Tables found in db.metadata after reflection: {list(db.metadata.tables.keys())}")
 
             # Use automap_base to create Python classes from the reflected database tables.
@@ -53,7 +72,7 @@ def init(db_url):
             # Iterate through all reflected tables and add them as ModelViews to Flask-Admin
             print("Attempting to add admin views for detected tables:")
             if not db.metadata.tables:
-                print("  - No tables were reflected from the database. Please ensure your database has tables.")
+                print("  - No tables were reflected from the database. This means the database file might be empty or inaccessible.")
             else:
                 for table_name in db.metadata.tables.keys():
                     try:
@@ -94,6 +113,13 @@ def init(db_url):
                         print(f"  - Successfully added view for table: '{table_name}' with columns: {all_display_and_form_columns}")
                     except KeyError:
                         print(f"  - Warning: No mapped class found for table '{table_name}'. Skipping. This usually means the table exists but wasn't mapped by automap_base.")
+                    except TypeError as e:
+                        # Specifically catch TypeError for unexpected keyword arguments
+                        if "unexpected keyword argument 'column_list'" in str(e) or "unexpected keyword argument 'form_columns'" in str(e):
+                            print(f"  - ERROR: Flask-Admin ModelView for table '{table_name}' failed to initialize due to unexpected keyword arguments (column_list/form_columns).")
+                            print(f"    This strongly suggests your 'flask-admin' package is outdated. Please upgrade it using: pip install --upgrade flask-admin")
+                        else:
+                            print(f"  - Error adding view for table '{table_name}': {e}")
                     except Exception as e:
                         print(f"  - Error adding view for table '{table_name}': {e}")
 

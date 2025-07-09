@@ -1,1 +1,8 @@
-Make a library that when this pseudo code is 
+Make a library that makes this pseudo code work:
+
+```
+import ll
+
+ll.init()
+```
+

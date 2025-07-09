@@ -3,6 +3,6 @@ Make a library that makes this pseudo code work:
 ```
 import ll
 
-ll.init()
+ll.init('Build a website ')
 ```
 

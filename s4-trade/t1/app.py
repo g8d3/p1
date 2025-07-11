@@ -18,9 +18,23 @@ def index():
         n = int(request.form.get('n', 10))
         durations = request.form.get('durations', '1d,4h,1h').split(',')
         quantities = request.form.get('quantities', '30').split(',')
-        # TODO: Call browsermcp scraping and analysis logic here
-        # For now, just pass config to results page
-        return render_template('results.html', n=n, durations=durations, quantities=quantities, categories=CATEGORIES, results=None)
+
+        # --- browsermcp scraping stub ---
+        # Replace this stub with actual browsermcp tool calls
+        results = []
+        for name, url in CATEGORIES:
+            # Simulate extracted data for demo
+            category_results = []
+            for i in range(n):
+                category_results.append({
+                    'coin': f'Coin_{i+1}_{name}',
+                    'change_24h': f'{5+i*2:.2f}%',
+                    'vol_24h': f'{10000+i*5000}',
+                    'link': f'{url}/en/coins/coin_{i+1}_{name.lower().replace(" ", "_")}'
+                })
+            results.append({'category': name, 'items': category_results})
+
+        return render_template('results.html', n=n, durations=durations, quantities=quantities, categories=CATEGORIES, results=results)
     return render_template('index.html', categories=CATEGORIES)
 
 @app.route('/results')

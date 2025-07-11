@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Extraction Results</title>
+</head>
+<body>
+    <h1>Extraction & Analysis Results</h1>
+    <p>Top N: {{ n }}</p>
+    <p>Candle Durations: {{ durations|join(', ') }}</p>
+    <p>Candle Quantities: {{ quantities|join(', ') }}</p>
+    <h3>Categories:</h3>
+    <ul>
+        {% for name, url in categories %}
+        <li>{{ name }} (<a href="{{ url }}" target="_blank">view</a>)</li>
+        {% endfor %}
+    </ul>
+    <hr>
+    {% if results %}
+        <!-- Results table will go here -->
+    {% else %}
+        <p>No results yet. Integrate browsermcp logic to display extracted data.</p>
+    {% endif %}
+    <a href="{{ url_for('index') }}">Back</a>
+</body>
+</html>

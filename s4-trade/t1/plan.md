@@ -1,4 +1,4 @@
-here are some controls I use with css selector:
+may not be helpful but here are some controls I use with css selector:
 
 sort by 24h change:
 body > div.container > main > div > div:nth-child(5) > div:nth-child(1) > div.tw-overflow-x-auto.\32 lg\:tw-overflow-x-visible.\32 lg\:tw-flex.\32 lg\:tw-justify-center > table > thead > tr:nth-child(1) > th:nth-child(7)
@@ -11,7 +11,7 @@ body > div.container > main > div > div:nth-child(5) > div:nth-child(1) > div.tw
 
 I would like to simplify these selectors, I would prefer something like "table tr td:nth-child(n) a"
 
-help me implement and complete this rough crypto trading strategy:
+Main goal: help me implement and complete this rough crypto trading strategy:
 
 1. using browsermcp(tool) get coingecko N biggest gainers by category for each of:
 
@@ -26,3 +26,5 @@ https://www.coingecko.com/en/categories/meme-token
 3. for each of top N gainers, get ohlcv using coingecko api, api key can be set using env var, make candle durations and candle quantities configurables by user, this means many durations and many quantities.
 
 4. use data to find out support and resistance levels for different candle durations
+
+I do not know how to present this to admin and users, I suppose a web app is the best way, but you can also propose.

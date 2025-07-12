@@ -14,3 +14,6 @@ developers can:
 - config LLMs: api url, model, api key
 - config mcp servers(app is mcp client)
 - enable or disable app as mcp server
+
+features to skip on MVP:
+- app as mcp server

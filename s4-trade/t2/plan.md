@@ -1,6 +1,6 @@
 ai chat application with model context protocol support, both as server and client.
 
-app gets text and build fullstack apps including smart contracts.
+app gets text and build fullstack apps(let's call them built apps) including smart contracts.
 
 types of users: admins and developers
 

@@ -15,7 +15,7 @@ developers can:
 - config mcp servers(app is mcp client)
 - enable or disable app as mcp server
 
-both the app and built apps should have the same base. And both should allow the right type of user to handle auth, access and tests
+both the app and built apps should have the same base. And both should allow the right type of user to handle auth, access, logs and tests
 
 features to skip on MVP:
 - app as mcp server

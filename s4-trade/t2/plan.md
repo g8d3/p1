@@ -15,7 +15,7 @@ developers can:
 - config mcp servers(app is mcp client)
 - enable or disable app as mcp server
 
-both the app and built 
+both the app and built apps should have the same base. And 
 
 features to skip on MVP:
 - app as mcp server

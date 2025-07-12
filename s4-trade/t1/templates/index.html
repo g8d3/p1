@@ -20,5 +20,21 @@
         </ul>
         <button type="submit">Extract & Analyze</button>
     </form>
+
+    <hr>
+    <h2>Edit MCP Server Config</h2>
+    <form method="post">
+        <textarea name="mcp_config" rows="12" cols="80">{{ mcp_config }}</textarea><br>
+        <button type="submit" name="save_mcp_config">Save MCP Config</button>
+    </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+        {% for category, message in messages %}
+          <li><strong>{{ category }}:</strong> {{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
 </body>
 </html>

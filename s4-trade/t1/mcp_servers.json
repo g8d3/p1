@@ -1,0 +1,15 @@
+{
+	"servers": {
+		// "mcphub": {
+		// 	"url": "http://localhost:3000/mcp",
+		// 	"type": "http"
+		// },
+		"browsermcp": {
+			"command": "npx",
+			"args": [
+				"@browsermcp/mcp@latest"
+			]
+		}
+	},
+	"inputs": []
+}

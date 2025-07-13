@@ -11,7 +11,7 @@ body > div.container > main > div > div:nth-child(5) > div:nth-child(1) > div.tw
 
 I would like to simplify these selectors, I would prefer something like "table tr td:nth-child(n) a"
 
-Main goal: help me implement and complete this rough crypto trading strategy:
+Main goal: help me implement and complete this rough crypto trading strategy in a web app:
 
 1. using browsermcp(tool) get coingecko N biggest gainers by category for each of:
 

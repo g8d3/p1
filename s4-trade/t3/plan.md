@@ -12,4 +12,6 @@ application might need admin interface but I am not sure what functions to inclu
 
 ## code
 
+folders: backend, frontend
+
 ## ui and functions

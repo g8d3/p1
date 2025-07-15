@@ -12,8 +12,11 @@ application might need admin interface but I am not sure what functions to inclu
 
 ## code
 
+Production ready code with actual connections and configs via UI and env vars.
+
 folders: backend, frontend
 files: readme
+
 
 
 ## ui and functions

@@ -41,6 +41,8 @@ with that code, it is enough to create a graphql or rest api according database 
 as for frontend, also defining a DSL would be great:
 
 ```html
+<div>
+</div>
 ```
 
 ## functions

@@ -44,7 +44,7 @@ as for frontend, also defining a DSL would be great:
 mf('http://localhost:3000')
 ```
 
-is enough to get an admin interface with this pseudo html:
+is enough to get an admin interface with :
 
 ```
 

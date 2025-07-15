@@ -21,10 +21,13 @@ playwright test cases.
 
 declarative code, with clear separation between code and data.
 
-using metaprogramming and creating a domain specifi language.
+using metaprogramming and creating a domain specific language.
+
+for example instead of defining each route in a flask or fastapi app do something like:
 
 ```python
-
+import mf
+mf.init('./a.db')
 ```
 
 ## ui and functions

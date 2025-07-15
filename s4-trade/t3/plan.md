@@ -19,6 +19,8 @@ files: readme and all others needed for full production code
 
 playwright test cases.
 
-declarative code
+declarative code, or at least clear separation between code and data.
+
+
 
 ## ui and functions

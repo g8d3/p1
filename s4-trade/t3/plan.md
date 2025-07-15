@@ -30,6 +30,12 @@ import mf
 mf.init('./a.db')
 ```
 
+or:
+
+```shell
+mf a.db
+```
+
 with that code, it is enough to create a graphql or rest api according database schema
 
 as for frontend, also defining a DSL would be great:

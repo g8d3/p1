@@ -44,4 +44,10 @@ as for frontend, also defining a DSL would be great:
 mf('http://localhost:3000')
 ```
 
+or
+
+```shell
+mf
+```
+
 ## functions

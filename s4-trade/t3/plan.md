@@ -17,6 +17,8 @@ Production ready code with actual data connections and configs via UI and env va
 folders: backend, frontend
 files: readme
 
+playwright test cases.
+
 
 
 ## ui and functions

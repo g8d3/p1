@@ -30,4 +30,6 @@ import mf
 mf.init('./a.db')
 ```
 
+with that code, it is enough 
+
 ## ui and functions

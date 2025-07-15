@@ -21,7 +21,7 @@ playwright test cases.
 
 declarative code, with clear separation between code and data.
 
-declarative but also concise, for example instead of defining all CRUDs use or create a library that lets this code run:
+using metaprogramming and creating a domain specifi language.
 
 ```python
 

@@ -1,0 +1,3 @@
+build in this folder: /home/vuos/code/p1/s4-trade/t3/
+
+give an idea of an application that helps crypto traders find good traders and tokens on solana and evms.

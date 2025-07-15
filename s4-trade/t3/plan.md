@@ -21,7 +21,7 @@ playwright test cases.
 
 declarative code, with clear separation between code and data.
 
-using metaprogramming and creating a domain specific language.
+using metaprogramming and creating a domain specific language(DSL).
 
 for example instead of defining each route in a flask or fastapi app do something like:
 
@@ -32,4 +32,9 @@ mf.init('./a.db')
 
 with that code, it is enough to create a graphql or rest api according database schema
 
-## ui and functions
+as for frontend, also defining a DSL would be great:
+
+```html
+```
+
+## functions

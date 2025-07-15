@@ -24,6 +24,7 @@ declarative code, or at least clear separation between code and data.
 declarative but also concise, for example instead of defining all CRUDs use or create a library that lets this code run:
 
 ```python
+
 ```
 
 ## ui and functions

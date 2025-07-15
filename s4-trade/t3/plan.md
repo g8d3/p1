@@ -41,7 +41,7 @@ with that code, it is enough to create a graphql or rest api according database 
 as for frontend, also defining a DSL would be great:
 
 ```js
-mf('http://localhost:3000')
+mf('http://localhost:3000/api')
 ```
 
 is enough to get an reactive admin interface with:

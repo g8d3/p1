@@ -30,6 +30,6 @@ import mf
 mf.init('./a.db')
 ```
 
-with that code, it is enough 
+with that code, it is enough to create a graphql or rest api according database schema
 
 ## ui and functions

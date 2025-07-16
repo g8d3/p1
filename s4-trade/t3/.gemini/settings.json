@@ -1,10 +1,20 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ]
-    }
+    // no support for js eval
+    // "playwright": {
+    //   "command": "npx",
+    //   "args": [
+    //     "@playwright/mcp@latest"
+    //   ]
+    // }
+
+    // failed finding browser executable
+    // "playwright": {
+    //   "name": "playwright",
+    //   "command": "npx",
+    //   "args": [
+    //     "@executeautomation/playwright-mcp-server"
+    //   ]
+    // }
   }
 }

@@ -15,13 +15,13 @@
     // steel, no clear mcp
 
     // failed finding browser executable
-    // "playwright": {
-    //   "name": "playwright",
-    //   "command": "npx",
-    //   "args": [
-    //     "@executeautomation/playwright-mcp-server"
-    //   ]
-    // }
+    "playwright": {
+      "name": "playwright",
+      "command": "npx",
+      "args": [
+        "@executeautomation/playwright-mcp-server"
+      ]
+    }
     // automcp?: https://grok.com/share/bGVnYWN5_a71c63d7-fcae-4753-a8f0-041bee68dc20
     // 
     // hangwin/mcp-chrome and browsermcp/mcp use current user browser, skipping

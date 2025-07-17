@@ -44,10 +44,4 @@ as for frontend, also defining a DSL would be great:
 mf('http://localhost:3000/api')
 ```
 
-is enough to get an reactive admin interface with:
-
-```js
-
-```
-
-## functions
+is enough to get an reactive admin interface. From the libraries I tested react admin or adminjs could be starting candidates.

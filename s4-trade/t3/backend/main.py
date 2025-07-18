@@ -28,6 +28,7 @@ def get_session():
 
 # Define your SQLModel schemas here
 class Trader(SQLModel, table=True):
+    __tablename__ = "trader"
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     solana_address: Optional[str] = None

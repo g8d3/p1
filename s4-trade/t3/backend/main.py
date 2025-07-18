@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, create_engine, Session, select
 from typing import Optional, List
 from pydantic import Field
 import os
+from contextlib import asynccontextmanager
 
 # Environment variable for database URL
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
@@ -12,11 +13,14 @@ engine = create_engine(DATABASE_URL, echo=True)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
-app = FastAPI()
-
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up...")
     create_db_and_tables()
+    yield
+    print("Shutting down...")
+
+app = FastAPI(lifespan=lifespan)
 
 def get_session():
     with Session(engine) as session:

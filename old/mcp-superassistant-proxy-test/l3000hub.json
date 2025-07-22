@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "l3000/mcp": {
+        "command": "npx",
+        "args": ["mcp-remote@next", "http://localhost:3000/mcp"]
+    }
+
+  }
+}

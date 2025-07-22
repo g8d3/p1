@@ -1,0 +1,6 @@
+name: Automated Testing Platform 🧪
+
+entities:
+  User 👤:
+    authenticable: true
+    

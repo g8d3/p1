@@ -1,0 +1,728 @@
+warning: virtual workspace defaulting to `resolver = "1"` despite one or more workspace members being on edition 2021 which implies `resolver = "2"`
+note: to keep the current resolver, specify `workspace.resolver = "1"` in the workspace root's manifest
+note: to use the edition 2021 resolver, specify `workspace.resolver = "2"` in the workspace root's manifest
+note: for more details see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
+   Compiling my_launchpad v0.1.0 (/home/vuos/code/p1/s3-web3-w/t3/my_launchpad/programs/my_launchpad)
+error[E0425]: cannot find value `ID` in this scope
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^ not found in this scope
+  |
+  = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing one of these items
+  |
+1 + use crate::ID;
+  |
+1 + use crate::dex::token::ID;
+  |
+1 + use crate::launchpad::ID;
+  |
+1 + use anchor_lang::system_program::ID;
+  |
+    and 28 other candidates
+
+error[E0425]: cannot find value `ID` in this scope
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^ not found in this scope
+  |
+  = help: consider importing one of these items:
+          crate::ID
+          crate::dex::token::ID
+          crate::launchpad::ID
+          anchor_lang::system_program::ID
+          anchor_spl::associated_token::ID
+          anchor_spl::token::ID
+          anchor_spl::token_interface::ID
+          solana_program::bpf_loader::ID
+          solana_program::bpf_loader_deprecated::ID
+          solana_program::bpf_loader_upgradeable::ID
+          solana_program::config::program::ID
+          solana_program::ed25519_program::ID
+          solana_program::feature::ID
+          solana_program::incinerator::ID
+          solana_program::loader_v4::ID
+          solana_program::secp256k1_program::ID
+          solana_program::stake::config::ID
+          solana_program::stake::program::ID
+          solana_program::system_program::ID
+          solana_program::sysvar::ID
+          solana_program::sysvar::epoch_rewards::ID
+          solana_program::sysvar::epoch_schedule::ID
+          solana_program::sysvar::fees::ID
+          solana_program::sysvar::instructions::ID
+          solana_program::sysvar::last_restart_slot::ID
+          solana_program::sysvar::recent_blockhashes::ID
+          solana_program::sysvar::rent::ID
+          solana_program::sysvar::rewards::ID
+          solana_program::sysvar::slot_hashes::ID
+          solana_program::sysvar::slot_history::ID
+          solana_program::sysvar::stake_history::ID
+          solana_program::vote::program::ID
+  = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0412]: cannot find type `TokenData` in this scope
+   --> programs/my_launchpad/src/dex.rs:121:36
+    |
+121 |     pub token_data: Account<'info, TokenData>,
+    |                                    ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct through its public re-export
+    |
+1   + use crate::TokenData;
+    |
+
+error[E0603]: function import `initialize` is private
+  --> programs/my_launchpad/src/lib.rs:17:20
+   |
+17 |         launchpad::initialize(ctx, fee_percentage)
+   |                    ^^^^^^^^^^ private function import
+   |
+note: the function import `initialize` is defined here...
+  --> programs/my_launchpad/src/launchpad.rs:6:1
+   |
+6  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `initialize` which is defined here
+  --> programs/my_launchpad/src/launchpad.rs:11:5
+   |
+11 |     pub fn initialize(ctx: Context<Initialize>, fee_percentage: u64) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+17 |         crate::launchpad::launchpad::initialize(ctx, fee_percentage)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `create_token` is private
+  --> programs/my_launchpad/src/lib.rs:28:20
+   |
+28 |         launchpad::create_token(ctx, name, symbol, uri, initial_supply, creation_fee)
+   |                    ^^^^^^^^^^^^ private function import
+   |
+note: the function import `create_token` is defined here...
+  --> programs/my_launchpad/src/launchpad.rs:6:1
+   |
+6  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `create_token` which is defined here
+  --> programs/my_launchpad/src/launchpad.rs:20:5
+   |
+20 | /     pub fn create_token(
+21 | |         ctx: Context<CreateToken>,
+22 | |         name: String,
+23 | |         symbol: String,
+...  |
+77 | |         Ok(())
+78 | |     }
+   | |_____^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+28 |         crate::launchpad::launchpad::create_token(ctx, name, symbol, uri, initial_supply, creation_fee)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `buy_tokens` is private
+  --> programs/my_launchpad/src/lib.rs:32:20
+   |
+32 |         launchpad::buy_tokens(ctx, amount)
+   |                    ^^^^^^^^^^ private function import
+   |
+note: the function import `buy_tokens` is defined here...
+  --> programs/my_launchpad/src/launchpad.rs:6:1
+   |
+6  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `buy_tokens` which is defined here
+  --> programs/my_launchpad/src/launchpad.rs:81:5
+   |
+81 |     pub fn buy_tokens(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+32 |         crate::launchpad::launchpad::buy_tokens(ctx, amount)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `reinvest_fees` is private
+   --> programs/my_launchpad/src/lib.rs:36:20
+    |
+36  |         launchpad::reinvest_fees(ctx, amount)
+    |                    ^^^^^^^^^^^^^ private function import
+    |
+note: the function import `reinvest_fees` is defined here...
+   --> programs/my_launchpad/src/launchpad.rs:6:1
+    |
+6   | #[program]
+    | ^^^^^^^^^^
+note: ...and refers to the function `reinvest_fees` which is defined here
+   --> programs/my_launchpad/src/launchpad.rs:123:5
+    |
+123 |     pub fn reinvest_fees(ctx: Context<ReinvestFees>, amount: u64) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+    = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+    |
+36  |         crate::launchpad::launchpad::reinvest_fees(ctx, amount)
+    |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `initialize_dex` is private
+  --> programs/my_launchpad/src/lib.rs:41:14
+   |
+41 |         dex::initialize_dex(ctx, swap_fee)
+   |              ^^^^^^^^^^^^^^ private function import
+   |
+note: the function import `initialize_dex` is defined here...
+  --> programs/my_launchpad/src/dex.rs:4:1
+   |
+4  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `initialize_dex` which is defined here
+  --> programs/my_launchpad/src/dex.rs:9:5
+   |
+9  |     pub fn initialize_dex(ctx: Context<InitializeDex>, swap_fee: u64) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+41 |         crate::dex::dex::initialize_dex(ctx, swap_fee)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `migrate_token` is private
+  --> programs/my_launchpad/src/lib.rs:45:14
+   |
+45 |         dex::migrate_token(ctx, liquidity_amount)
+   |              ^^^^^^^^^^^^^ private function import
+   |
+note: the function import `migrate_token` is defined here...
+  --> programs/my_launchpad/src/dex.rs:4:1
+   |
+4  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `migrate_token` which is defined here
+  --> programs/my_launchpad/src/dex.rs:18:5
+   |
+18 |     pub fn migrate_token(ctx: Context<MigrateToken>, liquidity_amount: u64) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+45 |         crate::dex::dex::migrate_token(ctx, liquidity_amount)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `swap_tokens` is private
+  --> programs/my_launchpad/src/lib.rs:49:14
+   |
+49 |         dex::swap_tokens(ctx, amount_in)
+   |              ^^^^^^^^^^^ private function import
+   |
+note: the function import `swap_tokens` is defined here...
+  --> programs/my_launchpad/src/dex.rs:4:1
+   |
+4  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `swap_tokens` which is defined here
+  --> programs/my_launchpad/src/dex.rs:52:5
+   |
+52 |     pub fn swap_tokens(ctx: Context<SwapTokens>, amount_in: u64) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+49 |         crate::dex::dex::swap_tokens(ctx, amount_in)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0603]: function import `distribute_revenue` is private
+  --> programs/my_launchpad/src/lib.rs:53:14
+   |
+53 |         dex::distribute_revenue(ctx, amount)
+   |              ^^^^^^^^^^^^^^^^^^ private function import
+   |
+note: the function import `distribute_revenue` is defined here...
+  --> programs/my_launchpad/src/dex.rs:4:1
+   |
+4  | #[program]
+   | ^^^^^^^^^^
+note: ...and refers to the function `distribute_revenue` which is defined here
+  --> programs/my_launchpad/src/dex.rs:94:5
+   |
+94 |     pub fn distribute_revenue(ctx: Context<DistributeRevenue>, amount: u64) -> Result<()> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ you could import this directly
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this function instead
+   |
+53 |         crate::dex::dex::distribute_revenue(ctx, amount)
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+warning: unexpected `cfg` condition value: `cpi`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+   = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+   = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-heap`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `solana`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `target_os` are: `aix`, `android`, `cuda`, `dragonfly`, `emscripten`, `espidf`, `freebsd`, `fuchsia`, `haiku`, `hermit`, `horizon`, `hurd`, `illumos`, `ios`, `l4re`, `linux`, `macos`, `netbsd`, `none`, `nto`, `nuttx`, `openbsd`, `psp`, `psx`, `redox`, `rtems`, `solaris`, `solid_asp3`, `teeos`, `trusty`, `tvos`, `uefi`, `unknown`, `visionos`, and `vita` and 6 more
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-panic`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `solana`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `target_os` are: `aix`, `android`, `cuda`, `dragonfly`, `emscripten`, `espidf`, `freebsd`, `fuchsia`, `haiku`, `hermit`, `horizon`, `hurd`, `illumos`, `ios`, `l4re`, `linux`, `macos`, `netbsd`, `none`, `nto`, `nuttx`, `openbsd`, `psp`, `psx`, `redox`, `rtems`, `solaris`, `solid_asp3`, `teeos`, `trusty`, `tvos`, `uefi`, `unknown`, `visionos`, and `vita` and 6 more
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `cpi`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+  = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-heap`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `solana`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `target_os` are: `aix`, `android`, `cuda`, `dragonfly`, `emscripten`, `espidf`, `freebsd`, `fuchsia`, `haiku`, `hermit`, `horizon`, `hurd`, `illumos`, `ios`, `l4re`, `linux`, `macos`, `netbsd`, `none`, `nto`, `nuttx`, `openbsd`, `psp`, `psx`, `redox`, `rtems`, `solaris`, `solid_asp3`, `teeos`, `trusty`, `tvos`, `uefi`, `unknown`, `visionos`, and `vita` and 6 more
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-panic`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `solana`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `target_os` are: `aix`, `android`, `cuda`, `dragonfly`, `emscripten`, `espidf`, `freebsd`, `fuchsia`, `haiku`, `hermit`, `horizon`, `hurd`, `illumos`, `ios`, `l4re`, `linux`, `macos`, `netbsd`, `none`, `nto`, `nuttx`, `openbsd`, `psp`, `psx`, `redox`, `rtems`, `solaris`, `solid_asp3`, `teeos`, `trusty`, `tvos`, `uefi`, `unknown`, `visionos`, and `vita` and 6 more
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+  = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `no-log-ix-name`
+ --> programs/my_launchpad/src/launchpad.rs:6:1
+  |
+6 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+  = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/launchpad.rs:136:10
+    |
+136 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/launchpad.rs:145:10
+    |
+145 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/launchpad.rs:162:10
+    |
+162 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/launchpad.rs:180:10
+    |
+180 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `cpi`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+  = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-heap`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `solana`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `target_os` are: `aix`, `android`, `cuda`, `dragonfly`, `emscripten`, `espidf`, `freebsd`, `fuchsia`, `haiku`, `hermit`, `horizon`, `hurd`, `illumos`, `ios`, `l4re`, `linux`, `macos`, `netbsd`, `none`, `nto`, `nuttx`, `openbsd`, `psp`, `psx`, `redox`, `rtems`, `solaris`, `solid_asp3`, `teeos`, `trusty`, `tvos`, `uefi`, `unknown`, `visionos`, and `vita` and 6 more
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-panic`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `solana`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `target_os` are: `aix`, `android`, `cuda`, `dragonfly`, `emscripten`, `espidf`, `freebsd`, `fuchsia`, `haiku`, `hermit`, `horizon`, `hurd`, `illumos`, `ios`, `l4re`, `linux`, `macos`, `netbsd`, `none`, `nto`, `nuttx`, `openbsd`, `psp`, `psx`, `redox`, `rtems`, `solaris`, `solid_asp3`, `teeos`, `trusty`, `tvos`, `uefi`, `unknown`, `visionos`, and `vita` and 6 more
+  = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+  = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+  = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `no-log-ix-name`
+ --> programs/my_launchpad/src/dex.rs:4:1
+  |
+4 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+  = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+  = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/dex.rs:107:10
+    |
+107 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/dex.rs:116:10
+    |
+116 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/dex.rs:136:10
+    |
+136 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/my_launchpad/src/dex.rs:153:10
+    |
+153 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+   = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+   = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+   = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+   = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `no-log-ix-name`
+  --> programs/my_launchpad/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `default`, `no-cpi`, `no-entrypoint`, and `no-idl`
+   = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+   = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `lamports`
+  --> programs/my_launchpad/src/launchpad.rs:34:13
+   |
+34 |         let lamports = rent.minimum_balance(Mint::LEN);
+   |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_lamports`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+error[E0502]: cannot borrow `ctx.accounts.launchpad` as immutable because it is also borrowed as mutable
+  --> programs/my_launchpad/src/launchpad.rs:36:11
+   |
+28 |         let launchpad = &mut ctx.accounts.launchpad;
+   |                         --------------------------- mutable borrow occurs here
+...
+36 |         **ctx.accounts.launchpad.to_account_info().try_borrow_mut_lamports()? += creation_fee;
+   |           ^^^^^^^^^^^^^^^^^^^^^^ immutable borrow occurs here
+37 |         launchpad.total_fees += creation_fee;
+   |         --------- mutable borrow later used here
+
+warning: unused variable: `launchpad`
+  --> programs/my_launchpad/src/launchpad.rs:83:13
+   |
+83 |         let launchpad = &mut ctx.accounts.launchpad;
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_launchpad`
+
+error[E0502]: cannot borrow `ctx.accounts.launchpad` as immutable because it is also borrowed as mutable
+   --> programs/my_launchpad/src/launchpad.rs:128:11
+    |
+124 |         let launchpad = &mut ctx.accounts.launchpad;
+    |                         --------------------------- mutable borrow occurs here
+...
+128 |         **ctx.accounts.launchpad.to_account_info().try_borrow_mut_lamports()? -= amount;
+    |           ^^^^^^^^^^^^^^^^^^^^^^ immutable borrow occurs here
+129 |         **ctx.accounts.treasury.to_account_info().try_borrow_mut_lamports()? += amount;
+130 |         launchpad.total_fees -= amount;
+    |         --------- mutable borrow later used here
+
+error[E0502]: cannot borrow `ctx.accounts.dex` as immutable because it is also borrowed as mutable
+   --> programs/my_launchpad/src/dex.rs:99:11
+    |
+95  |         let dex = &mut ctx.accounts.dex;
+    |                   --------------------- mutable borrow occurs here
+...
+99  |         **ctx.accounts.dex.to_account_info().try_borrow_mut_lamports()? -= amount;
+    |           ^^^^^^^^^^^^^^^^ immutable borrow occurs here
+100 |         **ctx.accounts.creator.to_account_info().try_borrow_mut_lamports()? += amount;
+101 |         dex.total_fees -= amount;
+    |         --- mutable borrow later used here
+
+Some errors have detailed explanations: E0412, E0425, E0502, E0603.
+For more information about an error, try `rustc --explain E0412`.
+warning: `my_launchpad` (lib) generated 49 warnings (15 duplicates)
+error: could not compile `my_launchpad` (lib) due to 14 previous errors; 49 warnings emitted

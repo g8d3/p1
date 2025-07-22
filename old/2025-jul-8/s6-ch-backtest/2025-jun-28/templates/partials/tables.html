@@ -1,0 +1,12 @@
+
+<h2>Tables</h2>
+<form id="create-table-form">
+    <input type="hidden" name="idx" id="table-idx">
+    <input name="table" placeholder="Table name">
+    <input name="columns" placeholder="e.g. id INTEGER PRIMARY KEY, name TEXT">
+    <button type="submit">Create Table</button>
+</form>
+<ul id="tables-list-ul">
+    <!-- Tables will be rendered here by JS -->
+</ul>
+<p id="no-tables-msg" style="display:none;">No tables found.</p>

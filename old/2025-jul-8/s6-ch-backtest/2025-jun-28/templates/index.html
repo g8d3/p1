@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DB Manager</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        .cred-list { margin-bottom: 2em; }
+        .table-list, .table-data { margin-top: 2em; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 0.5em; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+    <h1>Database Manager</h1>
+    <form id="add-cred-form" hx-post="/add-credential" hx-ext="json-enc" hx-trigger="submit" hx-target="#cred-list" hx-swap="none">
+        <label>Type:
+            <select name="type">
+                <option value="sqlite">SQLite</option>
+                <option value="postgres">Postgres</option>
+                <option value="mysql">MySQL</option>
+            </select>
+        </label>
+        <label>Host: <input name="host" placeholder="localhost"></label>
+        <label>Port: <input name="port" placeholder="5432"></label>
+        <label>User: <input name="user"></label>
+        <label>Password: <input name="password" type="password"></label>
+        <label>Database/File: <input name="database"></label>
+        <button type="submit">Save Credential</button>
+    </form>
+    <div id="cred-list" class="cred-list" hx-get="/credentials" hx-trigger="load, submit from:#add-cred-form">
+        <!-- Credentials will be loaded here by htmx -->
+    </div>
+    <div id="db-tables" class="table-list">
+        {% include 'partials/tables.html' %}
+    </div>
+    <div id="table-data" class="table-data"></div>
+    <script>
+    // Render tables list from JSON (keep this for now)
+    function renderTables(tables, idx) {
+        const ul = document.getElementById('tables-list-ul');
+        const noMsg = document.getElementById('no-tables-msg');
+        ul.innerHTML = '';
+        if (!tables.length) {
+            noMsg.style.display = '';
+            return;
+        }
+        noMsg.style.display = 'none';
+        tables.forEach(table => {
+            const li = document.createElement('li');
+            li.innerHTML = `<button onclick=\"loadTableData('${table}', ${idx})\">${table}</button> <button onclick=\"dropTable('${table}', ${idx})\">Drop</button>`;
+            ul.appendChild(li);
+        });
+    }
+    renderTables([], '');
+    </script>
+</body>
+</html>

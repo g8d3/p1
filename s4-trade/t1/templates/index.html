@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crypto Top Gainers Config</title>
+</head>
+<body>
+    <h1>Configure Top Gainers Extraction</h1>
+    <form method="post">
+        <label for="n">Top N gainers per category:</label>
+        <input type="number" id="n" name="n" value="10" min="1" max="100"><br><br>
+        <label for="durations">Candle durations (comma separated):</label>
+        <input type="text" id="durations" name="durations" value="1d,4h,1h"><br><br>
+        <label for="quantities">Candle quantities (comma separated):</label>
+        <input type="text" id="quantities" name="quantities" value="30"><br><br>
+        <h3>Categories:</h3>
+        <ul>
+            {% for name, url in categories %}
+            <li>{{ name }} (<a href="{{ url }}" target="_blank">view</a>)</li>
+            {% endfor %}
+        </ul>
+        <button type="submit">Extract & Analyze</button>
+    </form>
+
+    <hr>
+    <h2>Edit MCP Server Config</h2>
+    <form method="post">
+        <textarea name="mcp_config" rows="12" cols="80">{{ mcp_config }}</textarea><br>
+        <button type="submit" name="save_mcp_config">Save MCP Config</button>
+    </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+        {% for category, message in messages %}
+          <li><strong>{{ category }}:</strong> {{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+</body>
+</html>

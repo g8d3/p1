@@ -1,0 +1,37 @@
+<h2>Table: {{ table }}</h2>
+{% if error %}
+<div style="color: red; font-weight: bold;">Error: {{ error }}</div>
+{% endif %}
+<form hx-post="/insert-row" hx-target="#table-data" hx-swap="outerHTML">
+    <input type="hidden" name="idx" value="{{ idx }}">
+    <input type="hidden" name="table" value="{{ table }}">
+    {% for col in columns %}
+        <input type="hidden" name="columns" value="{{ col }}">
+        <input name="{{ col }}" placeholder="{{ col }}">
+    {% endfor %}
+    <button type="submit">Insert Row</button>
+</form>
+<table>
+    <thead>
+        <tr>
+            {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for cell in row %}<td>{{ cell }}</td>{% endfor %}
+            <td>
+                <form hx-post="/delete-row" hx-target="#table-data" hx-swap="outerHTML" style="display:inline">
+                    <input type="hidden" name="idx" value="{{ idx }}">
+                    <input type="hidden" name="table" value="{{ table }}">
+                    <input type="hidden" name="pk_col" value="{{ columns[0] }}">
+                    <input type="hidden" name="pk_val" value="{{ row[0] }}">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

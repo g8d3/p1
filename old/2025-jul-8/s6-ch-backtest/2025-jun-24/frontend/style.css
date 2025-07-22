@@ -1,0 +1,31 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f7f7fa;
+  margin: 0;
+  padding: 0;
+}
+#app {
+  max-width: 800px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 2rem;
+}
+h1 {
+  text-align: center;
+  color: #222;
+}
+#ranking-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+#ranking-table th, #ranking-table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: center;
+}
+#ranking-table th {
+  background: #f0f0f5;
+}

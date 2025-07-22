@@ -1,0 +1,4 @@
+Flask
+flask_sqlalchemy
+psycopg2-binary
+mysql-connector-python

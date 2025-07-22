@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CCXT Playground for interacting with cryptocurrency exchanges">
+    <title>CCXT Playground</title>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --background-color: #f5f5f5;
+            --text-color: #333;
+            --error-color: #d32f2f;
+            --border-radius: 4px;
+            --padding: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: var(--padding);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: var(--padding);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: var(--padding);
+        }
+
+        .controls, .output, .history {
+            background: #fff;
+            border-radius: var(--border-radius);
+            padding: var(--padding);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-weight: 500;
+        }
+
+        select, input, button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+
+        select, input {
+            width: 100%;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .output {
+            min-height: 300px;
+            overflow-x: auto;
+        }
+
+        .output pre, .output table {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error {
+            color: var(--error-color);
+            font-weight: 500;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: var(--padding);
+        }
+
+        .loader::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #ccc;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .history, .ohlcv-table {
+            margin-top: var(--padding);
+        }
+
+        .history table, .ohlcv-table table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .history th, .history td, .ohlcv-table th, .ohlcv-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .history th, .ohlcv-table th {
+            background-color: #f8f8f8;
+            cursor: pointer;
+        }
+
+        .history th:hover, .ohlcv-table th:hover {
+            background-color: #e0e0e0;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: center;
+        }
+
+        .pagination button {
+            padding: 4px 8px;
+        }
+
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-suggestions div {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .autocomplete-suggestions div:hover {
+            background-color: #f0f0f0;
+        }
+
+        .pair-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .pair-suggestions button {
+            padding: 4px 8px;
+            font-size: 0.9rem;
+        }
+
+        .last-update {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CCXT Playground</h1>
+        <p>Interact with cryptocurrency exchanges using CCXT</p>
+    </header>
+    <div class="container">
+        <div class="controls">
+            <div class="form-group">
+                <label for="exchange">Select Exchange</label>
+                <select id="exchange">
+                    <option value="">Select an exchange</option>
+                    <!-- Populated dynamically -->
+                </select>
+                <div class="last-update" id="lastUpdate">Last market update: Never</div>
+            </div>
+            <div class="form-group">
+                <label for="cacheDuration">Cache Duration (seconds)</label>
+                <input type="number" id="cacheDuration" value="300" min="10" max="3600" placeholder="Cache duration">
+            </div>
+            <div class="form-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="Enter your API key">
+            </div>
+            <div class="form-group">
+                <label for="apiSecret">API Secret</label>
+                <input type="password" id="apiSecret" placeholder="Enter your API secret">
+            </div>
+            <div class="form-group">
+                <label for="symbol">Trading Pair</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="symbol" placeholder="Enter trading pair (e.g., BTC/USDT)">
+                    <div class="autocomplete-suggestions" id="symbolSuggestions"></div>
+                </div>
+                <div class="pair-suggestions" id="pairSuggestions">
+                    <button data-pair="BTC/USDT">BTC/USDT</button>
+                    <button data-pair="ETH/USDT">ETH/USDT</button>
+                    <button data-pair="BNB/USDT">BNB/USDT</button>
+                    <button data-pair="XRP/USDT">XRP/USDT</button>
+                    <button data-pair="ADA/USDT">ADA/USDT</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="timeframe">OHLCV Timeframe</label>
+                <select id="timeframe">
+                    <option value="1m">1 Minute</option>
+                    <option value="5m">5 Minutes</option>
+                    <option value="15m">15 Minutes</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="4h">4 Hours</option>
+                    <option value="1d">1 Day</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="candleLimit">Number of Candles</label>
+                <input type="number" id="candleLimit" value="100" min="1" max="1000" placeholder="Number of candles">
+            </div>
+            <div class="form-group">
+                <label for="amount">Order Amount</label>
+                <input type="number" id="amount" placeholder="Enter amount" step="0.0001">
+            </div>
+            <div class="form-group">
+                <label for="historyLimit">History Limit (n)</label>
+                <input type="number" id="historyLimit" value="10" min="1" max="100" placeholder="Number of actions to save">
+            </div>
+            <div class="form-group">
+                <label for="storeFullOutput">Store Full Output in History</label>
+                <input type="checkbox" id="storeFullOutput">
+            </div>
+            <div class="form-group">
+                <button id="fetchBalance">Fetch Balance</button>
+                <button id="fetchMarkets">Fetch Markets</button>
+                <button id="reloadMarkets">Reload Markets</button>
+                <button id="fetchOHLCV">Fetch OHLCV</button>
+                <button id="placeOrder">Place Market Order</button>
+                <button id="clearHistory">Clear History</button>
+            </div>
+            <div class="loader" id="loader"></div>
+        </div>
+        <div class="output" id="output">
+            <pre>Please select an exchange and perform an action.</pre>
+            <div class="ohlcv-table" id="ohlcvTable" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
+                            <th>Close</th>
+                            <th>Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ohlcvBody"></tbody>
+                </table>
+                <div class="pagination" id="ohlcvPagination"></div>
+            </div>
+        </div>
+    </div>
+    <div class="history">
+        <h2>Action History</h2>
+        <div class="form-group">
+            <label for="historyFilter">Filter by Action Type</label>
+            <select id="historyFilter">
+                <option value="">All Actions</option>
+                <option value="fetchBalance">Fetch Balance</option>
+                <option value="fetchMarkets">Fetch Markets</option>
+                <option value="fetchOHLCV">Fetch OHLCV</option>
+                <option value="placeOrder">Place Order</option>
+            </select>
+        </div>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th data-sort="action">Action</th>
+                    <th data-sort="timestamp">Timestamp</th>
+                    <th data-sort="parameters">Parameters</th>
+                    <th data-sort="output">Output</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ccxt@4.4.5/dist/ccxt.browser.min.js" onerror="document.getElementById('output').innerHTML = '<pre class=\"error\">Failed to load CCXT library. Please check your internet connection or try again later.</pre>'"></script>
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js" onerror="document.getElementById('output').innerHTML = '<pre class=\"error\">Failed to load Dexie.js library. Please check your internet connection or try again later.</pre>'"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // Check if CCXT and Dexie are loaded
+            if (typeof ccxt === 'undefined') {
+                document.getElementById('output').innerHTML = '<pre class="error">CCXT library not loaded. Please refresh the page or check your internet connection.</pre>';
+                return;
+            }
+            if (typeof Dexie === 'undefined') {
+                document.getElementById('output').innerHTML = '<pre class="error">Dexie.js library not loaded. Please refresh the page or check your internet connection.</pre>';
+                return;
+            }
+
+            // Initialize Dexie database
+            const db = new Dexie('CCXTPlayground');
+            db.version(1).stores({
+                actions: '++id, action, timestamp'
+            });
+
+            // DOM Elements
+            const elements = {
+                exchangeSelect: document.getElementById('exchange'),
+                cacheDurationInput: document.getElementById('cacheDuration'),
+                apiKeyInput: document.getElementById('apiKey'),
+                apiSecretInput: document.getElementById('apiSecret'),
+                symbolInput: document.getElementById('symbol'),
+                symbolSuggestions: document.getElementById('symbolSuggestions'),
+                pairSuggestions: document.getElementById('pairSuggestions'),
+                timeframeSelect: document.getElementById('timeframe'),
+                candleLimitInput: document.getElementById('candleLimit'),
+                amountInput: document.getElementById('amount'),
+                historyLimitInput: document.getElementById('historyLimit'),
+                storeFullOutputCheckbox: document.getElementById('storeFullOutput'),
+                fetchBalanceBtn: document.getElementById('fetchBalance'),
+                fetchMarketsBtn: document.getElementById('fetchMarkets'),
+                reloadMarketsBtn: document.getElementById('reloadMarkets'),
+                fetchOHLCVBtn: document.getElementById('fetchOHLCV'),
+                placeOrderBtn: document.getElementById('placeOrder'),
+                clearHistoryBtn: document.getElementById('clearHistory'),
+                output: document.getElementById('output'),
+                ohlcvTable: document.getElementById('ohlcvTable'),
+                ohlcvBody: document.getElementById('ohlcvBody'),
+                ohlcvPagination: document.getElementById('ohlcvPagination'),
+                loader: document.getElementById('loader'),
+                lastUpdate: document.getElementById('lastUpdate'),
+                historyFilter: document.getElementById('historyFilter'),
+                historyBody: document.getElementById('historyBody'),
+                pagination: document.getElementById('pagination')
+            };
+
+            let exchangeInstance = null;
+            let marketsCache = { markets: null, timestamp: null, exchangeId: null };
+            let currentPage = 1;
+            let ohlcvPage = 1;
+            let ohlcvData = [];
+            const rowsPerPage = 10;
+            let sortColumn = 'timestamp';
+            let sortDirection = 'desc';
+
+            // Initialize exchange options
+            function initializeExchanges() {
+                const exchanges = Object.keys(ccxt.exchanges)
+                    .filter(exchange => !['okex', 'okcoin'].includes(exchange))
+                    .sort();
+                elements.exchangeSelect.innerHTML = '<option value="">Select an exchange</option>' +
+                    exchanges.map(exchange => `<option value="${exchange}">${exchange}</option>`).join('');
+            }
+
+            // Show loading state
+            function setLoading(isLoading) {
+                elements.loader.style.display = isLoading ? 'block' : 'none';
+                elements.fetchBalanceBtn.disabled = isLoading;
+                elements.fetchMarketsBtn.disabled = isLoading;
+                elements.reloadMarketsBtn.disabled = isLoading;
+                elements.fetchOHLCVBtn.disabled = isLoading;
+                elements.placeOrderBtn.disabled = isLoading;
+                elements.clearHistoryBtn.disabled = isLoading;
+            }
+
+            // Display output
+            function displayOutput(data, isError = false, isOHLCV = false) {
+                elements.ohlcvTable.style.display = isOHLCV ? 'block' : 'none';
+                elements.output.querySelector('pre').style.display = isOHLCV ? 'none' : 'block';
+                if (isOHLCV) {
+                    ohlcvData = data;
+                    renderOHLCV();
+                } else {
+                    elements.output.querySelector('pre').innerHTML = `<pre class="${isError ? 'error' : ''}">${
+                        typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+                    }</pre>`;
+                }
+            }
+
+            // Render OHLCV table with pagination
+            function renderOHLCV() {
+                const totalPages = Math.ceil(ohlcvData.length / rowsPerPage);
+                const start = (ohlcvPage - 1) * rowsPerPage;
+                const paginatedData = ohlcvData.slice(start, start + rowsPerPage);
+
+                elements.ohlcvBody.innerHTML = paginatedData.map(candle => `
+                    <tr>
+                        <td>${new Date(candle[0]).toLocaleString()}</td>
+                        <td>${candle[1]}</td>
+                        <td>${candle[2]}</td>
+                        <td>${candle[3]}</td>
+                        <td>${candle[4]}</td>
+                        <td>${candle[5]}</td>
+                    </tr>
+                `).join('');
+
+                elements.ohlcvPagination.innerHTML = `
+                    <button onclick="changeOHLCVPage(${ohlcvPage - 1})" ${ohlcvPage === 1 ? 'disabled' : ''}>Previous</button>
+                    <span>Page ${ohlcvPage} of ${totalPages || 1}</span>
+                    <button onclick="changeOHLCVPage(${ohlcvPage + 1})" ${ohlcvPage >= totalPages ? 'disabled' : ''}>Next</button>
+                `;
+            }
+
+            // Change OHLCV page
+            window.changeOHLCVPage = function (page) {
+                ohlcvPage = Math.max(1, Math.min(page, Math.ceil(ohlcvData.length / rowsPerPage)));
+                renderOHLCV();
+            };
+
+            // Truncate output for storage
+            function truncateOutput(action, output) {
+                if (elements.storeFullOutputCheckbox.checked) {
+                    return output;
+                }
+                if (action === 'fetchMarkets') {
+                    return { count: Object.keys(output).length, sample: output[Object.keys(output)[0]] };
+                }
+                if (action === 'fetchOHLCV') {
+                    return output.slice(0, 10);
+                }
+                if (action === 'fetchBalance' && output.total) {
+                    return { total: output.total, free: output.free };
+                }
+                return output;
+            }
+
+            // Save action to history
+            async function saveToHistory(action, parameters, output) {
+                const limit = parseInt(elements.historyLimitInput.value) || 10;
+                const truncatedOutput = truncateOutput(action, output);
+                try {
+                    await db.actions.add({
+                        action,
+                        timestamp: new Date().toISOString(),
+                        parameters: JSON.stringify(parameters),
+                        output: JSON.stringify(truncatedOutput)
+                    });
+
+                    // Enforce history limit
+                    const count = await db.actions.count();
+                    if (count > limit) {
+                        const toDelete = await db.actions.orderBy('timestamp').limit(count - limit).toArray();
+                        await db.actions.bulkDelete(toDelete.map(item => item.id));
+                    }
+                } catch (error) {
+                    displayOutput(`Failed to save history: ${error.message}. Try clearing history or reducing output size.`, true);
+                }
+                await renderHistory();
+            }
+
+            // Clear history
+            async function clearHistory() {
+                try {
+                    await db.actions.clear();
+                    await renderHistory();
+                    displayOutput('History cleared successfully.');
+                } catch (error) {
+                    displayOutput(`Failed to clear history: ${error.message}`, true);
+                }
+            }
+
+            // Render history table
+            async function renderHistory() {
+                try {
+                    const filter = elements.historyFilter.value;
+                    let query = db.actions.orderBy(sortColumn);
+                    if (sortDirection === 'desc') query = query.reverse();
+                    if (filter) query = query.filter(item => item.action === filter);
+
+                    const total = await query.count();
+                    const totalPages = Math.ceil(total / rowsPerPage);
+                    const start = (currentPage - 1) * rowsPerPage;
+                    const paginatedHistory = await query.offset(start).limit(rowsPerPage).toArray();
+
+                    elements.historyBody.innerHTML = paginatedHistory.map(item => `
+                        <tr>
+                            <td>${item.action}</td>
+                            <td>${new Date(item.timestamp).toLocaleString()}</td>
+                            <td>${item.parameters}</td>
+                            <td><pre>${item.output}</pre></td>
+                        </tr>
+                    `).join('');
+
+                    elements.pagination.innerHTML = `
+                        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                        <span>Page ${currentPage} of ${totalPages || 1}</span>
+                        <button onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+                    `;
+                } catch (error) {
+                    displayOutput(`Failed to render history: ${error.message}`, true);
+                }
+            }
+
+            // Change history page
+            window.changePage = async function (page) {
+                currentPage = Math.max(1, page);
+                await renderHistory();
+            };
+
+            // Retry logic for exchange operations
+            async function withRetry(fn, maxRetries = 3) {
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        return await fn();
+                    } catch (error) {
+                        if (attempt === maxRetries) {
+                            throw new Error(`Failed after ${maxRetries} attempts: ${error.message}`);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    }
+                }
+            }
+
+            // Initialize exchange instance
+            async function initializeExchange(force = false) {
+                const exchangeId = elements.exchangeSelect.value;
+                if (!exchangeId) {
+                    displayOutput('Please select an exchange.', true);
+                    return false;
+                }
+
+                const cacheDuration = (parseInt(elements.cacheDurationInput.value) || 300) * 1000;
+                const now = Date.now();
+                if (!force && marketsCache.markets && marketsCache.exchangeId === exchangeId && marketsCache.timestamp && (now - marketsCache.timestamp < cacheDuration)) {
+                    // Use cached markets
+                    const symbols = Object.keys(marketsCache.markets).sort();
+                    updateSymbolSuggestions(symbols);
+                    elements.lastUpdate.textContent = `Last market update: ${new Date(marketsCache.timestamp).toLocaleString()}`;
+                    await saveToHistory('fetchMarkets', { exchange: exchangeId, cached: true }, marketsCache.markets);
+                    return true;
+                }
+
+                try {
+                    const ExchangeClass = ccxt[exchangeId];
+                    exchangeInstance = new ExchangeClass({
+                        apiKey: elements.apiKeyInput.value.trim(),
+                        secret: elements.apiSecretInput.value.trim(),
+                        enableRateLimit: true
+                    });
+
+                    setLoading(true);
+                    marketsCache.markets = await withRetry(() => exchangeInstance.loadMarkets());
+                    marketsCache.exchangeId = exchangeId;
+                    marketsCache.timestamp = now;
+                    const symbols = Object.keys(marketsCache.markets).sort();
+                    updateSymbolSuggestions(symbols);
+                    elements.lastUpdate.textContent = `Last market update: ${new Date(now).toLocaleString()}`;
+                    await saveToHistory('fetchMarkets', { exchange: exchangeId, cached: false }, marketsCache.markets);
+                    setLoading(false);
+                    return true;
+                } catch (error) {
+                    setLoading(false);
+                    displayOutput(`Error initializing exchange: ${error.message}`, true);
+                    return false;
+                }
+            }
+
+            // Update symbol suggestions for autocomplete
+            function updateSymbolSuggestions(symbols) {
+                elements.symbolInput.value = '';
+                elements.symbolSuggestions.innerHTML = '';
+                elements.symbolInput.dataset.symbols = JSON.stringify(symbols);
+            }
+
+            // Autocomplete handler
+            function handleAutocomplete() {
+                const query = elements.symbolInput.value.toLowerCase();
+                const symbols = JSON.parse(elements.symbolInput.dataset.symbols || '[]');
+                const filtered = symbols.filter(symbol => symbol.toLowerCase().includes(query)).slice(0, 10);
+                elements.symbolSuggestions.innerHTML = filtered.map(symbol => `<div data-symbol="${symbol}">${symbol}</div>`).join('');
+                elements.symbolSuggestions.style.display = filtered.length ? 'block' : 'none';
+            }
+
+            // Fetch balance
+            async function fetchBalance() {
+                if (!exchangeInstance && !(await initializeExchange())) return;
+
+                setLoading(true);
+                try {
+                    const balance = await withRetry(() => exchangeInstance.fetchBalance());
+                    displayOutput(balance);
+                    await saveToHistory('fetchBalance', {}, balance);
+                } catch (error) {
+                    displayOutput(`Error fetching balance: ${error.message}`, true);
+                    await saveToHistory('fetchBalance', {}, { error: error.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // Fetch markets
+            async function fetchMarkets() {
+                if (!exchangeInstance && !(await initializeExchange())) return;
+
+                setLoading(true);
+                try {
+                    const marketsData = marketsCache.markets || await withRetry(() => exchangeInstance.loadMarkets());
+                    displayOutput(marketsData);
+                    await saveToHistory('fetchMarkets', { exchange: elements.exchangeSelect.value }, marketsData);
+                } catch (error) {
+                    displayOutput(`Error fetching markets: ${error.message}`, true);
+                    await saveToHistory('fetchMarkets', { exchange: elements.exchangeSelect.value }, { error: error.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // Reload markets
+            async function reloadMarkets() {
+                if (!exchangeInstance && !(await initializeExchange(true))) return;
+
+                setLoading(true);
+                try {
+                    marketsCache.markets = await withRetry(() => exchangeInstance.loadMarkets());
+                    marketsCache.timestamp = Date.now();
+                    const symbols = Object.keys(marketsCache.markets).sort();
+                    updateSymbolSuggestions(symbols);
+                    elements.lastUpdate.textContent = `Last market update: ${new Date(marketsCache.timestamp).toLocaleString()}`;
+                    displayOutput('Markets reloaded successfully.');
+                    await saveToHistory('fetchMarkets', { exchange: elements.exchangeSelect.value, forced: true }, marketsCache.markets);
+                } catch (error) {
+                    displayOutput(`Error reloading markets: ${error.message}`, true);
+                    await saveToHistory('fetchMarkets', { exchange: elements.exchangeSelect.value, forced: true }, { error: error.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // Fetch OHLCV
+            async function fetchOHLCV() {
+                if (!exchangeInstance && !(await initializeExchange())) return;
+
+                const symbol = elements.symbolInput.value;
+                const timeframe = elements.timeframeSelect.value;
+                const limit = parseInt(elements.candleLimitInput.value) || 100;
+
+                if (!symbol || !marketsCache.markets[symbol]) {
+                    displayOutput('Please select a valid trading pair.', true);
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    const ohlcv = await withRetry(() => exchangeInstance.fetchOHLCV(symbol, timeframe, undefined, limit));
+                    displayOutput(ohlcv, false, true);
+                    await saveToHistory('fetchOHLCV', { symbol, timeframe, limit }, ohlcv);
+                } catch (error) {
+                    displayOutput(`Error fetching OHLCV: ${error.message}`, true);
+                    await saveToHistory('fetchOHLCV', { symbol, timeframe, limit }, { error: error.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // Place market order
+            async function placeOrder() {
+                if (!exchangeInstance && !(await initializeExchange())) return;
+
+                const symbol = elements.symbolInput.value;
+                const amount = parseFloat(elements.amountInput.value);
+
+                if (!symbol || !marketsCache.markets[symbol] || isNaN(amount) || amount <= 0) {
+                    displayOutput('Please select a valid trading pair and enter a valid amount.', true);
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    const order = await withRetry(() => exchangeInstance.createMarketBuyOrder(symbol, amount));
+                    displayOutput(order);
+                    await saveToHistory('placeOrder', { symbol, amount }, order);
+                } catch (error) {
+                    displayOutput(`Error placing order: ${error.message}`, true);
+                    await saveToHistory('placeOrder', { symbol, amount }, { error: error.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // Event listeners
+            elements.exchangeSelect.addEventListener('change', async () => {
+                elements.symbolInput.value = '';
+                elements.symbolSuggestions.innerHTML = '';
+                exchangeInstance = null;
+                marketsCache = { markets: null, timestamp: null, exchangeId: null };
+                elements.lastUpdate.textContent = 'Last market update: Never';
+                displayOutput('Please select an action.');
+                await initializeExchange();
+            });
+
+            elements.symbolInput.addEventListener('input', handleAutocomplete);
+            elements.symbolSuggestions.addEventListener('click', (e) => {
+                if (e.target.dataset.symbol) {
+                    elements.symbolInput.value = e.target.dataset.symbol;
+                    elements.symbolSuggestions.style.display = 'none';
+                }
+            });
+            elements.pairSuggestions.addEventListener('click', (e) => {
+                if (e.target.dataset.pair) {
+                    elements.symbolInput.value = e.target.dataset.pair;
+                    elements.symbolSuggestions.style.display = 'none';
+                }
+            });
+            elements.fetchBalanceBtn.addEventListener('click', fetchBalance);
+            elements.fetchMarketsBtn.addEventListener('click', fetchMarkets);
+            elements.reloadMarketsBtn.addEventListener('click', reloadMarkets);
+            elements.fetchOHLCVBtn.addEventListener('click', fetchOHLCV);
+            elements.placeOrderBtn.addEventListener('click', placeOrder);
+            elements.clearHistoryBtn.addEventListener('click', clearHistory);
+            elements.historyFilter.addEventListener('change', async () => {
+                currentPage = 1;
+                await renderHistory();
+            });
+            elements.historyLimitInput.addEventListener('change', async () => {
+                await renderHistory();
+            });
+
+            // Table sorting
+            document.querySelectorAll('#historyTable th').forEach(th => {
+                th.addEventListener('click', async () => {
+                    const column = th.getAttribute('data-sort');
+                    if (sortColumn === column) {
+                        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortColumn = column;
+                        sortDirection = 'asc';
+                    }
+                    await renderHistory();
+                });
+            });
+
+            // Initialize
+            initializeExchanges();
+            renderHistory();
+        })();
+    </script>
+</body>
+</html>

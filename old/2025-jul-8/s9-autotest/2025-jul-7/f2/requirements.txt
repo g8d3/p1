@@ -1,0 +1,4 @@
+flask
+flask_sqlalchemy
+flask_admin==1.6.1
+sqlalchemy

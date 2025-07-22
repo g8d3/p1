@@ -1,0 +1,1 @@
+build a web ui for a ccxt playground, do not use react, produce production code,

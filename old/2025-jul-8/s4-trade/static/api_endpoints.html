@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Endpoints</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .method-get { color: green; }
+        .method-post { color: blue; }
+        .method-patch { color: orange; }
+        .method-del { color: red; }
+    </style>
+</head>
+<body>
+    <h1>API Endpoints</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Method</th>
+                <th>Endpoint</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Record Category -->
+            <tr>
+                <td rowspan="10">Record</td>
+                <td class="method-get">GET</td>
+                <td>/bases/Base/tables/Table/records</td>
+                <td>Get Table records</td>
+            </tr>
+            <tr>
+                <td class="method-post">POST</td>
+                <td>/bases/Base/tables/Table/records</td>
+                <td>Create Table record</td>
+            </tr>
+            <tr>
+                <td class="method-patch">PATCH</td>
+                <td>/bases/Base/tables/Table/records</td>
+                <td>Bulk update Table records</td>
+            </tr>
+            <tr>
+                <td class="method-del">DELETE</td>
+                <td>/bases/Base/tables/Table/records</td>
+                <td>Bulk delete Table records</td>
+            </tr>
+            <tr>
+                <td class="method-get">GET</td>
+                <td>/bases/Base/tables/Table/records/{recordId}</td>
+                <td>Get Table record by id</td>
+            </tr>
+            <tr>
+                <td class="method-patch">PATCH</td>
+                <td>/bases/Base/tables/Table/records/{recordId}</td>
+                <td>Update Table record</td>
+            </tr>
+            <tr>
+                <td class="method-del">DELETE</td>
+                <td>/bases/Base/tables/Table/records/{recordId}</td>
+                <td>Delete Table record by id</td>
+            </tr>
+            <tr>
+                <td class="method-post">POST</td>
+                <td>/bases/Base/tables/Table/records/bulk</td>
+                <td>Bulk create Table record</td>
+            </tr>
+            <tr>
+                <td class="method-post">POST</td>
+                <td>/bases/Base/tables/Table/records/duplicate</td>
+                <td>Bulk duplicate Table records</td>
+            </tr>
+            <tr>
+                <td class="method-post">POST</td>
+                <td>/bases/Base/tables/Table/records/{recordId}/duplicate</td>
+                <td>Duplicate Table record by id</td>
+            </tr>
+            <!-- Subscription Category -->
+            <tr>
+                <td>Subscription</td>
+                <td class="method-get">GET</td>
+                <td>/bases/Base/tables/Table/subscription</td>
+                <td>Subscribe Table record events</td>
+            </tr>
+            <!-- Form Category -->
+            <tr>
+                <td rowspan="2">Form</td>
+                <td class="method-post">POST</td>
+                <td>/bases/Base/tables/Table/forms/form/submit</td>
+                <td>Submit Table form</td>
+            </tr>
+            <tr>
+                <td class="method-post">POST</td>
+                <td>/bases/Base/tables/Table/forms/form(1)/submit</td>
+                <td>Submit Table form (1)</td>
+            </tr>
+            <!-- Aggregate Category -->
+            <tr>
+                <td>Aggregate</td>
+                <td class="method-get">GET</td>
+                <td>/bases/Base/tables/Table/views/default/records/aggregate</td>
+                <td>Get Table records aggregate in default view</td>
+            </tr>
+            <!-- View Category -->
+            <tr>
+                <td rowspan="2">View</td>
+                <td class="method-get">GET</td>
+                <td>/bases/Base/tables/Table/views/default/records</td>
+                <td>Get Table records in default view</td>
+            </tr>
+            <tr>
+                <td class="method-get">GET</td>
+                <td>/bases/Base/tables/Table/views/default/records/{recordId}</td>
+                <td>Get Table record by id in default view</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

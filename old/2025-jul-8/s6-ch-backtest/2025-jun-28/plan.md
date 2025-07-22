@@ -1,0 +1,1 @@
+htmx code allowing to save many db credentials, then user can connect and manage data and schema

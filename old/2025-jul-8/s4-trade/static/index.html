@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Data Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+    <div id="app" class="container mx-auto p-4"></div>
+
+    <script>
+        $(document).ready(function () {
+            let token = localStorage.getItem('token') || '';
+            let pollInterval = null;
+
+            function renderLogin() {
+                $('#app').html(`
+                       <div class="flex items-center justify-center min-h-screen">
+                           <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+                               <h2 class="text-2xl font-bold mb-6 text-center">Login / Register</h2>
+                               <input
+                                   id="username"
+                                   type="text"
+                                   placeholder="Username"
+                                   class="w-full p-2 mb-4 border rounded"
+                               />
+                               <input
+                                   id="password"
+                                   type="password"
+                                   placeholder="Password"
+                                   class="w-full p-2 mb-4 border rounded"
+                               />
+                               <div class="flex justify-between">
+                                   <button id="login-btn" class="bg-blue-500 text-white p-2 rounded">Login</button>
+                                   <button id="register-btn" class="bg-green-500 text-white p-2 rounded">Register</button>
+                               </div>
+                               <div id="error" class="text-red-500 mt-4 hidden"></div>
+                           </div>
+                       </div>
+                   `);
+
+                $('#login-btn').click(handleLogin);
+                $('#register-btn').click(handleRegister);
+                if (pollInterval) clearInterval(pollInterval);
+            }
+
+            function renderDashboard() {
+                $('#app').html(`
+                       <h1 class="text-3xl font-bold mb-4">Crypto Data Dashboard</h1>
+                       <div class="mb-4 flex flex-wrap gap-2">
+                           <select id="exchange" class="p-2 border rounded">
+                               <option value="binance">Binance</option>
+                               <option value="kraken">Kraken</option>
+                           </select>
+                           <input
+                               id="symbol"
+                               type="text"
+                               value="BTC/USDT"
+                               placeholder="Symbol (e.g., BTC/USDT)"
+                               class="p-2 border rounded"
+                           />
+                           <select id="timeframe" class="p-2 border rounded">
+                               <option value="1m">1m</option>
+                               <option value="5m">5m</option>
+                               <option value="1h">1h</option>
+                               <option value="1d">1d</option>
+                           </select>
+                           <input
+                               id="limit"
+                               type="number"
+                               value="100"
+                               placeholder="Limit"
+                               class="p-2 border rounded"
+                           />
+                           <button id="fetch-btn" class="bg-blue-500 text-white p-2 rounded">Fetch OHLCV</button>
+                           <button id="logout-btn" class="bg-red-500 text-white p-2 rounded">Logout</button>
+                       </div>
+                       <div id="error" class="text-red-500 mb-4 hidden"></div>
+                       <div class="overflow-x-auto">
+                           <table id="ohlcv-table" class="min-w-full bg-white border">
+                               <thead>
+                                   <tr>
+                                       <th class="p-2 border">Timestamp</th>
+                                       <th class="p-2 border">Open</th>
+                                       <th class="p-2 border">High</th>
+                                       <th class="p-2 border">Low</th>
+                                       <th class="p-2 border">Close</th>
+                                       <th class="p-2 border">Volume</th>
+                                   </tr>
+                               </thead>
+                               <tbody></tbody>
+                           </table>
+                       </div>
+                   `);
+
+                $('#fetch-btn').click(fetchOHLCV);
+                $('#logout-btn').click(() => {
+                    localStorage.removeItem('token');
+                    token = '';
+                    if (pollInterval) clearInterval(pollInterval);
+                    renderLogin();
+                });
+                $('#exchange, #symbol, #timeframe').change(fetchOHLCV);
+                startPolling();
+            }
+
+            function handleLogin() {
+                const username = $('#username').val();
+                const password = $('#password').val();
+                axios.post('/token', new URLSearchParams({ username, password }))
+                    .then(response => {
+                        token = response.data.access_token;
+                        localStorage.setItem('token', token);
+                        renderDashboard();
+                        fetchOHLCV();
+                    })
+                    .catch(error => {
+                        $('#error').text('Login failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                    });
+            }
+
+            function handleRegister() {
+                const username = $('#username').val();
+                const password = $('#password').val();
+                axios.post('/register', { username, password })
+                    .then(() => {
+                        alert('Registration successful! Please login.');
+                        $('#username').val('');
+                        $('#password').val('');
+                    })
+                    .catch(error => {
+                        $('#error').text('Registration failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                    });
+            }
+
+            function fetchOHLCV() {
+                if (!token) {
+                    $('#error').text('Please log in to fetch data').show();
+                    renderLogin();
+                    return;
+                }
+                const exchange = $('#exchange').val();
+                const symbol = $('#symbol').val().trim().toUpperCase();
+                const timeframe = $('#timeframe').val();
+                const limit = $('#limit').val();
+                if (!symbol || !exchange || !timeframe) {
+                    $('#error').text('Invalid exchange, symbol, or timeframe').show();
+                    return;
+                }
+                axios.post('/fetch-ohlcv', { exchange, symbol, timeframe, limit }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                    .then(response => {
+                        updateTable(response.data);
+                        $('#error').hide();
+                    })
+                    .catch(error => {
+                        if (error.response?.status === 401) {
+                            $('#error').text('Session expired. Please log in again.').show();
+                            localStorage.removeItem('token');
+                            token = '';
+                            renderLogin();
+                        } else {
+                            $('#error').text('Fetch failed: ' + (error.response?.data?.detail || 'Unknown error')).show();
+                        }
+                    });
+            }
+
+            function updateTable(data) {
+                const tbody = $('#ohlcv-table tbody');
+                tbody.empty();
+                data.forEach((row, index) => {
+                    tbody.append(`
+                           <tr>
+                               <td class="p-2 border">${new Date(row.timestamp).toLocaleString()}</td>
+                               <td class="p-2 border">${row.open}</td>
+                               <td class="p-2 border">${row.high}</td>
+                               <td class="p-2 border">${row.low}</td>
+                               <td class="p-2 border">${row.close}</td>
+                               <td class="p-2 border">${row.volume}</td>
+                           </tr>
+                       `);
+                });
+            }
+
+            function startPolling() {
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = setInterval(fetchOHLCV, 10000); // Poll every 10 seconds
+            }
+
+            // Initial render
+            if (token) {
+                renderDashboard();
+            } else {
+                renderLogin();
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -11,14 +11,14 @@ use tokio::net::TcpListener;
 
 // Schema metadata for a table
 #[derive(Debug)]
-struct TableSchema {
+pub struct TableSchema {
     name: String,
     columns: Vec<ColumnSchema>,
     primary_keys: Vec<String>,
 }
 
 #[derive(Debug)]
-struct ColumnSchema {
+pub struct ColumnSchema {
     name: String,
     type_name: String,
     not_null: bool,
@@ -26,7 +26,7 @@ struct ColumnSchema {
 
 // App state with database connection and schema
 #[derive(Clone)]
-struct AppState {
+pub struct AppState {
     conn: Arc<Mutex<Connection>>, // Use Mutex to make Connection thread-safe
     schemas: Arc<Vec<TableSchema>>,
 }
@@ -65,7 +65,7 @@ pub async fn mylib(db_path: &str) -> anyhow::Result<()> {
 }
 
 // Fetch schema for all tables
-fn get_schemas(conn: &Arc<Mutex<Connection>>) -> anyhow::Result<Vec<TableSchema>> {
+pub fn get_schemas(conn: &Arc<Mutex<Connection>>) -> anyhow::Result<Vec<TableSchema>> {
     let conn = conn.lock().unwrap();
     let mut schemas = Vec::new();
     let tables = get_tables(&conn)?;

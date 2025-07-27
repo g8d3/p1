@@ -7,7 +7,6 @@ use axum::{
 use rusqlite::{Connection, Error as RusqliteError};
 use serde_json::{json, Value};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tokio::net::TcpListener;
 
 // Schema metadata for a table
@@ -23,13 +22,12 @@ struct ColumnSchema {
     name: String,
     type_name: String,
     not_null: bool,
-    is_primary_key: bool,
 }
 
 // App state with database connection and schema
 #[derive(Clone)]
 struct AppState {
-    conn: Arc<Mutex<Connection>>,
+    conn: Arc<Connection>,
     schemas: Arc<Vec<TableSchema>>,
 }
 
@@ -37,10 +35,10 @@ struct AppState {
 pub async fn mylib(db_path: &str) -> anyhow::Result<()> {
     // Connect to SQLite database
     let conn = Connection::open(db_path)?;
-    let conn = Arc::new(tokio::sync::Mutex::new(conn));
+    let conn = Arc::new(conn);
 
     // Get schema for all tables
-    let schemas = get_schemas(&conn).await?;
+    let schemas = get_schemas(&conn)?;
     let schemas = Arc::new(schemas);
 
     // Create Axum router
@@ -67,26 +65,25 @@ pub async fn mylib(db_path: &str) -> anyhow::Result<()> {
 }
 
 // Fetch schema for all tables
-async fn get_schemas(conn: &Arc<tokio::sync::Mutex<Connection>>) -> anyhow::Result<Vec<TableSchema>> {
-    let conn_lock = conn.lock().await;
+fn get_schemas(conn: &Connection) -> anyhow::Result<Vec<TableSchema>> {
     let mut schemas = Vec::new();
-    let tables = get_tables(&conn_lock).await?;
+    let tables = get_tables(conn)?;
     for table in tables {
-        let mut stmt = conn_lock.prepare(&format!("PRAGMA table_info({})", table))?;
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table))?;
         let columns = stmt
             .query_map([], |row| {
                 Ok(ColumnSchema {
                     name: row.get(1)?,
                     type_name: row.get(2)?,
                     not_null: row.get(3)?,
-                    is_primary_key: row.get::<_, i32>(5).unwrap_or(0) > 0,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
         let primary_keys = columns
             .iter()
-            .filter(|c| c.is_primary_key)
-            .map(|c| c.name.clone())
+            .enumerate()
+            .filter(|(i, _)| row.get::<_, i32>(5).unwrap_or(0) > 0)
+            .map(|(_, c)| c.name.clone())
             .collect();
         schemas.push(TableSchema {
             name: table,
@@ -98,7 +95,7 @@ async fn get_schemas(conn: &Arc<tokio::sync::Mutex<Connection>>) -> anyhow::Resu
 }
 
 // Fetch all table names
-async fn get_tables(conn: &tokio::sync::MutexGuard<'_, Connection>) -> anyhow::Result<Vec<String>> {
+fn get_tables(conn: &Connection) -> anyhow::Result<Vec<String>> {
     let mut stmt = conn.prepare("SELECT name FROM sqlite_master WHERE type='table'")?;
     let tables = stmt
         .query_map([], |row| row.get::<_, String>(0))?
@@ -125,7 +122,7 @@ fn create_table_router(schema: &TableSchema) -> Router<AppState> {
 async fn list_rows(State(state): State<AppState>, Path(table): Path<String>) -> Result<Json<Vec<Value>>, StatusCode> {
     let schema = state.schemas.iter().find(|s| s.name == table).ok_or(StatusCode::NOT_FOUND)?;
     let query = format!("SELECT * FROM {}", table);
-    let rows = execute_query(&state.conn, &query, &[], &schema.columns).await?;
+    let rows = execute_query(&state.conn, &query, &[], &schema.columns)?;
     Ok(Json(rows))
 }
 
@@ -139,12 +136,12 @@ async fn get_row(
         .primary_keys
         .iter()
         .zip(params.iter().skip(1))
-        .map(|(pk, (_, _v))| format!("{} = ?", pk))
+        .map(|(pk, (_, v))| format!("{} = ?", pk))
         .collect::<Vec<_>>()
         .join(" AND ");
     let query = format!("SELECT * FROM {} WHERE {}", table, where_clause);
     let values: Vec<String> = params.into_iter().skip(1).map(|(_, v)| v).collect();
-    let row = execute_query(&state.conn, &query, &values, &schema.columns).await?
+    let row = execute_query(&state.conn, &query, &values, &schema.columns)?
         .into_iter()
         .next()
         .ok_or(StatusCode::NOT_FOUND)?;
@@ -170,7 +167,6 @@ async fn create_row(
     let query = format!("INSERT INTO {} ({}) VALUES ({})", table, columns.join(","), placeholders);
     state
         .conn
-        .lock().await
         .execute(&query, rusqlite::params_from_iter(&values))
         .map_err(|e| map_sqlite_error(e))?;
     Ok(StatusCode::CREATED)
@@ -196,14 +192,13 @@ async fn update_row(
         .primary_keys
         .iter()
         .zip(params.iter().skip(1))
-        .map(|(pk, (_, _v))| format!("{} = ?", pk))
+        .map(|(pk, (_, v))| format!("{} = ?", pk))
         .collect::<Vec<_>>()
         .join(" AND ");
     let query = format!("UPDATE {} SET {} WHERE {}", table, updates.join(","), where_clause);
     let values: Vec<String> = params.into_iter().skip(1).map(|(_, v)| v).collect();
     state
         .conn
-        .lock().await
         .execute(&query, rusqlite::params_from_iter(&values))
         .map_err(|e| map_sqlite_error(e))?;
     Ok(StatusCode::OK)
@@ -219,28 +214,26 @@ async fn delete_row(
         .primary_keys
         .iter()
         .zip(params.iter().skip(1))
-        .map(|(pk, (_, _v))| format!("{} = ?", pk))
+        .map(|(pk, (_, v))| format!("{} = ?", pk))
         .collect::<Vec<_>>()
         .join(" AND ");
     let query = format!("DELETE FROM {} WHERE {}", table, where_clause);
     let values: Vec<String> = params.into_iter().skip(1).map(|(_, v)| v).collect();
     state
         .conn
-        .lock().await
         .execute(&query, rusqlite::params_from_iter(&values))
         .map_err(|e| map_sqlite_error(e))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 // Execute a query and map rows to JSON
-async fn execute_query(
-    conn: &Arc<tokio::sync::Mutex<Connection>>,
+fn execute_query(
+    conn: &Connection,
     query: &str,
     params: &[String],
     columns: &[ColumnSchema],
 ) -> Result<Vec<Value>, StatusCode> {
-    let conn_lock = conn.lock().await;
-    let mut stmt = conn_lock.prepare(query).map_err(|e| map_sqlite_error(e))?;
+    let mut stmt = conn.prepare(query).map_err(|e| map_sqlite_error(e))?;
     let rows = stmt
         .query_map(rusqlite::params_from_iter(params), |row| {
             let mut map = serde_json::Map::new();

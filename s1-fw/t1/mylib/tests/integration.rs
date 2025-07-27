@@ -2,16 +2,17 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use mylib::mylib;
+use mylib::{mylib, AppState, get_schemas, generate_openapi, create_table_router};
+use rusqlite::Connection;
 use serde_json::{json, Value};
-use tokio::net::TcpListener;
+use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn test_list_users() {
     // Create a temporary SQLite database
     let db_path = "test.db";
-    let conn = rusqlite::Connection::open(db_path).unwrap();
+    let conn = Connection::open(db_path).unwrap();
     conn.execute(
         "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT)",
         [],
@@ -23,14 +24,22 @@ async fn test_list_users() {
     )
     .unwrap();
 
-    // Start the server in a background task
-    let server = tokio::spawn(mylib(db_path));
-
-    // Wait briefly for the server to start
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    // Set up the app state
+    let conn = Arc::new(Mutex::new(conn));
+    let schemas = get_schemas(&conn).unwrap();
+    let schemas = Arc::new(schemas);
+    let mut app = axum::Router::new();
+    app = app.route("/openapi.json", axum::routing::get(|| async { Json(generate_openapi(&schemas)) }));
+    for schema in schemas.iter() {
+        let state = AppState {
+            conn: conn.clone(),
+            schemas: schemas.clone(),
+        };
+        let table_router = create_table_router(schema);
+        app = app.nest(&format!("/{}", schema.name), table_router.with_state(state));
+    }
 
     // Create a client to send requests
-    let app = mylib::mylib(db_path).await.unwrap();
     let request = Request::builder()
         .method("GET")
         .uri("/users")
@@ -43,7 +52,7 @@ async fn test_list_users() {
 
     // Check the response
     assert_eq!(response.status(), StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let body: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(
         body,
@@ -57,7 +66,6 @@ async fn test_list_users() {
     );
 
     // Clean up
-    server.abort();
     std::fs::remove_file(db_path).unwrap();
 }
 
@@ -65,7 +73,7 @@ async fn test_list_users() {
 async fn test_get_user() {
     // Create a temporary SQLite database
     let db_path = "test.db";
-    let conn = rusqlite::Connection::open(db_path).unwrap();
+    let conn = Connection::open(db_path).unwrap();
     conn.execute(
         "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT)",
         [],
@@ -77,14 +85,22 @@ async fn test_get_user() {
     )
     .unwrap();
 
-    // Start the server in a background task
-    let server = tokio::spawn(mylib(db_path));
-
-    // Wait briefly for the server to start
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    // Set up the app state
+    let conn = Arc::new(Mutex::new(conn));
+    let schemas = get_schemas(&conn).unwrap();
+    let schemas = Arc::new(schemas);
+    let mut app = axum::Router::new();
+    app = app.route("/openapi.json", axum::routing::get(|| async { Json(generate_openapi(&schemas)) }));
+    for schema in schemas.iter() {
+        let state = AppState {
+            conn: conn.clone(),
+            schemas: schemas.clone(),
+        };
+        let table_router = create_table_router(schema);
+        app = app.nest(&format!("/{}", schema.name), table_router.with_state(state));
+    }
 
     // Create a client to send requests
-    let app = mylib::mylib(db_path).await.unwrap();
     let request = Request::builder()
         .method("GET")
         .uri("/users/1")
@@ -97,7 +113,7 @@ async fn test_get_user() {
 
     // Check the response
     assert_eq!(response.status(), StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let body: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(
         body,
@@ -109,7 +125,6 @@ async fn test_get_user() {
     );
 
     // Clean up
-    server.abort();
     std::fs::remove_file(db_path).unwrap();
 }
 
@@ -117,21 +132,29 @@ async fn test_get_user() {
 async fn test_get_user_not_found() {
     // Create a temporary SQLite database
     let db_path = "test.db";
-    let conn = rusqlite::Connection::open(db_path).unwrap();
+    let conn = Connection::open(db_path).unwrap();
     conn.execute(
         "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT)",
         [],
     )
     .unwrap();
 
-    // Start the server in a background task
-    let server = tokio::spawn(mylib(db_path));
-
-    // Wait briefly for the server to start
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    // Set up the app state
+    let conn = Arc::new(Mutex::new(conn));
+    let schemas = get_schemas(&conn).unwrap();
+    let schemas = Arc::new(schemas);
+    let mut app = axum::Router::new();
+    app = app.route("/openapi.json", axum::routing::get(|| async { Json(generate_openapi(&schemas)) }));
+    for schema in schemas.iter() {
+        let state = AppState {
+            conn: conn.clone(),
+            schemas: schemas.clone(),
+        };
+        let table_router = create_table_router(schema);
+        app = app.nest(&format!("/{}", schema.name), table_router.with_state(state));
+    }
 
     // Create a client to send requests
-    let app = mylib::mylib(db_path).await.unwrap();
     let request = Request::builder()
         .method("GET")
         .uri("/users/1")
@@ -146,6 +169,5 @@ async fn test_get_user_not_found() {
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
     // Clean up
-    server.abort();
     std::fs::remove_file(db_path).unwrap();
 }

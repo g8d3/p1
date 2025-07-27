@@ -1,1 +1,11 @@
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+    Updating crates.io index
+     Locking 5 packages to latest Rust 1.88.0 compatible versions
+      Adding pin-project v1.1.10
+      Adding pin-project-internal v1.1.10
+      Adding tower v0.4.13 (available: v0.5.2)
+      Adding try-lock v0.2.5
+      Adding want v0.3.1
+ Downloading crates ...
+  Downloaded try-lock v0.2.5
+  Downloaded want v0.3.1
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.00s

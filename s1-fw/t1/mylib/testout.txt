@@ -1,0 +1,87 @@
+   Compiling mylib v0.1.0 (/home/vuos/code/p1/s1-fw/t1/mylib)
+error[E0425]: cannot find function `to_bytes` in module `hyper::body`
+  --> tests/integration.rs:46:29
+   |
+46 |     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+   |                             ^^^^^^^^ not found in `hyper::body`
+   |
+help: consider importing this function
+   |
+1  + use axum::body::to_bytes;
+   |
+help: if you import `to_bytes`, refer to it directly
+   |
+46 -     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+46 +     let body = to_bytes(response.into_body()).await.unwrap();
+   |
+
+error[E0425]: cannot find function `to_bytes` in module `hyper::body`
+   --> tests/integration.rs:100:29
+    |
+100 |     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    |                             ^^^^^^^^ not found in `hyper::body`
+    |
+help: consider importing this function
+    |
+1   + use axum::body::to_bytes;
+    |
+help: if you import `to_bytes`, refer to it directly
+    |
+100 -     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+100 +     let body = to_bytes(response.into_body()).await.unwrap();
+    |
+
+warning: unused import: `tokio::net::TcpListener`
+ --> tests/integration.rs:7:5
+  |
+7 | use tokio::net::TcpListener;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+error[E0599]: the method `oneshot` exists for unit type `()`, but its trait bounds were not satisfied
+  --> tests/integration.rs:42:24
+   |
+42 |     let response = app.oneshot(request).await.unwrap();
+   |                        ^^^^^^^ method cannot be called on `()` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `(): tower::Service<_>`
+           which is required by `(): tower::ServiceExt<_>`
+           `&(): tower::Service<_>`
+           which is required by `&(): tower::ServiceExt<_>`
+           `&mut (): tower::Service<_>`
+           which is required by `&mut (): tower::ServiceExt<_>`
+
+error[E0599]: the method `oneshot` exists for unit type `()`, but its trait bounds were not satisfied
+  --> tests/integration.rs:96:24
+   |
+96 |     let response = app.oneshot(request).await.unwrap();
+   |                        ^^^^^^^ method cannot be called on `()` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `(): tower::Service<_>`
+           which is required by `(): tower::ServiceExt<_>`
+           `&(): tower::Service<_>`
+           which is required by `&(): tower::ServiceExt<_>`
+           `&mut (): tower::Service<_>`
+           which is required by `&mut (): tower::ServiceExt<_>`
+
+error[E0599]: the method `oneshot` exists for unit type `()`, but its trait bounds were not satisfied
+   --> tests/integration.rs:143:24
+    |
+143 |     let response = app.oneshot(request).await.unwrap();
+    |                        ^^^^^^^ method cannot be called on `()` due to unsatisfied trait bounds
+    |
+    = note: the following trait bounds were not satisfied:
+            `(): tower::Service<_>`
+            which is required by `(): tower::ServiceExt<_>`
+            `&(): tower::Service<_>`
+            which is required by `&(): tower::ServiceExt<_>`
+            `&mut (): tower::Service<_>`
+            which is required by `&mut (): tower::ServiceExt<_>`
+
+Some errors have detailed explanations: E0425, E0599.
+For more information about an error, try `rustc --explain E0425`.
+warning: `mylib` (test "integration") generated 1 warning
+error: could not compile `mylib` (test "integration") due to 5 previous errors; 1 warning emitted

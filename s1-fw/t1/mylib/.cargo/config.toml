@@ -1,0 +1,2 @@
+[alias]
+btr = "build --message-format=json 2>&1 | tee buildout.txt && test --message-format=json 2>&1 | tee testout.txt && run"

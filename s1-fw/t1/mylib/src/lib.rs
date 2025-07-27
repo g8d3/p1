@@ -114,7 +114,7 @@ fn get_tables(conn: &Connection) -> anyhow::Result<Vec<String>> {
 }
 
 // Create a router for a table
-fn create_table_router(schema: &TableSchema) -> Router<AppState> {
+pub fn create_table_router(schema: &TableSchema) -> Router<AppState> {
     let pk_path = if schema.primary_keys.len() == 1 {
         format!("/{}", schema.primary_keys[0])
     } else {
@@ -322,7 +322,7 @@ fn map_sqlite_error(e: RusqliteError) -> StatusCode {
 }
 
 // Generate OpenAPI 3.0 specification
-fn generate_openapi(schemas: &[TableSchema]) -> Value {
+pub fn generate_openapi(schemas: &[TableSchema]) -> Value {
     let mut paths = serde_json::Map::new();
     for schema in schemas {
         let path_prefix = format!("/{}", schema.name);

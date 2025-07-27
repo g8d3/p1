@@ -1,1 +1,2 @@
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+   Compiling mylib v0.1.0 (/home/vuos/code/p1/s1-fw/t1/mylib)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.58s

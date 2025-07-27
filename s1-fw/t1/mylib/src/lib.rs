@@ -125,18 +125,23 @@ fn create_table_router(schema: &TableSchema) -> Router<AppState> {
             .collect::<Vec<_>>()
             .join("")
     };
+    // Pass the table name to list_rows explicitly
+    let table_name = schema.name.clone();
     Router::new()
-        .route("/", get(list_rows))
+        .route(
+            "/",
+            get(move |state| list_rows(state, table_name.clone())),
+        )
         .route(&pk_path, get(get_row))
         .route("/", post(create_row))
         .route(&pk_path, put(update_row))
         .route(&pk_path, delete(delete_row))
 }
 
-// CRUD handlers
+// Updated list_rows handler
 async fn list_rows(
     State(state): State<AppState>,
-    Path(table): Path<String>,
+    table: String, // Pass table name directly
 ) -> Result<Json<Vec<Value>>, StatusCode> {
     let schema = state
         .schemas

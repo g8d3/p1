@@ -1,0 +1,1 @@
+cargo build --message-format=json 2>&1 | tee buildout.txt && cargo test --message-format=json 2>&1 | tee testout.txt && cargo run

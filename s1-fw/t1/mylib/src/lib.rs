@@ -6,7 +6,7 @@ use axum::{
 };
 use rusqlite::{Connection, Error as RusqliteError};
 use serde_json::{json, Value};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 
 // Schema metadata for a table
@@ -27,7 +27,7 @@ struct ColumnSchema {
 // App state with database connection and schema
 #[derive(Clone)]
 struct AppState {
-    conn: Arc<Connection>,
+    conn: Arc<Mutex<Connection>>, // Use Mutex to make Connection thread-safe
     schemas: Arc<Vec<TableSchema>>,
 }
 
@@ -35,7 +35,7 @@ struct AppState {
 pub async fn mylib(db_path: &str) -> anyhow::Result<()> {
     // Connect to SQLite database
     let conn = Connection::open(db_path)?;
-    let conn = Arc::new(conn);
+    let conn = Arc::new(Mutex::new(conn)); // Wrap in Mutex
 
     // Get schema for all tables
     let schemas = get_schemas(&conn)?;
@@ -65,9 +65,10 @@ pub async fn mylib(db_path: &str) -> anyhow::Result<()> {
 }
 
 // Fetch schema for all tables
-fn get_schemas(conn: &Connection) -> anyhow::Result<Vec<TableSchema>> {
+fn get_schemas(conn: &Arc<Mutex<Connection>>) -> anyhow::Result<Vec<TableSchema>> {
+    let conn = conn.lock().unwrap();
     let mut schemas = Vec::new();
-    let tables = get_tables(conn)?;
+    let tables = get_tables(&conn)?;
     for table in tables {
         let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table))?;
         let columns = stmt
@@ -79,12 +80,21 @@ fn get_schemas(conn: &Connection) -> anyhow::Result<Vec<TableSchema>> {
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
-        let primary_keys = columns
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| row.get::<_, i32>(5).unwrap_or(0) > 0)
-            .map(|(_, c)| c.name.clone())
+
+        // Fetch primary keys using PRAGMA table_info
+        let mut pk_stmt = conn.prepare(&format!("PRAGMA table_info({})", table))?;
+        let primary_keys = pk_stmt
+            .query_map([], |row| {
+                let is_pk: i32 = row.get(5)?;
+                let name: String = row.get(1)?;
+                Ok((name, is_pk))
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter(|&(_, is_pk)| is_pk > 0)
+            .map(|(name, _)| name)
             .collect();
+
         schemas.push(TableSchema {
             name: table,
             columns,
@@ -108,7 +118,12 @@ fn create_table_router(schema: &TableSchema) -> Router<AppState> {
     let pk_path = if schema.primary_keys.len() == 1 {
         format!("/{}", schema.primary_keys[0])
     } else {
-        schema.primary_keys.iter().map(|pk| format!("/{}", pk)).collect::<Vec<_>>().join("")
+        schema
+            .primary_keys
+            .iter()
+            .map(|pk| format!("/{}", pk))
+            .collect::<Vec<_>>()
+            .join("")
     };
     Router::new()
         .route("/", get(list_rows))
@@ -119,10 +134,18 @@ fn create_table_router(schema: &TableSchema) -> Router<AppState> {
 }
 
 // CRUD handlers
-async fn list_rows(State(state): State<AppState>, Path(table): Path<String>) -> Result<Json<Vec<Value>>, StatusCode> {
-    let schema = state.schemas.iter().find(|s| s.name == table).ok_or(StatusCode::NOT_FOUND)?;
+async fn list_rows(
+    State(state): State<AppState>,
+    Path(table): Path<String>,
+) -> Result<Json<Vec<Value>>, StatusCode> {
+    let schema = state
+        .schemas
+        .iter()
+        .find(|s| s.name == table)
+        .ok_or(StatusCode::NOT_FOUND)?;
     let query = format!("SELECT * FROM {}", table);
-    let rows = execute_query(&state.conn, &query, &[], &schema.columns)?;
+    let conn = state.conn.lock().unwrap();
+    let rows = execute_query(&conn, &query, &[], &schema.columns)?;
     Ok(Json(rows))
 }
 
@@ -130,18 +153,26 @@ async fn get_row(
     State(state): State<AppState>,
     Path(params): Path<Vec<(String, String)>>,
 ) -> Result<Json<Value>, StatusCode> {
-    let table = params.get(0).map(|(t, _)| t).ok_or(StatusCode::BAD_REQUEST)?;
-    let schema = state.schemas.iter().find(|s| s.name == *table).ok_or(StatusCode::NOT_FOUND)?;
+    let table = params
+        .get(0)
+        .map(|(t, _)| t)
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let schema = state
+        .schemas
+        .iter()
+        .find(|s| s.name == *table)
+        .ok_or(StatusCode::NOT_FOUND)?;
     let where_clause = schema
         .primary_keys
         .iter()
         .zip(params.iter().skip(1))
-        .map(|(pk, (_, v))| format!("{} = ?", pk))
+        .map(|(pk, _)| format!("{} = ?", pk))
         .collect::<Vec<_>>()
         .join(" AND ");
     let query = format!("SELECT * FROM {} WHERE {}", table, where_clause);
     let values: Vec<String> = params.into_iter().skip(1).map(|(_, v)| v).collect();
-    let row = execute_query(&state.conn, &query, &values, &schema.columns)?
+    let conn = state.conn.lock().unwrap();
+    let row = execute_query(&conn, &query, &values, &schema.columns)?
         .into_iter()
         .next()
         .ok_or(StatusCode::NOT_FOUND)?;
@@ -153,7 +184,11 @@ async fn create_row(
     Path(table): Path<String>,
     Json(payload): Json<Value>,
 ) -> Result<StatusCode, StatusCode> {
-    let schema = state.schemas.iter().find(|s| s.name == table).ok_or(StatusCode::NOT_FOUND)?;
+    let schema = state
+        .schemas
+        .iter()
+        .find(|s| s.name == table)
+        .ok_or(StatusCode::NOT_FOUND)?;
     let obj = payload.as_object().ok_or(StatusCode::BAD_REQUEST)?;
     let (columns, values): (Vec<String>, Vec<String>) = obj
         .iter()
@@ -164,10 +199,14 @@ async fn create_row(
         return Err(StatusCode::BAD_REQUEST);
     }
     let placeholders = values.iter().map(|_| "?").collect::<Vec<_>>().join(",");
-    let query = format!("INSERT INTO {} ({}) VALUES ({})", table, columns.join(","), placeholders);
-    state
-        .conn
-        .execute(&query, rusqlite::params_from_iter(&values))
+    let query = format!(
+        "INSERT INTO {} ({}) VALUES ({})",
+        table,
+        columns.join(","),
+        placeholders
+    );
+    let conn = state.conn.lock().unwrap();
+    conn.execute(&query, rusqlite::params_from_iter(&values))
         .map_err(|e| map_sqlite_error(e))?;
     Ok(StatusCode::CREATED)
 }
@@ -177,12 +216,21 @@ async fn update_row(
     Path(params): Path<Vec<(String, String)>>,
     Json(payload): Json<Value>,
 ) -> Result<StatusCode, StatusCode> {
-    let table = params.get(0).map(|(t, _)| t).ok_or(StatusCode::BAD_REQUEST)?;
-    let schema = state.schemas.iter().find(|s| s.name == *table).ok_or(StatusCode::NOT_FOUND)?;
+    let table = params
+        .get(0)
+        .map(|(t, _)| t)
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let schema = state
+        .schemas
+        .iter()
+        .find(|s| s.name == *table)
+        .ok_or(StatusCode::NOT_FOUND)?;
     let obj = payload.as_object().ok_or(StatusCode::BAD_REQUEST)?;
     let updates: Vec<String> = obj
         .iter()
-        .filter(|(k, _)| schema.columns.iter().any(|c| c.name == **k) && !schema.primary_keys.contains(k))
+        .filter(|(k, _)| {
+            schema.columns.iter().any(|c| c.name == **k) && !schema.primary_keys.contains(k)
+        })
         .map(|(k, v)| format!("{} = {}", k, v))
         .collect();
     if updates.is_empty() {
@@ -192,14 +240,13 @@ async fn update_row(
         .primary_keys
         .iter()
         .zip(params.iter().skip(1))
-        .map(|(pk, (_, v))| format!("{} = ?", pk))
+        .map(|(pk, _)| format!("{} = ?", pk))
         .collect::<Vec<_>>()
         .join(" AND ");
     let query = format!("UPDATE {} SET {} WHERE {}", table, updates.join(","), where_clause);
     let values: Vec<String> = params.into_iter().skip(1).map(|(_, v)| v).collect();
-    state
-        .conn
-        .execute(&query, rusqlite::params_from_iter(&values))
+    let conn = state.conn.lock().unwrap();
+    conn.execute(&query, rusqlite::params_from_iter(&values))
         .map_err(|e| map_sqlite_error(e))?;
     Ok(StatusCode::OK)
 }
@@ -208,20 +255,26 @@ async fn delete_row(
     State(state): State<AppState>,
     Path(params): Path<Vec<(String, String)>>,
 ) -> Result<StatusCode, StatusCode> {
-    let table = params.get(0).map(|(t, _)| t).ok_or(StatusCode::BAD_REQUEST)?;
-    let schema = state.schemas.iter().find(|s| s.name == *table).ok_or(StatusCode::NOT_FOUND)?;
+    let table = params
+        .get(0)
+        .map(|(t, _)| t)
+        .ok_or(StatusCode::BAD_REQUEST)?;
+    let schema = state
+        .schemas
+        .iter()
+        .find(|s| s.name == *table)
+        .ok_or(StatusCode::NOT_FOUND)?;
     let where_clause = schema
         .primary_keys
         .iter()
         .zip(params.iter().skip(1))
-        .map(|(pk, (_, v))| format!("{} = ?", pk))
+        .map(|(pk, _)| format!("{} = ?", pk))
         .collect::<Vec<_>>()
         .join(" AND ");
     let query = format!("DELETE FROM {} WHERE {}", table, where_clause);
     let values: Vec<String> = params.into_iter().skip(1).map(|(_, v)| v).collect();
-    state
-        .conn
-        .execute(&query, rusqlite::params_from_iter(&values))
+    let conn = state.conn.lock().unwrap();
+    conn.execute(&query, rusqlite::params_from_iter(&values))
         .map_err(|e| map_sqlite_error(e))?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -256,7 +309,9 @@ fn execute_query(
 fn map_sqlite_error(e: RusqliteError) -> StatusCode {
     match e {
         RusqliteError::QueryReturnedNoRows => StatusCode::NOT_FOUND,
-        RusqliteError::SqliteFailure(_, Some(msg)) if msg.contains("constraint") => StatusCode::BAD_REQUEST,
+        RusqliteError::SqliteFailure(_, Some(msg)) if msg.contains("constraint") => {
+            StatusCode::BAD_REQUEST
+        }
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
@@ -269,7 +324,12 @@ fn generate_openapi(schemas: &[TableSchema]) -> Value {
         let pk_path = if schema.primary_keys.len() == 1 {
             format!("/{}/{}", schema.name, schema.primary_keys[0])
         } else {
-            let pk_segment = schema.primary_keys.iter().map(|pk| format!("/{}", pk)).collect::<Vec<_>>().join("");
+            let pk_segment = schema
+                .primary_keys
+                .iter()
+                .map(|pk| format!("/{}", pk))
+                .collect::<Vec<_>>()
+                .join("");
             format!("/{}{}", schema.name, pk_segment)
         };
 
@@ -318,7 +378,7 @@ fn generate_openapi(schemas: &[TableSchema]) -> Value {
                         }
                     }
                 }
-            })
+            }),
         );
         path_obj.insert(
             "post".to_string(),
@@ -335,7 +395,7 @@ fn generate_openapi(schemas: &[TableSchema]) -> Value {
                     "201": { "description": "Created" },
                     "400": { "description": "Bad request" }
                 }
-            })
+            }),
         );
         paths.insert(path_prefix.clone(), json!(path_obj));
 
@@ -359,7 +419,7 @@ fn generate_openapi(schemas: &[TableSchema]) -> Value {
                     },
                     "404": { "description": "Not found" }
                 }
-            })
+            }),
         );
         pk_path_obj.insert(
             "put".to_string(),
@@ -381,7 +441,7 @@ fn generate_openapi(schemas: &[TableSchema]) -> Value {
                     "400": { "description": "Bad request" },
                     "404": { "description": "Not found" }
                 }
-            })
+            }),
         );
         pk_path_obj.insert(
             "delete".to_string(),
@@ -397,7 +457,7 @@ fn generate_openapi(schemas: &[TableSchema]) -> Value {
                     "204": { "description": "Deleted" },
                     "404": { "description": "Not found" }
                 }
-            })
+            }),
         );
         paths.insert(pk_path, json!(pk_path_obj));
     }

@@ -1,15 +1,36 @@
 {
   "mcpServers": {
-    // failed finding browser executable
     "playwright": {
       "name": "playwright",
       "command": "npx",
       "args": [
         "@executeautomation/playwright-mcp-server"
       ]
+    },
+    "desktop-commander": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@wonderwhy-er/desktop-commander"
+      ]
     }
-  }
+  },
+  "selectedAuthType": "gemini-api-key"
 }
+
+
+// {
+//   "mcpServers": {
+//     // failed finding browser executable
+//     "playwright": {
+//       "name": "playwright",
+//       "command": "npx",
+//       "args": [
+//         "@executeautomation/playwright-mcp-server"
+//       ]
+//     }
+//   }
+// }
 // https://mcpmarket.com/categories/browser-automation
 // no support for js eval
 // "playwright": {

@@ -73,6 +73,7 @@ This project aims to create a comprehensive directory for smart contract auditor
 - Dune Analytics datasets
 - Community feedback (forums, Twitter)
 - Real-time exploit feeds (security newsletters, GitHub issues, on-chain transaction monitoring)
+- **DefiLlama**: API for smart contracts sorted by TVL or volume; prioritize high-value protocols for audit relevance and data collection.
 
 ## Implementation Steps
 1. **Research Phase (1-2 weeks)**: Collect data on top auditors, costs, benefits, and historical exploits.
@@ -85,7 +86,7 @@ This project aims to create a comprehensive directory for smart contract auditor
 8. **Launch and Maintenance**: Deploy and update regularly, with continuous monitoring for new exploits.
 
 ## Technologies
-- **Frontend**: Next.js, React
+- **Frontend**: Next.js, React (initial choice; alternatives like Svelte or Vue considered for potentially lighter dev experience and fewer outdated deps)
 - **Backend**: Node.js, Express or serverless functions
 - **Database**: PostgreSQL or MongoDB for auditor data, with time-series support for ratings
 - **Data Pipeline**: Apache Kafka or similar for real-time processing, web scraping with Puppeteer or Selenium

@@ -1,0 +1,24 @@
+{
+  "name": "audir-pipeline",
+  "version": "1.0.0",
+  "description": "Data pipeline for Smart Contract Auditing Directory",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "scrape": "node scrapers/index.js",
+    "ingest": "node ingestion/index.js",
+    "process": "node processing/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^21.0.0",
+    "axios": "^1.5.0",
+    "winston": "^3.10.0",
+    "async": "^3.2.4",
+    "node-cron": "^3.0.3"
+  },
+  "keywords": ["blockchain", "auditing", "data-pipeline"],
+  "author": "",
+  "license": "ISC"
+}

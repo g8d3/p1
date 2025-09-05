@@ -24,6 +24,10 @@ class RatingUpdater {
   }
 
   updateRatings(exploitData) {
+    if (!Array.isArray(exploitData)) {
+      logger.error(`exploitData is not an array: ${typeof exploitData}`);
+      return this.auditors;
+    }
     exploitData.forEach(exploit => {
       if (exploit.contract) {
         const affectedAuditors = this.auditors.filter(auditor =>

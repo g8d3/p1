@@ -16,7 +16,7 @@ CryptoGuard is a comprehensive web application designed to collect, analyze, and
 - **DApp Developers**: Building secure smart contracts and applications
 - **Security Researchers**: Analyzing patterns and developing countermeasures
 - **Protocol Teams**: Strengthening existing DeFi protocols
-- **Auditors**: Enhancing security audit processes
+- **Auditors**: Enhancing security audit processes and tracking auditorsCalled metrics
 - **Educators**: Teaching DeFi security concepts
 
 ## System Architecture Overview
@@ -48,6 +48,7 @@ CryptoGuard is a comprehensive web application designed to collect, analyze, and
 - **API Integrations**: Direct feeds from security platforms
 - **Manual Submissions**: Community-contributed exploit reports
 - **Blockchain Monitoring**: On-chain transaction analysis
+- **Auditor Tracking**: Monitor auditorsCalled frequency and patterns
 
 #### 2. Analysis Engine
 - **Vulnerability Classification**: Standardized categorization system
@@ -71,7 +72,7 @@ CryptoGuard is a comprehensive web application designed to collect, analyze, and
 
 ### Backend Infrastructure
 - **Application Framework**: Node.js with Express/Fastify or Python with FastAPI
-- **Database**: PostgreSQL for structured data, MongoDB for document storage
+- **Database**: PostgreSQL for structured data
 - **Search Engine**: Elasticsearch for advanced querying
 - **Message Queue**: Redis/RabbitMQ for asynchronous processing
 - **Caching**: Redis for performance optimization
@@ -133,7 +134,7 @@ CryptoGuard is a comprehensive web application designed to collect, analyze, and
 ### Secondary Metrics
 - **Data Quality**: Accuracy of categorization, expert verification rate
 - **Platform Performance**: Response times, uptime, user satisfaction
-- **Security Impact**: Prevented vulnerabilities, improved audit scores
+- **Security Impact**: Prevented vulnerabilities, improved audit scores, auditorsCalled effectiveness
 - **Community Health**: Expert participation, quality contributions
 
 ## Risk Assessment & Mitigation
@@ -348,7 +349,13 @@ class BlockchainMonitor:
       "fixed": "string"
     },
     "transaction_hashes": ["string"],
-    "block_numbers": ["number"]
+    "block_numbers": ["number"],
+    "auditors_called": {
+      "count": "number",
+      "auditor_firms": ["string"],
+      "audit_dates": ["datetime"],
+      "effectiveness_rating": "enum[none|low|medium|high]"
+    }
   },
   "impact_assessment": {
     "financial_impact": "number",

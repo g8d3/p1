@@ -26,7 +26,7 @@ if st.button("Fetch Data and Analyze"):
         data = vbt.YFData.download(symbol, interval=tf, period=period)
         df = data.get()
         if df.empty:
-            st.error("No data fetched. Try a shorter period or different timeframe (e.g., 1m limited to 7d).")
+            st.error("No data fetched. Ensure the period is valid for the selected timeframe (e.g., 1m limited to 7d).")
             st.stop()
         st.write(f"Data fetched for {symbol} on {tf} timeframe. Rows: {len(df)}")
 
@@ -78,6 +78,8 @@ if st.button("Fetch Data and Analyze"):
                     try:
                         start = int(row['entry_idx'])
                         end = int(row['exit_idx'])
+                        if start < 0 or end >= len(df) or start > end:
+                            raise ValueError(f"Invalid indices: start={start}, end={end}, df_len={len(df)}")
                         entry_price = row['entry_price']
                         slice_df = df.iloc[start:end + 1]
                         if row['direction'] == 'long':  # long
@@ -86,14 +88,19 @@ if st.button("Fetch Data and Analyze"):
                         else:  # short
                             max_price = slice_df['High'].max()
                             mae = (entry_price - max_price) / entry_price * 100
-                        return mae
+                        return mae if not np.isnan(mae) else np.nan
                     except Exception as inner_e:
-                        st.error(f"Error in MAE computation: {str(inner_e)}\n{traceback.format_exc()}")
+                        st.error(f"Error in MAE computation at line 93: {str(inner_e)}\n{traceback.format_exc()}")
                         return np.nan
 
                 if not pf.trades.records.empty:
-                    pf.trades.records['mae'] = pf.trades.records.apply(compute_mae, axis=1)
-                    winners = pf.trades.records[pf.trades.records['return'] > 0]
+                    # Create a copy of trades records to avoid SettingWithCopyWarning
+                    trades_df = pf.trades.records.copy()
+                    # Initialize 'mae' column with NaN
+                    trades_df['mae'] = np.nan
+                    # Apply MAE computation
+                    trades_df['mae'] = trades_df.apply(compute_mae, axis=1)
+                    winners = trades_df[trades_df['return'] > 0]
                     avg_mae = winners['mae'].mean() if not winners.empty else np.nan
                 else:
                     avg_mae = np.nan
@@ -150,5 +157,5 @@ if st.button("Fetch Data and Analyze"):
             st.write("No entry signals detected. Try adjusting the RSI parameters or timeframe.")
 
     except Exception as e:
-        error_msg = f"Error fetching or analyzing data: {str(e)}\n{traceback.format_exc()}. Try adjusting parameters, timeframe, or period."
+        error_msg = f"Error at line 142: {str(e)}\n{traceback.format_exc()}. Check RSI parameters, timeframe, or period for compatibility."
         st.error(error_msg)

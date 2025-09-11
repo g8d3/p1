@@ -3,6 +3,7 @@ import vectorbt as vbt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import traceback
 
 st.title("Crypto RSI Trading Backtest with Risk-Reward Analysis")
 
@@ -41,13 +42,13 @@ if st.button("Fetch Data and Analyze"):
         freq = timeframe_map.get(tf, "1D")
 
         # Calculate RSI
-        rsi = vbt.RSI.run(df['Close'], window=rsi_period)
+        rsi = vbt.RSI.run(df['Close'], window=rsi_period).rsi
 
         # Generate entry signals
         # Long: RSI crosses above lower_rsi (exiting oversold upwards)
         # Short: RSI crosses below upper_rsi (exiting overbought downwards)
-        long_entries = rsi.rsi.crossed_above(lower_rsi)
-        short_entries = rsi.rsi.crossed_below(upper_rsi)
+        long_entries = (rsi.shift(1) < lower_rsi) & (rsi >= lower_rsi)
+        short_entries = (rsi.shift(1) > upper_rsi) & (rsi <= upper_rsi)
 
         # Hardcoded TP percentages and RR ratios
         tp_percentages = [1, 2, 3, 4]
@@ -74,17 +75,21 @@ if st.button("Fetch Data and Analyze"):
 
                 # Compute MAE for each trade
                 def compute_mae(row):
-                    start = row['entry_idx']
-                    end = row['exit_idx']
-                    entry_price = row['entry_price']
-                    slice_df = df.iloc[start:end + 1]
-                    if row['direction'] == 0:  # long
-                        min_price = slice_df['Low'].min()
-                        mae = (min_price - entry_price) / entry_price
-                    else:  # short
-                        max_price = slice_df['High'].max()
-                        mae = (entry_price - max_price) / entry_price
-                    return mae
+                    try:
+                        start = int(row['entry_idx'])
+                        end = int(row['exit_idx'])
+                        entry_price = row['entry_price']
+                        slice_df = df.iloc[start:end + 1]
+                        if row['direction'] == 'long':  # long
+                            min_price = slice_df['Low'].min()
+                            mae = (min_price - entry_price) / entry_price * 100
+                        else:  # short
+                            max_price = slice_df['High'].max()
+                            mae = (entry_price - max_price) / entry_price * 100
+                        return mae
+                    except Exception as inner_e:
+                        st.error(f"Error in MAE computation: {str(inner_e)}\n{traceback.format_exc()}")
+                        return np.nan
 
                 if not pf.trades.records.empty:
                     pf.trades.records['mae'] = pf.trades.records.apply(compute_mae, axis=1)
@@ -94,7 +99,7 @@ if st.button("Fetch Data and Analyze"):
                     avg_mae = np.nan
 
                 win_rate = pf.trades.win_rate() * 100 if pf.trades.count() > 0 else 0
-                ann_return = pf.stats()['Ann. Return [%]']
+                ann_return = pf.stats().get('Annualized Return [%]', 0)
 
                 results.append({
                     'TP (%)': tp,
@@ -102,7 +107,7 @@ if st.button("Fetch Data and Analyze"):
                     'SL (%)': round(sl_pct, 2),
                     'Win Rate (%)': round(win_rate, 2),
                     'Ann. Return (%)': round(ann_return, 2),
-                    'Avg MAE for Winners (%)': round(avg_mae * 100, 2) if not np.isnan(avg_mae) else 'N/A'
+                    'Avg MAE for Winners (%)': round(avg_mae, 2) if not np.isnan(avg_mae) else 'N/A'
                 })
 
         # Display results table
@@ -110,6 +115,20 @@ if st.button("Fetch Data and Analyze"):
             results_df = pd.DataFrame(results)
             st.subheader("Backtest Results for Different TP and RR")
             st.write(results_df)
+
+            # Plot win rates as a bar chart
+            st.subheader("Win Rates by TP and RR")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            for tp in tp_percentages:
+                subset = results_df[results_df['TP (%)'] == tp]
+                ax.plot(subset['RR'], subset['Win Rate (%)'], marker='o', label=f"TP {tp}%")
+            ax.set_title("Win Rates by Take-Profit and Risk-Reward Ratio")
+            ax.set_xlabel("Risk-Reward Ratio")
+            ax.set_ylabel("Win Rate (%)")
+            ax.legend()
+            ax.grid(True)
+            plt.tight_layout()
+            st.pyplot(fig)
         else:
             st.write("No trades detected. Try adjusting the RSI parameters or timeframe.")
 
@@ -131,4 +150,5 @@ if st.button("Fetch Data and Analyze"):
             st.write("No entry signals detected. Try adjusting the RSI parameters or timeframe.")
 
     except Exception as e:
-        st.error(f"Error fetching or analyzing data: {str(e)}. Try a shorter period (e.g., 7d for 1m timeframe) or different timeframe.")
+        error_msg = f"Error fetching or analyzing data: {str(e)}\n{traceback.format_exc()}. Try adjusting parameters, timeframe, or period."
+        st.error(error_msg)

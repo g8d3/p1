@@ -49,6 +49,7 @@ if st.button("Fetch Data and Analyze"):
         # Short: RSI crosses below upper_rsi (exiting overbought downwards)
         long_entries = (rsi.shift(1) < lower_rsi) & (rsi >= lower_rsi)
         short_entries = (rsi.shift(1) > upper_rsi) & (rsi <= upper_rsi)
+        st.write(f"Number of Long Entry Signals: {long_entries.sum()}, Short Entry Signals: {short_entries.sum()}")
 
         # Hardcoded TP percentages and RR ratios
         tp_percentages = [1, 2, 3, 4]
@@ -71,7 +72,8 @@ if st.button("Fetch Data and Analyze"):
                     sl_stop=sl_frac,
                     direction='both',
                     freq=freq,
-                    init_cash=10000
+                    init_cash=10000,
+                    accumulate=False  # Ensure no overlapping trades
                 )
 
                 # Compute MAE for each trade

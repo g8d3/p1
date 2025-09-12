@@ -102,10 +102,15 @@ if st.button("Fetch Data and Analyze"):
                     trades_df['mae'] = np.nan
                     trades_df['mae'] = trades_df.apply(compute_mae, axis=1)
                     winners = trades_df[trades_df['return'] > 0]
+                    losers = trades_df[trades_df['return'] <= 0]
                     avg_mae = winners['mae'].mean() if not winners.empty else np.nan
                     min_mae = winners['mae'].min() if not winners.empty else np.nan
                     max_mae = winners['mae'].max() if not winners.empty else np.nan
                     std_mae = winners['mae'].std() if not winners.empty else np.nan
+                    avg_mae_losers = losers['mae'].mean() if not losers.empty else np.nan
+                    min_mae_losers = losers['mae'].min() if not losers.empty else np.nan
+                    max_mae_losers = losers['mae'].max() if not losers.empty else np.nan
+                    std_mae_losers = losers['mae'].std() if not losers.empty else np.nan
                     num_trades = len(trades_df)
                     # Collect MAE for long and short winners
                     if not winners.empty:
@@ -113,6 +118,7 @@ if st.button("Fetch Data and Analyze"):
                         mae_short_list.extend(winners[winners['direction'] == 'short']['mae'].dropna())
                 else:
                     avg_mae = min_mae = max_mae = std_mae = np.nan
+                    avg_mae_losers = min_mae_losers = max_mae_losers = std_mae_losers = np.nan
                     num_trades = 0
 
                 win_rate = pf.trades.win_rate() * 100 if pf.trades.count() > 0 else 0
@@ -130,6 +136,10 @@ if st.button("Fetch Data and Analyze"):
                     'Min MAE for Winners (%)': round(min_mae, 2) if not np.isnan(min_mae) else 'N/A',
                     'Max MAE for Winners (%)': round(max_mae, 2) if not np.isnan(max_mae) else 'N/A',
                     'Std MAE for Winners (%)': round(std_mae, 2) if not np.isnan(std_mae) else 'N/A',
+                    'Avg MAE for Losers (%)': round(avg_mae_losers, 2) if not np.isnan(avg_mae_losers) else 'N/A',
+                    'Min MAE for Losers (%)': round(min_mae_losers, 2) if not np.isnan(min_mae_losers) else 'N/A',
+                    'Max MAE for Losers (%)': round(max_mae_losers, 2) if not np.isnan(max_mae_losers) else 'N/A',
+                    'Std MAE for Losers (%)': round(std_mae_losers, 2) if not np.isnan(std_mae_losers) else 'N/A',
                     'Number of Trades': num_trades
                 })
 
@@ -152,7 +162,8 @@ if st.button("Fetch Data and Analyze"):
                     target_price = entry_price * (1 + abs(avg_mae_long) / 100) if avg_mae_long != 0 else entry_price
                     crosses = future_prices >= target_price
                     if crosses.any():
-                        first_true_idx = crosses[crosses].index[0]  # First True value
+                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])  # First True index
+                        first_true_idx = df.index[start_idx + 1 + first_true_loc]
                         long_entries_adjusted.loc[first_true_idx] = True
             except Exception as inner_e:
                 st.error(f"Error adjusting long entry at line 134: {str(inner_e)}\n{traceback.format_exc()}")
@@ -166,7 +177,8 @@ if st.button("Fetch Data and Analyze"):
                     target_price = entry_price * (1 - abs(avg_mae_short) / 100) if avg_mae_short != 0 else entry_price
                     crosses = future_prices <= target_price
                     if crosses.any():
-                        first_true_idx = crosses[crosses].index[0]  # First True value
+                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])  # First True index
+                        first_true_idx = df.index[start_idx + 1 + first_true_loc]
                         short_entries_adjusted.loc[first_true_idx] = True
             except Exception as inner_e:
                 st.error(f"Error adjusting short entry at line 146: {str(inner_e)}\n{traceback.format_exc()}")
@@ -198,13 +210,19 @@ if st.button("Fetch Data and Analyze"):
                     trades_df['mae'] = np.nan
                     trades_df['mae'] = trades_df.apply(compute_mae, axis=1)
                     winners = trades_df[trades_df['return'] > 0]
+                    losers = trades_df[trades_df['return'] <= 0]
                     avg_mae = winners['mae'].mean() if not winners.empty else np.nan
                     min_mae = winners['mae'].min() if not winners.empty else np.nan
                     max_mae = winners['mae'].max() if not winners.empty else np.nan
                     std_mae = winners['mae'].std() if not winners.empty else np.nan
+                    avg_mae_losers = losers['mae'].mean() if not losers.empty else np.nan
+                    min_mae_losers = losers['mae'].min() if not losers.empty else np.nan
+                    max_mae_losers = losers['mae'].max() if not losers.empty else np.nan
+                    std_mae_losers = losers['mae'].std() if not losers.empty else np.nan
                     num_trades = len(trades_df)
                 else:
                     avg_mae = min_mae = max_mae = std_mae = np.nan
+                    avg_mae_losers = min_mae_losers = max_mae_losers = std_mae_losers = np.nan
                     num_trades = 0
 
                 win_rate = pf.trades.win_rate() * 100 if pf.trades.count() > 0 else 0
@@ -222,6 +240,10 @@ if st.button("Fetch Data and Analyze"):
                     'Min MAE for Winners (%)': round(min_mae, 2) if not np.isnan(min_mae) else 'N/A',
                     'Max MAE for Winners (%)': round(max_mae, 2) if not np.isnan(max_mae) else 'N/A',
                     'Std MAE for Winners (%)': round(std_mae, 2) if not np.isnan(std_mae) else 'N/A',
+                    'Avg MAE for Losers (%)': round(avg_mae_losers, 2) if not np.isnan(avg_mae_losers) else 'N/A',
+                    'Min MAE for Losers (%)': round(min_mae_losers, 2) if not np.isnan(min_mae_losers) else 'N/A',
+                    'Max MAE for Losers (%)': round(max_mae_losers, 2) if not np.isnan(max_mae_losers) else 'N/A',
+                    'Std MAE for Losers (%)': round(std_mae_losers, 2) if not np.isnan(std_mae_losers) else 'N/A',
                     'Number of Trades': num_trades
                 })
 

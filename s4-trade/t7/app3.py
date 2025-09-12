@@ -57,6 +57,7 @@ if st.button("Fetch Data and Analyze"):
         results_first = []
         mae_long_list = []
         mae_short_list = []
+        num_winners = 0
 
         for tp in tp_percentages:
             for rr in rr_ratios:
@@ -89,9 +90,13 @@ if st.button("Fetch Data and Analyze"):
                         if row['direction'] == 'long':
                             min_price = slice_df['Low'].min()
                             mae = (min_price - entry_price) / entry_price * 100
+                            if mae == 0:
+                                st.warning(f"Zero MAE for long trade at index {start}. Check price data.")
                         else:  # short
                             max_price = slice_df['High'].max()
                             mae = (entry_price - max_price) / entry_price * 100
+                            if mae == 0:
+                                st.warning(f"Zero MAE for short trade at index {start}. Check price data.")
                         return mae if not np.isnan(mae) else np.nan
                     except Exception as inner_e:
                         st.error(f"Error in MAE computation at line 93: {str(inner_e)}\n{traceback.format_exc()}")
@@ -112,10 +117,13 @@ if st.button("Fetch Data and Analyze"):
                     max_mae_losers = losers['mae'].max() if not losers.empty else np.nan
                     std_mae_losers = losers['mae'].std() if not losers.empty else np.nan
                     num_trades = len(trades_df)
-                    # Collect MAE for long and short winners
+                    num_winners += len(winners)
+                    # Collect MAE for long and short winners, excluding zeros
                     if not winners.empty:
-                        mae_long_list.extend(winners[winners['direction'] == 'long']['mae'].dropna())
-                        mae_short_list.extend(winners[winners['direction'] == 'short']['mae'].dropna())
+                        long_maes = winners[winners['direction'] == 'long']['mae'].dropna()
+                        short_maes = winners[winners['direction'] == 'short']['mae'].dropna()
+                        mae_long_list.extend(long_maes[long_maes != 0])
+                        mae_short_list.extend(short_maes[short_maes != 0])
                 else:
                     avg_mae = min_mae = max_mae = std_mae = np.nan
                     avg_mae_losers = min_mae_losers = max_mae_losers = std_mae_losers = np.nan
@@ -146,8 +154,11 @@ if st.button("Fetch Data and Analyze"):
         # Calculate average MAE for long and short from first backtest
         avg_mae_long = np.mean(mae_long_list) if mae_long_list else 0
         avg_mae_short = np.mean(mae_short_list) if mae_short_list else 0
+        st.write(f"First Backtest - Total Winning Trades: {num_winners}")
         st.write(f"Average MAE for Winning Long Trades: {round(avg_mae_long, 2)}%")
         st.write(f"Average MAE for Winning Short Trades: {round(avg_mae_short, 2)}%")
+        if num_winners == 0:
+            st.warning("No winning trades in first backtest. Adjust RSI parameters or timeframe to generate winning trades.")
 
         # Second backtest: Adjust entries based on average MAE
         long_entries_adjusted = pd.Series(False, index=df.index)
@@ -159,10 +170,10 @@ if st.button("Fetch Data and Analyze"):
                 if start_idx + 1 < len(df):
                     future_prices = df['Close'].iloc[start_idx + 1:]
                     entry_price = df['Close'].loc[idx]
-                    target_price = entry_price * (1 + abs(avg_mae_long) / 100) if avg_mae_long != 0 else entry_price
-                    crosses = future_prices >= target_price
+                    target_price = entry_price * (1 - abs(avg_mae_long) / 100) if avg_mae_long != 0 else entry_price
+                    crosses = future_prices <= target_price
                     if crosses.any():
-                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])  # First True index
+                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])
                         first_true_idx = df.index[start_idx + 1 + first_true_loc]
                         long_entries_adjusted.loc[first_true_idx] = True
             except Exception as inner_e:
@@ -174,10 +185,10 @@ if st.button("Fetch Data and Analyze"):
                 if start_idx + 1 < len(df):
                     future_prices = df['Close'].iloc[start_idx + 1:]
                     entry_price = df['Close'].loc[idx]
-                    target_price = entry_price * (1 - abs(avg_mae_short) / 100) if avg_mae_short != 0 else entry_price
-                    crosses = future_prices <= target_price
+                    target_price = entry_price * (1 + abs(avg_mae_short) / 100) if avg_mae_short != 0 else entry_price
+                    crosses = future_prices >= target_price
                     if crosses.any():
-                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])  # First True index
+                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])
                         first_true_idx = df.index[start_idx + 1 + first_true_loc]
                         short_entries_adjusted.loc[first_true_idx] = True
             except Exception as inner_e:
@@ -187,6 +198,7 @@ if st.button("Fetch Data and Analyze"):
 
         # Second backtest: Run with adjusted entries
         results_second = []
+        num_winners_second = 0
         for tp in tp_percentages:
             for rr in rr_ratios:
                 sl_pct = tp / rr
@@ -220,6 +232,7 @@ if st.button("Fetch Data and Analyze"):
                     max_mae_losers = losers['mae'].max() if not losers.empty else np.nan
                     std_mae_losers = losers['mae'].std() if not losers.empty else np.nan
                     num_trades = len(trades_df)
+                    num_winners_second += len(winners)
                 else:
                     avg_mae = min_mae = max_mae = std_mae = np.nan
                     avg_mae_losers = min_mae_losers = max_mae_losers = std_mae_losers = np.nan
@@ -256,6 +269,7 @@ if st.button("Fetch Data and Analyze"):
             st.subheader("Second Backtest Results (MAE-Adjusted Entries)")
             results_df_second = pd.DataFrame(results_second)
             st.write(results_df_second)
+            st.write(f"Second Backtest - Total Winning Trades: {num_winners_second}")
 
             # Plot win rates comparison
             st.subheader("Win Rates Comparison: Base vs MAE-Adjusted")

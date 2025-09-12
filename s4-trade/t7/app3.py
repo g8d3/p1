@@ -290,13 +290,17 @@ if st.button("Fetch Data and Analyze"):
             ax2.grid(True)
             plt.tight_layout()
             st.pyplot(fig)
+
         else:
             st.write("No trades detected in first backtest. Try adjusting the RSI parameters or timeframe.")
 
-        # Plot OHLCV with entry signals for both backtests
+        # Plot OHLCV with RSI and entry signals for both backtests
         if long_entries_base.any() or short_entries_base.any() or long_entries_adjusted.any() or short_entries_adjusted.any():
-            st.subheader("OHLCV with Entry Signals")
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+            st.subheader("OHLCV and RSI with Entry Signals")
+            fig = plt.figure(figsize=(12, 10))
+            
+            # Price plot
+            ax1 = fig.add_subplot(2, 1, 1)
             ax1.plot(df.index, df['Close'], label='Close Price', color='blue', alpha=0.5)
             ax1.scatter(df.index[long_entries_base], df['Close'][long_entries_base], color='green', label='Long Entries', marker='^', s=100)
             ax1.scatter(df.index[short_entries_base], df['Close'][short_entries_base], color='red', label='Short Entries', marker='v', s=100)
@@ -305,14 +309,49 @@ if st.button("Fetch Data and Analyze"):
             ax1.legend()
             ax1.grid(True)
 
-            ax2.plot(df.index, df['Close'], label='Close Price', color='blue', alpha=0.5)
-            ax2.scatter(df.index[long_entries_adjusted], df['Close'][long_entries_adjusted], color='green', label='Long Entries (MAE-Adjusted)', marker='^', s=100)
-            ax2.scatter(df.index[short_entries_adjusted], df['Close'][short_entries_adjusted], color='red', label='Short Entries (MAE-Adjusted)', marker='v', s=100)
-            ax2.set_title(f"{symbol} Price with MAE-Adjusted Entry Signals")
+            # RSI plot
+            ax2 = fig.add_subplot(2, 1, 2, sharex=ax1)
+            ax2.plot(df.index, rsi, label='RSI', color='purple', alpha=0.7)
+            ax2.axhline(y=lower_rsi, color='green', linestyle='--', label=f'Lower RSI ({lower_rsi})')
+            ax2.axhline(y=upper_rsi, color='red', linestyle='--', label=f'Upper RSI ({upper_rsi})')
+            ax2.scatter(df.index[long_entries_base], rsi[long_entries_base], color='green', label='Long Entries', marker='^', s=100)
+            ax2.scatter(df.index[short_entries_base], rsi[short_entries_base], color='red', label='Short Entries', marker='v', s=100)
+            ax2.set_title("RSI with Entry Signals")
             ax2.set_xlabel("Time")
-            ax2.set_ylabel("Price")
+            ax2.set_ylabel("RSI")
             ax2.legend()
             ax2.grid(True)
+
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            st.pyplot(fig)
+
+            # MAE-adjusted signals plot
+            fig = plt.figure(figsize=(12, 10))
+            
+            # Price plot
+            ax3 = fig.add_subplot(2, 1, 1)
+            ax3.plot(df.index, df['Close'], label='Close Price', color='blue', alpha=0.5)
+            ax3.scatter(df.index[long_entries_adjusted], df['Close'][long_entries_adjusted], color='green', label='Long Entries (MAE-Adjusted)', marker='^', s=100)
+            ax3.scatter(df.index[short_entries_adjusted], df['Close'][short_entries_adjusted], color='red', label='Short Entries (MAE-Adjusted)', marker='v', s=100)
+            ax3.set_title(f"{symbol} Price with MAE-Adjusted Entry Signals")
+            ax3.set_ylabel("Price")
+            ax3.legend()
+            ax3.grid(True)
+
+            # RSI plot
+            ax4 = fig.add_subplot(2, 1, 2, sharex=ax3)
+            ax4.plot(df.index, rsi, label='RSI', color='purple', alpha=0.7)
+            ax4.axhline(y=lower_rsi, color='green', linestyle='--', label=f'Lower RSI ({lower_rsi})')
+            ax4.axhline(y=upper_rsi, color='red', linestyle='--', label=f'Upper RSI ({upper_rsi})')
+            ax4.scatter(df.index[long_entries_adjusted], rsi[long_entries_adjusted], color='green', label='Long Entries (MAE-Adjusted)', marker='^', s=100)
+            ax4.scatter(df.index[short_entries_adjusted], rsi[short_entries_adjusted], color='red', label='Short Entries (MAE-Adjusted)', marker='v', s=100)
+            ax4.set_title("RSI with MAE-Adjusted Entry Signals")
+            ax4.set_xlabel("Time")
+            ax4.set_ylabel("RSI")
+            ax4.legend()
+            ax4.grid(True)
+
             plt.xticks(rotation=45)
             plt.tight_layout()
             st.pyplot(fig)

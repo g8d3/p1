@@ -70,7 +70,8 @@ if st.button("Fetch Data and Analyze"):
                     tp_stop=tp_frac,
                     sl_stop=sl_frac,
                     direction='both',
-                    freq=freq
+                    freq=freq,
+                    init_cash=10000
                 )
 
                 # Compute MAE for each trade
@@ -102,11 +103,19 @@ if st.button("Fetch Data and Analyze"):
                     trades_df['mae'] = trades_df.apply(compute_mae, axis=1)
                     winners = trades_df[trades_df['return'] > 0]
                     avg_mae = winners['mae'].mean() if not winners.empty else np.nan
+                    min_mae = winners['mae'].min() if not winners.empty else np.nan
+                    max_mae = winners['mae'].max() if not winners.empty else np.nan
+                    std_mae = winners['mae'].std() if not winners.empty else np.nan
+                    num_trades = len(trades_df)
                 else:
-                    avg_mae = np.nan
+                    avg_mae = min_mae = max_mae = std_mae = np.nan
+                    num_trades = 0
 
                 win_rate = pf.trades.win_rate() * 100 if pf.trades.count() > 0 else 0
-                ann_return = pf.stats().get('Annualized Return [%]', 0)
+                # Calculate annualized return manually
+                total_return = pf.total_return()
+                time_delta = (df.index[-1] - df.index[0]).total_seconds() / (365 * 24 * 3600)  # Years
+                ann_return = ((1 + total_return) ** (1 / time_delta) - 1) * 100 if time_delta > 0 else 0
 
                 results.append({
                     'TP (%)': tp,
@@ -114,7 +123,11 @@ if st.button("Fetch Data and Analyze"):
                     'SL (%)': round(sl_pct, 2),
                     'Win Rate (%)': round(win_rate, 2),
                     'Ann. Return (%)': round(ann_return, 2),
-                    'Avg MAE for Winners (%)': round(avg_mae, 2) if not np.isnan(avg_mae) else 'N/A'
+                    'Avg MAE for Winners (%)': round(avg_mae, 2) if not np.isnan(avg_mae) else 'N/A',
+                    'Min MAE for Winners (%)': round(min_mae, 2) if not np.isnan(min_mae) else 'N/A',
+                    'Max MAE for Winners (%)': round(max_mae, 2) if not np.isnan(max_mae) else 'N/A',
+                    'Std MAE for Winners (%)': round(std_mae, 2) if not np.isnan(std_mae) else 'N/A',
+                    'Number of Trades': num_trades
                 })
 
         # Display results table

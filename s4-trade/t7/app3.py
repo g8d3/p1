@@ -45,8 +45,8 @@ if st.button("Fetch Data and Analyze"):
         rsi = vbt.RSI.run(df['Close'], window=rsi_period).rsi
 
         # Generate base entry signals for first backtest
-        long_entries_base = (rsi.shift(1) < lower_rsi) & (rsi >= lower_rsi)
-        short_entries_base = (rsi.shift(1) > upper_rsi) & (rsi <= upper_rsi)
+        long_entries_base = (rsi.shift(1) > lower_rsi) & (rsi <= lower_rsi)
+        short_entries_base = (rsi.shift(1) < upper_rsi) & (rsi >= upper_rsi)
         st.write(f"First Backtest - Number of Long Entry Signals: {long_entries_base.sum()}, Short Entry Signals: {short_entries_base.sum()}")
 
         # Hardcoded TP percentages and RR ratios
@@ -161,38 +161,8 @@ if st.button("Fetch Data and Analyze"):
             st.warning("No winning trades in first backtest. Adjust RSI parameters or timeframe to generate winning trades.")
 
         # Second backtest: Adjust entries based on average MAE
-        long_entries_adjusted = pd.Series(False, index=df.index)
-        short_entries_adjusted = pd.Series(False, index=df.index)
-
-        for idx in df.index[long_entries_base]:
-            try:
-                start_idx = df.index.get_loc(idx)
-                if start_idx + 1 < len(df):
-                    future_prices = df['Close'].iloc[start_idx + 1:]
-                    entry_price = df['Close'].loc[idx]
-                    target_price = entry_price * (1 - abs(avg_mae_long) / 100) if avg_mae_long != 0 else entry_price
-                    crosses = future_prices <= target_price
-                    if crosses.any():
-                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])
-                        first_true_idx = df.index[start_idx + 1 + first_true_loc]
-                        long_entries_adjusted.loc[first_true_idx] = True
-            except Exception as inner_e:
-                st.error(f"Error adjusting long entry at line 134: {str(inner_e)}\n{traceback.format_exc()}")
-
-        for idx in df.index[short_entries_base]:
-            try:
-                start_idx = df.index.get_loc(idx)
-                if start_idx + 1 < len(df):
-                    future_prices = df['Close'].iloc[start_idx + 1:]
-                    entry_price = df['Close'].loc[idx]
-                    target_price = entry_price * (1 + abs(avg_mae_short) / 100) if avg_mae_short != 0 else entry_price
-                    crosses = future_prices >= target_price
-                    if crosses.any():
-                        first_true_loc = future_prices.index.get_loc(crosses[crosses].index[0])
-                        first_true_idx = df.index[start_idx + 1 + first_true_loc]
-                        short_entries_adjusted.loc[first_true_idx] = True
-            except Exception as inner_e:
-                st.error(f"Error adjusting short entry at line 146: {str(inner_e)}\n{traceback.format_exc()}")
+        long_entries_adjusted = long_entries_base.copy()
+        short_entries_adjusted = short_entries_base.copy()
 
         st.write(f"Second Backtest - Number of Long Entry Signals: {long_entries_adjusted.sum()}, Short Entry Signals: {short_entries_adjusted.sum()}")
 

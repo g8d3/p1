@@ -1,0 +1,23 @@
+--- app4.py
++++ app4_fixed.py
+@@ -1,5 +1,6 @@
+ import streamlit as st
+ import vectorbt as vbt
++import vectorbtpro as vbtp
+ import pandas as pd
+ import numpy as np
+ from datetime import datetime
+@@ -159,7 +160,7 @@
+         for i, level in enumerate(buy_levels):
+             col = f'buy_level_{i+1}_{level:.2f}'
+-            entry_sig = vbt.signals.factories.crossed_below(close, level)
++            entry_sig = vbtp.indicators.basic.crossed_below(close, level)
+             entries[col] = entry_sig
+             sizes[col] = size_per_trade * entry_sig.astype(float)
+         
+@@ -167,7 +168,7 @@
+             col = f'sell_level_{i+1}_{level:.2f}'
+-            entry_sig = vbt.signals.factories.crossed_above(close, level)
++            entry_sig = vbtp.indicators.basic.crossed_above(close, level)
+             entries[col] = entry_sig
+             sizes[col] = -size_per_trade * entry_sig.astype(float)

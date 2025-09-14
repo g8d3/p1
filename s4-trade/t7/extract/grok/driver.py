@@ -8,6 +8,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 import traceback
+import time
 
 # Function to get driver attached to CDP
 @st.cache_resource
@@ -41,23 +42,44 @@ def fetch_page_content(url, timeout=10):
         # Store current window handles and their URLs to identify Streamlit tab
         initial_windows = {}
         for handle in driver.window_handles:
-            driver.switch_to.window(handle)
-            initial_windows[handle] = driver.current_url
+            try:
+                driver.switch_to.window(handle)
+                initial_windows[handle] = driver.current_url
+            except NoSuchWindowException:
+                continue
         print(f"Initial windows: {initial_windows}")
 
-        # Protect Streamlit tab (assuming it runs on localhost:8501)
+        # Identify Streamlit tab
         streamlit_tab = None
         for handle, page_url in initial_windows.items():
             if "localhost:8501" in page_url:
                 streamlit_tab = handle
                 break
 
+        # Attempt to open a new tab with retries
         print(f"Opening new tab for {url}")
-        # Open a new tab
-        driver.execute_script("window.open('about:blank');")
-        new_tab = driver.window_handles[-1]
-        driver.switch_to.window(new_tab)
-        print(f"Switched to new tab: {new_tab}")
+        max_retries = 3
+        for attempt in range(max_retries):
+            current_handles = set(driver.window_handles)
+            driver.execute_script("window.open('about:blank');")
+            time.sleep(1)  # Increased delay to ensure tab creation
+            new_handles = set(driver.window_handles) - current_handles
+            
+            if new_handles:
+                new_tab = new_handles.pop()
+                if new_tab == streamlit_tab or new_tab in initial_windows:
+                    print(f"Attempt {attempt + 1}: New tab is the Streamlit tab or an existing tab. Retrying.")
+                    continue
+                driver.switch_to.window(new_tab)
+                print(f"Switched to new tab: {new_tab}")
+                break
+            else:
+                print(f"Attempt {attempt + 1}: Failed to open a new tab. Retrying.")
+                if attempt == max_retries - 1:
+                    st.error("Failed to open a new tab for scraping after multiple attempts.")
+                    print("Failed to open a new tab for scraping after multiple attempts.")
+                    return None
+                time.sleep(1)  # Wait before retrying
 
         # Navigate to the URL in the new tab
         driver.get(url)
@@ -69,7 +91,7 @@ def fetch_page_content(url, timeout=10):
         driver.close()
         print(f"Closed scraping tab: {new_tab}")
 
-        # Switch back to the original tab (prefer Streamlit tab if available)
+        # Switch back to the Streamlit tab if available, otherwise original tab
         if streamlit_tab and streamlit_tab in driver.window_handles:
             driver.switch_to.window(streamlit_tab)
             print(f"Switched back to Streamlit tab: {streamlit_tab}")

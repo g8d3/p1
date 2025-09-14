@@ -16,33 +16,45 @@ def scrape_trending(url):
         if not table:
             raise ValueError("No table found on trending page")
         
-        # Extract headers and handle empty ones
-        headers = []
-        for i, th in enumerate(table.find('thead').find_all('th')):
-            text = th.text.strip()
-            if not text:
-                text = f"Column_{i+1}"  # e.g., Column_1, Column_4, etc.
-            headers.append(text)
-        headers.append('Link')  # Add Link column
+        # Define desired headers
+        headers = ['Name', 'Symbol', 'Price', '1h', '24h', '7d', '24h Volume', 'Market Cap', 'Link']
         
         rows = []
         for tr in table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
+            if len(cells) < 10:  # Expect at least 10 columns based on previous output
+                print(f"Skipping row with {len(cells)} columns, expected at least 10.")
+                continue
+            
+            # Extract cell data
             row = [cell.text.strip() for cell in cells]
+            
+            # Split Column_4 (index 3) into Name and Symbol
+            coin_data = row[3].split('\n')
+            name = coin_data[0].strip() if coin_data else ''
+            symbol = coin_data[1].strip() if len(coin_data) > 1 else ''
+            
+            # Extract link
             coin_link = tr.find('a', href=re.compile(r'/en/coins/'))
-            row.append('https://www.coingecko.com' + coin_link['href'] if coin_link else None)
-            # Pad or truncate row to match headers
-            if len(row) < len(headers):
-                print(f"Row has {len(row)} columns, expected {len(headers)}. Padding with None.")
-                row.extend([None] * (len(headers) - len(row)))
-            elif len(row) > len(headers):
-                print(f"Row has {len(row)} columns, expected {len(headers)}. Truncating.")
-                row = row[:len(headers)]
-            rows.append(row)
+            link = 'https://www.coingecko.com' + coin_link['href'] if coin_link else None
+            
+            # Select relevant columns: skip Column_1 (0), # (1), Column_4 (3), Last 7 Days (10), Column_12 (11)
+            # Map to: Name, Symbol, Price (4), 1h (5), 24h (6), 7d (7), 24h Volume (8), Market Cap (9), Link
+            new_row = [name, symbol, row[4], row[5], row[6], row[7], row[8], row[9], link]
+            
+            # Ensure row length matches headers
+            if len(new_row) < len(headers):
+                print(f"Row has {len(new_row)} columns, expected {len(headers)}. Padding with None.")
+                new_row.extend([None] * (len(headers) - len(new_row)))
+            elif len(new_row) > len(headers):
+                print(f"Row has {len(new_row)} columns, expected {len(headers)}. Truncating.")
+                new_row = new_row[:len(headers)]
+            
+            rows.append(new_row)
         
-        # Create DataFrame with cleaned headers
+        # Create DataFrame
         df = pd.DataFrame(rows, columns=headers)
-        print(f"Headers after cleaning: {headers}")
+        print(f"Trending headers: {headers}")
         return df
     except Exception as e:
         st.error(f"Failed to scrape trending page: {str(e)}")

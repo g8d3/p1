@@ -20,7 +20,6 @@ def scrape_trending(url):
         headers = []
         for i, th in enumerate(table.find('thead').find_all('th')):
             text = th.text.strip()
-            # Assign a unique name to empty headers
             if not text:
                 text = f"Column_{i+1}"  # e.g., Column_1, Column_4, etc.
             headers.append(text)
@@ -65,7 +64,13 @@ def scrape_gainers_losers(url):
         
         # Gainers table
         gainers_table = tables[0]
-        gainers_headers = [th.text.strip() for th in gainers_table.find('thead').find_all('th')]
+        gainers_headers = []
+        for i, th in enumerate(gainers_table.find('thead').find_all('th')):
+            text = th.text.strip()
+            if not text:
+                text = f"Column_{i+1}"  # e.g., Column_1, Column_2, etc.
+            gainers_headers.append(text)
+        gainers_headers.append('Link')  # Add Link column
         gainers_rows = []
         for tr in gainers_table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
@@ -73,19 +78,29 @@ def scrape_gainers_losers(url):
             name_td = cells[1] if len(cells) > 1 else None
             if name_td:
                 coin_link = name_td.find('a', href=re.compile(r'/en/coins/'))
-                if coin_link:
-                    row.append('https://www.coingecko.com' + coin_link['href'])
-                else:
-                    row.append(None)
+                row.append('https://www.coingecko.com' + coin_link['href'] if coin_link else None)
             else:
                 row.append(None)
+            # Pad or truncate row to match headers
+            if len(row) < len(gainers_headers):
+                print(f"Gainers row has {len(row)} columns, expected {len(gainers_headers)}. Padding with None.")
+                row.extend([None] * (len(gainers_headers) - len(row)))
+            elif len(row) > len(gainers_headers):
+                print(f"Gainers row has {len(row)} columns, expected {len(gainers_headers)}. Truncating.")
+                row = row[:len(gainers_headers)]
             gainers_rows.append(row)
-        gainers_headers.append('Link')
         gainers_df = pd.DataFrame(gainers_rows, columns=gainers_headers)
+        print(f"Gainers headers: {gainers_headers}")
         
         # Losers table
         losers_table = tables[1]
-        losers_headers = [th.text.strip() for th in losers_table.find('thead').find_all('th')]
+        losers_headers = []
+        for i, th in enumerate(losers_table.find('thead').find_all('th')):
+            text = th.text.strip()
+            if not text:
+                text = f"Column_{i+1}"  # e.g., Column_1, Column_2, etc.
+            losers_headers.append(text)
+        losers_headers.append('Link')  # Add Link column
         losers_rows = []
         for tr in losers_table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
@@ -93,15 +108,19 @@ def scrape_gainers_losers(url):
             name_td = cells[1] if len(cells) > 1 else None
             if name_td:
                 coin_link = name_td.find('a', href=re.compile(r'/en/coins/'))
-                if coin_link:
-                    row.append('https://www.coingecko.com' + coin_link['href'])
-                else:
-                    row.append(None)
+                row.append('https://www.coingecko.com' + coin_link['href'] if coin_link else None)
             else:
                 row.append(None)
+            # Pad or truncate row to match headers
+            if len(row) < len(losers_headers):
+                print(f"Losers row has {len(row)} columns, expected {len(losers_headers)}. Padding with None.")
+                row.extend([None] * (len(losers_headers) - len(row)))
+            elif len(row) > len(losers_headers):
+                print(f"Losers row has {len(row)} columns, expected {len(losers_headers)}. Truncating.")
+                row = row[:len(losers_headers)]
             losers_rows.append(row)
-        losers_headers.append('Link')
         losers_df = pd.DataFrame(losers_rows, columns=losers_headers)
+        print(f"Losers headers: {losers_headers}")
         
         return gainers_df, losers_df
     except Exception as e:
@@ -144,7 +163,12 @@ def parse_markets_page(content):
         table = soup.find('table')
         if not table:
             raise ValueError("No markets table found")
-        headers = [th.text.strip() for th in table.find('thead').find_all('th')]
+        headers = []
+        for i, th in enumerate(table.find('thead').find_all('th')):
+            text = th.text.strip()
+            if not text:
+                text = f"Column_{i+1}"
+            headers.append(text)
         if '' in headers:
             headers[headers.index('')] = 'Type'
         rows = []

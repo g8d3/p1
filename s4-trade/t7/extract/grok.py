@@ -9,18 +9,23 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
 
 # Function to get driver attached to CDP
 @st.cache_resource
 def get_driver(debugger_address='127.0.0.1:9222'):
     try:
+        # Automatically fetch the correct ChromeDriver version
+        service = Service(ChromeDriverManager().install())
         options = Options()
         options.add_experimental_option("debuggerAddress", debugger_address)
-        driver = webdriver.Chrome(options=options)
+        driver = webdriver.Chrome(service=service, options=options)
         return driver
     except Exception as e:
         st.error(f"Failed to connect to CDP: {str(e)}")
         st.error(f"Stack trace:\n{traceback.format_exc()}")
+        st.error("Ensure Chrome is running with --remote-debugging-port=9222. See instructions below.")
         return None
 
 # Function to fetch page content using CDP
@@ -210,25 +215,30 @@ st.markdown("""
 To use this app, you need to run your Chrome browser with remote debugging enabled. This allows the app to control your browser via the Chrome DevTools Protocol (CDP).
 
 #### How to Run Chrome with CDP:
-1. **Close all Chrome instances** to avoid conflicts.
+1. **Close all Chrome instances** to avoid port conflicts.
 2. **Run Chrome from the command line**:
    - On **Windows**:
      ```
-     "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\temp\chrome_profile"
+     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\\temp\\chrome_profile"
      ```
    - On **macOS**:
      ```
-     /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
+     /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
      ```
-   - On **Linux**:
+   - On **Linux** (your system, based on error path):
      ```
      google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
      ```
-   - Replace the `--user-data-dir` path with a temporary directory to avoid affecting your main profile.
-3. **Keep the browser open**. The app will connect to it at `127.0.0.1:9222` (default; you can change in code if using a different port).
-4. **Note**: You cannot enable CDP from within the browser UI; it must be started with the flag. The browser will open, and you can use it normally—the app will navigate tabs as needed.
+   - Replace `--user-data-dir` path with a temporary directory to avoid affecting your main profile.
+3. **Keep the browser open**. The app connects to it at `127.0.0.1:9222` (default; change in code if using another port).
+4. **Verify Chrome Version**: Your Chrome is version 139.0.7258.158. Ensure no updates occur during use, as `webdriver-manager` will fetch a matching ChromeDriver.
+5. **Troubleshooting**:
+   - If connection fails, ensure no other Chrome instance uses port 9222 (`lsof -i :9222` on Linux).
+   - Check firewall settings to allow localhost connections.
+   - Run `google-chrome --version` to confirm your Chrome version.
+   - If errors persist, try a different port (e.g., 9223) and update `debugger_address` in the code.
 
-If connection fails, ensure no other Chrome is running on the port, and check firewall settings.
+**Note**: You cannot enable CDP from the browser UI; it requires the command-line flag. The browser will remain open, and the app will navigate tabs as needed.
 """)
 
 st.write(f"Data fetched on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

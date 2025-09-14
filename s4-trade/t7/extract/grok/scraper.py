@@ -15,19 +15,35 @@ def scrape_trending(url):
         table = soup.find('table')
         if not table:
             raise ValueError("No table found on trending page")
-        headers = [th.text.strip() for th in table.find('thead').find_all('th')]
+        
+        # Extract headers and handle empty ones
+        headers = []
+        for i, th in enumerate(table.find('thead').find_all('th')):
+            text = th.text.strip()
+            # Assign a unique name to empty headers
+            if not text:
+                text = f"Column_{i+1}"  # e.g., Column_1, Column_4, etc.
+            headers.append(text)
+        headers.append('Link')  # Add Link column
+        
         rows = []
         for tr in table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
             row = [cell.text.strip() for cell in cells]
             coin_link = tr.find('a', href=re.compile(r'/en/coins/'))
-            if coin_link:
-                row.append('https://www.coingecko.com' + coin_link['href'])
-            else:
-                row.append(None)
+            row.append('https://www.coingecko.com' + coin_link['href'] if coin_link else None)
+            # Pad or truncate row to match headers
+            if len(row) < len(headers):
+                print(f"Row has {len(row)} columns, expected {len(headers)}. Padding with None.")
+                row.extend([None] * (len(headers) - len(row)))
+            elif len(row) > len(headers):
+                print(f"Row has {len(row)} columns, expected {len(headers)}. Truncating.")
+                row = row[:len(headers)]
             rows.append(row)
-        headers.append('Link')
+        
+        # Create DataFrame with cleaned headers
         df = pd.DataFrame(rows, columns=headers)
+        print(f"Headers after cleaning: {headers}")
         return df
     except Exception as e:
         st.error(f"Failed to scrape trending page: {str(e)}")

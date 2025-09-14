@@ -11,21 +11,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 
 # Function to get driver attached to CDP
 @st.cache_resource
 def get_driver(debugger_address='127.0.0.1:9222'):
     try:
-        # Automatically fetch the correct ChromeDriver version
         service = Service(ChromeDriverManager().install())
         options = Options()
         options.add_experimental_option("debuggerAddress", debugger_address)
         driver = webdriver.Chrome(service=service, options=options)
+        # Ensure at least one window is open
+        if not driver.window_handles:
+            driver.execute_script("window.open('about:blank');")
+        driver.original_window = driver.window_handles[0]
+        st.write(f"Connected to CDP. Original window handle: {driver.original_window}")
         return driver
     except Exception as e:
         st.error(f"Failed to connect to CDP: {str(e)}")
         st.error(f"Stack trace:\n{traceback.format_exc()}")
-        st.error("Ensure Chrome is running with --remote-debugging-port=9222. See instructions below.")
+        st.error("Ensure Chrome is running with --remote-debugging-port=9222 and at least one tab is open. See instructions below.")
         return None
 
 # Function to fetch page content using CDP
@@ -34,15 +39,72 @@ def fetch_page_content(url, timeout=10):
     if not driver:
         return None
     try:
+        # Check if there are any open windows
+        if not driver.window_handles:
+            st.error("No browser windows available. Please ensure Chrome is open with a tab.")
+            return None
+        
+        # Store current window handles
+        initial_windows = set(driver.window_handles)
+        st.write(f"Opening new tab for {url}")
+        
+        # Open a new tab
+        driver.execute_script("window.open('about:blank');")
+        new_tab = driver.window_handles[-1]
+        driver.switch_to.window(new_tab)
+        st.write(f"Switched to new tab: {new_tab}")
+        
+        # Navigate to the URL in the new tab
         driver.get(url)
-        # Wait for body to be visible, handling potential challenges
         WebDriverWait(driver, timeout).until(EC.visibility_of_element_located((By.TAG_NAME, "body")))
         content = driver.page_source
+        
+        # Close only the new tab
+        driver.close()
+        st.write(f"Closed scraping tab: {new_tab}")
+        
+        # Switch back to the original tab
+        try:
+            driver.switch_to.window(driver.original_window)
+            st.write(f"Switched back to original tab: {driver.original_window}")
+        except NoSuchWindowException:
+            st.error("Original tab was closed. Switching to first available tab.")
+            if driver.window_handles:
+                driver.original_window = driver.window_handles[0]
+                driver.switch_to.window(driver.original_window)
+                st.write(f"New original tab: {driver.original_window}")
+            else:
+                st.error("No tabs available. Opening a new tab.")
+                driver.execute_script("window.open('about:blank');")
+                driver.original_window = driver.window_handles[0]
+                driver.switch_to.window(driver.original_window)
+        
         return content
+    except NoSuchWindowException as e:
+        st.error(f"Browser window closed unexpectedly: {str(e)}")
+        st.error(f"Stack trace:\n{traceback.format_exc()}")
+        return None
+    except WebDriverException as e:
+        st.error(f"WebDriver error: {str(e)}")
+        st.error(f"Stack trace:\n{traceback.format_exc()}")
+        return None
     except Exception as e:
         st.error(f"Failed to fetch page {url}: {str(e)}")
         st.error(f"Stack trace:\n{traceback.format_exc()}")
         return None
+    finally:
+        # Ensure we only close the new tab if it still exists
+        try:
+            current_windows = set(driver.window_handles)
+            new_tabs = current_windows - initial_windows
+            for tab in new_tabs:
+                if tab != driver.original_window:
+                    driver.switch_to.window(tab)
+                    driver.close()
+            if driver.window_handles and driver.current_window_handle != driver.original_window:
+                driver.switch_to.window(driver.original_window)
+        except:
+            pass
 
 # Function to fetch and parse the trending page
 def scrape_trending(url):
@@ -210,36 +272,32 @@ def fetch_coin_details(coin_url):
 # Streamlit app
 st.title("CoinGecko Crypto Scraper")
 
-st.markdown("""
-### Instructions for Enabling CDP:
-To use this app, you need to run your Chrome browser with remote debugging enabled. This allows the app to control your browser via the Chrome DevTools Protocol (CDP).
-
-#### How to Run Chrome with CDP:
-1. **Close all Chrome instances** to avoid port conflicts.
-2. **Run Chrome from the command line**:
-   - On **Windows**:
-     ```
-     "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\\temp\\chrome_profile"
-     ```
-   - On **macOS**:
-     ```
-     /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
-     ```
-   - On **Linux** (your system, based on error path):
-     ```
-     google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
-     ```
-   - Replace `--user-data-dir` path with a temporary directory to avoid affecting your main profile.
-3. **Keep the browser open**. The app connects to it at `127.0.0.1:9222` (default; change in code if using another port).
-4. **Verify Chrome Version**: Your Chrome is version 139.0.7258.158. Ensure no updates occur during use, as `webdriver-manager` will fetch a matching ChromeDriver.
-5. **Troubleshooting**:
-   - If connection fails, ensure no other Chrome instance uses port 9222 (`lsof -i :9222` on Linux).
-   - Check firewall settings to allow localhost connections.
-   - Run `google-chrome --version` to confirm your Chrome version.
-   - If errors persist, try a different port (e.g., 9223) and update `debugger_address` in the code.
-
-**Note**: You cannot enable CDP from the browser UI; it requires the command-line flag. The browser will remain open, and the app will navigate tabs as needed.
-""")
+st.markdown(
+    "# Instructions for Enabling CDP\n"
+    "To use this app, you need to run your Chrome browser with remote debugging enabled. This allows the app to control your browser via the Chrome DevTools Protocol (CDP).\n\n"
+    "## How to Run Chrome with CDP\n"
+    "1. **Close all Chrome instances** to avoid port conflicts:\n"
+    "   ```bash\n"
+    "   pkill -f chrome\n"
+    "   ```\n"
+    "2. **Run Chrome from the command line** (Linux):\n"
+    "   ```bash\n"
+    "   google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile\n"
+    "   ```\n"
+    "   - Replace `/tmp/chrome_profile` with a temporary directory (e.g., `/home/vuos/temp/chrome_profile`).\n"
+    "   - If port 9222 is in use, try another (e.g., 9223) and update `debugger_address` in the code.\n"
+    "3. **Verify Chrome is running**:\n"
+    "   - Check with `lsof -i :9222` to ensure the port is active.\n"
+    "   - Confirm version with `google-chrome --version` (should be 139.0.7258.158).\n"
+    "4. **Keep the browser open** with at least one tab (e.g., Streamlit app at http://localhost:8501). The app will open new tabs for scraping and close only those tabs.\n"
+    "5. **Troubleshooting**:\n"
+    "   - If connection fails, check port conflicts: `netstat -tuln | grep 9222`.\n"
+    "   - Ensure firewall allows localhost connections: `sudo ufw status`.\n"
+    "   - If Chrome updates, `webdriver-manager` should fetch the matching ChromeDriver.\n"
+    "   - For persistent issues, download ChromeDriver 139 manually from https://chromedriver.storage.googleapis.com/index.html?path=139.0.7258.158/ and specify in `Service('/path/to/chromedriver')`.\n"
+    "   - Do not close all browser tabs during scraping.\n\n"
+    "**Note**: CDP must be enabled via command-line flags; it cannot be enabled from the browser UI. You’ll see new tabs open and close during scraping, but other tabs (including Streamlit) will remain open."
+)
 
 st.write(f"Data fetched on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 

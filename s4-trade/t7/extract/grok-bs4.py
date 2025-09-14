@@ -1,51 +1,17 @@
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime
 import re
 import traceback
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-# Function to get driver attached to CDP
-@st.cache_resource
-def get_driver(debugger_address='127.0.0.1:9222'):
-    try:
-        options = Options()
-        options.add_experimental_option("debuggerAddress", debugger_address)
-        driver = webdriver.Chrome(options=options)
-        return driver
-    except Exception as e:
-        st.error(f"Failed to connect to CDP: {str(e)}")
-        st.error(f"Stack trace:\n{traceback.format_exc()}")
-        return None
-
-# Function to fetch page content using CDP
-def fetch_page_content(url, timeout=10):
-    driver = get_driver()
-    if not driver:
-        return None
-    try:
-        driver.get(url)
-        # Wait for body to be visible, handling potential challenges
-        WebDriverWait(driver, timeout).until(EC.visibility_of_element_located((By.TAG_NAME, "body")))
-        content = driver.page_source
-        return content
-    except Exception as e:
-        st.error(f"Failed to fetch page {url}: {str(e)}")
-        st.error(f"Stack trace:\n{traceback.format_exc()}")
-        return None
 
 # Function to fetch and parse the trending page
 def scrape_trending(url):
     try:
-        content = fetch_page_content(url)
-        if not content:
-            raise ValueError("No content fetched from trending page")
-        soup = BeautifulSoup(content, 'html.parser')
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Check for HTTP errors
+        soup = BeautifulSoup(response.text, 'html.parser')
         table = soup.find('table')
         if not table:
             raise ValueError("No table found on trending page")
@@ -54,6 +20,7 @@ def scrape_trending(url):
         for tr in table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
             row = [cell.text.strip() for cell in cells]
+            # Find the link
             coin_link = tr.find('a', href=re.compile(r'/en/coins/'))
             if coin_link:
                 row.append('https://www.coingecko.com' + coin_link['href'])
@@ -71,10 +38,9 @@ def scrape_trending(url):
 # Function to scrape gainers and losers
 def scrape_gainers_losers(url):
     try:
-        content = fetch_page_content(url)
-        if not content:
-            raise ValueError("No content fetched from gainers/losers page")
-        soup = BeautifulSoup(content, 'html.parser')
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
         tables = soup.find_all('table')
         if len(tables) < 2:
             raise ValueError("Expected at least two tables for gainers and losers")
@@ -86,6 +52,7 @@ def scrape_gainers_losers(url):
         for tr in gainers_table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
             row = [cell.text.strip() for cell in cells]
+            # Find the link in Name column
             name_td = cells[1] if len(cells) > 1 else None
             if name_td:
                 coin_link = name_td.find('a', href=re.compile(r'/en/coins/'))
@@ -106,6 +73,7 @@ def scrape_gainers_losers(url):
         for tr in losers_table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
             row = [cell.text.strip() for cell in cells]
+            # Find the link in Name column
             name_td = cells[1] if len(cells) > 1 else None
             if name_td:
                 coin_link = name_td.find('a', href=re.compile(r'/en/coins/'))
@@ -129,6 +97,7 @@ def scrape_gainers_losers(url):
 def extract_metrics(soup):
     try:
         metrics = {}
+        # Find the stats table
         stats_table = soup.select_one('#gecko-coin-page-container > div[class*="2lg:tw-row-span-2"] > div:nth-child(2) > table')
         if stats_table:
             for i, tr in enumerate(stats_table.find('tbody').find_all('tr'), start=1):
@@ -139,6 +108,7 @@ def extract_metrics(soup):
                     value = td.text.strip()
                     metrics[label] = value
         
+        # Contract address
         contract_div = soup.select_one('#gecko-coin-page-container > div[class*="2lg:tw-row-span-2"] > div.tw-relative[class*="2lg:tw-mb-6"] > div:nth-child(1) > div.tw-my-auto')
         if contract_div:
             metrics['Contract'] = contract_div.text.strip()
@@ -150,13 +120,16 @@ def extract_metrics(soup):
         return {}
 
 # Function to parse markets table
-def parse_markets_page(content):
+def parse_markets_page(url):
     try:
-        soup = BeautifulSoup(content, 'html.parser')
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
         table = soup.find('table')
         if not table:
             raise ValueError("No markets table found")
         headers = [th.text.strip() for th in table.find('thead').find_all('th')]
+        # Adjust headers for empty column
         if '' in headers:
             headers[headers.index('')] = 'Type'
         rows = []
@@ -166,20 +139,21 @@ def parse_markets_page(content):
         df = pd.DataFrame(rows, columns=headers)
         return df
     except Exception as e:
-        st.error(f"Failed to parse markets page: {str(e)}")
+        st.error(f"Failed to parse markets page {url}: {str(e)}")
         st.error(f"Stack trace:\n{traceback.format_exc()}")
         return None
 
 # Function to fetch coin details
 def fetch_coin_details(coin_url):
     try:
-        content = fetch_page_content(coin_url)
-        if not content:
-            raise ValueError("No content fetched for coin page")
-        soup = BeautifulSoup(content, 'html.parser')
+        response = requests.get(coin_url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
         
+        # Get metrics
         metrics = extract_metrics(soup)
         
+        # Get coin_id
         main_div = soup.select_one('body > div.container > main > div')
         coin_id = main_div.get('data-coin-id') if main_div else None
         
@@ -187,14 +161,10 @@ def fetch_coin_details(coin_url):
         perp_df = None
         if coin_id:
             spot_url = f"https://www.coingecko.com/en/coins/{coin_id}/markets/all/spot/rank_asc?items=100"
-            spot_content = fetch_page_content(spot_url)
-            if spot_content:
-                spot_df = parse_markets_page(spot_content)
+            spot_df = parse_markets_page(spot_url)
             
             perp_url = f"https://www.coingecko.com/en/coins/{coin_id}/markets/all/perpetuals/rank_asc?items=100"
-            perp_content = fetch_page_content(perp_url)
-            if perp_content:
-                perp_df = parse_markets_page(perp_content)
+            perp_df = parse_markets_page(perp_url)
         
         return metrics, spot_df, perp_df
     except Exception as e:
@@ -205,43 +175,19 @@ def fetch_coin_details(coin_url):
 # Streamlit app
 st.title("CoinGecko Crypto Scraper")
 
-st.markdown("""
-### Instructions for Enabling CDP:
-To use this app, you need to run your Chrome browser with remote debugging enabled. This allows the app to control your browser via the Chrome DevTools Protocol (CDP).
-
-#### How to Run Chrome with CDP:
-1. **Close all Chrome instances** to avoid conflicts.
-2. **Run Chrome from the command line**:
-   - On **Windows**:
-     ```
-     "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\temp\chrome_profile"
-     ```
-   - On **macOS**:
-     ```
-     /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
-     ```
-   - On **Linux**:
-     ```
-     google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome_profile
-     ```
-   - Replace the `--user-data-dir` path with a temporary directory to avoid affecting your main profile.
-3. **Keep the browser open**. The app will connect to it at `127.0.0.1:9222` (default; you can change in code if using a different port).
-4. **Note**: You cannot enable CDP from within the browser UI; it must be started with the flag. The browser will open, and you can use it normally—the app will navigate tabs as needed.
-
-If connection fails, ensure no other Chrome is running on the port, and check firewall settings.
-""")
-
 st.write(f"Data fetched on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 trending_url = "https://www.coingecko.com/en/highlights/trending-crypto"
 gainers_losers_url = "https://www.coingecko.com/en/crypto-gainers-losers"
 
 if st.button("Scrape Trending, Gainers, and Losers"):
+    # Scrape trending
     trending_df = scrape_trending(trending_url)
     if trending_df is not None:
         st.subheader("Trending Cryptocurrencies")
         st.dataframe(trending_df)
     
+    # Scrape gainers and losers
     gainers_df, losers_df = scrape_gainers_losers(gainers_losers_url)
     if gainers_df is not None:
         st.subheader("Top Gainers")
@@ -251,25 +197,27 @@ if st.button("Scrape Trending, Gainers, and Losers"):
         st.subheader("Top Losers")
         st.dataframe(losers_df)
     
+    # Collect all unique coins and their links
     all_coins = {}
     if trending_df is not None:
         for _, row in trending_df.iterrows():
-            if pd.notna(row['Link']) and row['Link']:
+            if row['Link']:
                 coin_name = row['Coin'] if 'Coin' in row else row.get('Name', 'Unknown')
                 all_coins[coin_name] = row['Link']
     if gainers_df is not None:
         for _, row in gainers_df.iterrows():
-            if pd.notna(row['Link']) and row['Link']:
+            if row['Link']:
                 coin_name = row['Name'] if 'Name' in row else 'Unknown'
                 all_coins[coin_name] = row['Link']
     if losers_df is not None:
         for _, row in losers_df.iterrows():
-            if pd.notna(row['Link']) and row['Link']:
+            if row['Link']:
                 coin_name = row['Name'] if 'Name' in row else 'Unknown'
                 all_coins[coin_name] = row['Link']
     
     st.session_state['all_coins'] = all_coins
 
+# If coins are scraped, allow selecting one
 if 'all_coins' in st.session_state and st.session_state['all_coins']:
     selected_coin = st.selectbox("Select a coin to view details", list(st.session_state['all_coins'].keys()))
     
@@ -279,6 +227,7 @@ if 'all_coins' in st.session_state and st.session_state['all_coins']:
         
         st.subheader(f"Details for {selected_coin}")
         
+        # Display metrics
         if metrics:
             st.subheader("Key Metrics")
             metrics_df = pd.DataFrame(list(metrics.items()), columns=['Metric', 'Value'])
@@ -286,14 +235,17 @@ if 'all_coins' in st.session_state and st.session_state['all_coins']:
         else:
             st.write("No metrics found.")
         
+        # Display spot markets
         if spot_df is not None:
             st.subheader("Spot Markets")
             st.dataframe(spot_df)
         else:
             st.write("No spot markets data.")
         
+        # Display perpetuals markets
         if perp_df is not None:
             st.subheader("Perpetuals Markets")
             st.dataframe(perp_df)
         else:
             st.write("No perpetuals markets data.")
+

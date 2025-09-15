@@ -121,13 +121,13 @@ def fetch_page_content(url, timeout=10):
         driver.close()
         print(f"Closed scraping tab: {new_tab}")
 
-        # Switch back to the Streamlit tab if available, otherwise original tab
+        # Switch to the Streamlit tab if available, otherwise original tab
         if streamlit_tab and streamlit_tab in driver.window_handles:
             driver.switch_to.window(streamlit_tab)
-            print(f"Switched back to Streamlit tab: {streamlit_tab}")
+            print(f"Switched to Streamlit tab: {streamlit_tab}")
         elif driver.original_window in driver.window_handles:
             driver.switch_to.window(driver.original_window)
-            print(f"Switched back to original tab: {driver.original_window}")
+            print(f"Switched to original tab: {driver.original_window}")
         else:
             print("Original and Streamlit tabs closed. Switching to first available tab.")
             if driver.window_handles:
@@ -162,7 +162,7 @@ def fetch_page_content(url, timeout=10):
         print(f"Stack trace:\n{traceback.format_exc()}")
         return None
     finally:
-        # Close only the new tab if it still exists and isn't the Streamlit tab
+        # Close any stray tabs and ensure Streamlit tab is active
         try:
             current_windows = set(driver.window_handles)
             new_tabs = current_windows - set(initial_windows.keys())
@@ -171,9 +171,9 @@ def fetch_page_content(url, timeout=10):
                     driver.switch_to.window(tab)
                     driver.close()
                     print(f"Closed stray tab: {tab}")
-            if driver.window_handles and driver.current_window_handle != streamlit_tab and streamlit_tab in driver.window_handles:
+            if streamlit_tab and streamlit_tab in driver.window_handles:
                 driver.switch_to.window(streamlit_tab)
-                print(f"Ensured switch back to Streamlit tab: {streamlit_tab}")
+                print(f"Ensured Streamlit tab is active: {streamlit_tab}")
             elif driver.window_handles and driver.current_window_handle != driver.original_window:
                 driver.switch_to.window(driver.original_window)
                 print(f"Ensured switch back to original tab: {driver.original_window}")

@@ -95,7 +95,7 @@ def scrape_gainers_losers(url):
         gainers_rows = []
         for tr in gainers_table.find('tbody').find_all('tr'):
             cells = tr.find_all('td')
-            if len(cells) < 6:  # Expect at least 6 columns (based on previous output)
+            if len(cells) < 6:  # Expect at least 6 columns
                 print(f"Gainers: Skipping row with {len(cells)} columns, expected at least 6.")
                 continue
             
@@ -125,6 +125,9 @@ def scrape_gainers_losers(url):
                 row[5] if len(row) > 5 else None,  # 24h
                 link
             ]
+            
+            # Debug row data
+            print(f"Gainers row data: {new_row}")
             
             # Ensure row length matches headers
             if len(new_row) < len(headers):
@@ -174,6 +177,9 @@ def scrape_gainers_losers(url):
                 row[5] if len(row) > 5 else None,  # 24h
                 link
             ]
+            
+            # Debug row data
+            print(f"Losers row data: {new_row}")
             
             # Ensure row length matches headers
             if len(new_row) < len(headers):

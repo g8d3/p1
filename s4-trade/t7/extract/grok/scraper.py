@@ -87,111 +87,81 @@ def scrape_gainers_losers(url):
         if len(tables) < 2:
             raise ValueError("Expected at least two tables for gainers and losers")
         
-        # Define desired headers
-        headers = ['#', 'Name', 'Symbol', 'Price', 'Volume', '24h', 'Link']
+        # Define desired headers (added Coin ID)
+        headers = ['#', 'Name', 'Symbol', 'Price', 'Volume', '24h', 'Link', 'Coin ID']
         
-        # Gainers table
+        def process_table(table, table_name):
+            rows = []
+            for tr in table.find('tbody').find_all('tr'):
+                cells = tr.find_all('td')
+                if len(cells) < 6:  # Expect at least 6 columns
+                    print(f"{table_name}: Skipping row with {len(cells)} columns, expected at least 6.")
+                    continue
+                
+                # Extract data from the sticky td (second column)
+                name_cell = cells[1] if len(cells) > 1 else None
+                name, symbol, coin_id, link = '', '', None, None
+                if name_cell:
+                    # Find the <a> tag within the sticky td
+                    name_link = name_cell.find('a', class_='tw-sticky')
+                    if name_link:
+                        # Extract Name (first div)
+                        name_div = name_link.find('div')
+                        if name_div and name_div.find('div'):
+                            name = name_div.find('div').text.strip()
+                            # Extract Symbol (child div of name_div)
+                            symbol_div = name_div.find('div').find('div')
+                            symbol = symbol_div.text.strip() if symbol_div else ''
+                        
+                        # Extract Coin ID from img src
+                        img_tag = name_link.find('img')
+                        if img_tag and 'src' in img_tag.attrs:
+                            img_src = img_tag['src']
+                            # Extract numeric ID from src (e.g., '22553' from 'https://assets.coingecko.com/coins/images/22553/standard')
+                            match = re.search(r'/coins/images/(\d+)/', img_src)
+                            coin_id = match.group(1) if match else None
+                        
+                        # Extract Link from <a> href
+                        link = 'https://www.coingecko.com' + name_link['href'] if 'href' in name_link.attrs else None
+                    else:
+                        print(f"{table_name}: No <a> tag with class 'tw-sticky' found in name cell for row.")
+                
+                # Select relevant columns: # (1), Price (3), Volume (4), 24h (5)
+                row = [cell.text.strip() for cell in cells]
+                new_row = [
+                    row[1] if len(row) > 1 else None,  # #
+                    name,
+                    symbol,
+                    row[3] if len(row) > 3 else None,  # Price
+                    row[4] if len(row) > 4 else None,  # Volume
+                    row[5] if len(row) > 5 else None,  # 24h
+                    link,
+                    coin_id
+                ]
+                
+                # Debug row data
+                print(f"{table_name} row data: {new_row}")
+                
+                # Ensure row length matches headers
+                if len(new_row) < len(headers):
+                    print(f"{table_name} row has {len(new_row)} columns, expected {len(headers)}. Padding with None.")
+                    new_row.extend([None] * (len(headers) - len(new_row)))
+                elif len(new_row) > len(headers):
+                    print(f"{table_name} row has {len(new_row)} columns, expected {len(headers)}. Truncating.")
+                    new_row = new_row[:len(headers)]
+                
+                rows.append(new_row)
+            
+            return pd.DataFrame(rows, columns=headers)
+        
+        # Process gainers table
         gainers_table = tables[0]
-        gainers_rows = []
-        for tr in gainers_table.find('tbody').find_all('tr'):
-            cells = tr.find_all('td')
-            if len(cells) < 6:  # Expect at least 6 columns
-                print(f"Gainers: Skipping row with {len(cells)} columns, expected at least 6.")
-                continue
-            
-            # Extract coin name and symbol from the cell containing both (index 1)
-            name_cell = cells[1] if len(cells) > 1 else None
-            name, symbol = '', ''
-            if name_cell:
-                name_text = name_cell.text.strip()
-                # Split on newlines or whitespace
-                name_parts = re.split(r'\s*\n+\s*|\s{2,}', name_text)
-                name_parts = [part.strip() for part in name_parts if part.strip()]
-                name = name_parts[0] if name_parts else ''
-                symbol = name_parts[1] if len(name_parts) > 1 else ''
-            
-            # Extract link from name cell
-            coin_link = name_cell.find('a', href=re.compile(r'/en/coins/')) if name_cell else None
-            link = 'https://www.coingecko.com' + coin_link['href'] if coin_link else None
-            
-            # Select relevant columns: # (1), Price (3), Volume (4), 24h (5)
-            row = [cell.text.strip() for cell in cells]
-            new_row = [
-                row[1] if len(row) > 1 else None,  # #
-                name,
-                symbol,
-                row[3] if len(row) > 3 else None,  # Price
-                row[4] if len(row) > 4 else None,  # Volume
-                row[5] if len(row) > 5 else None,  # 24h
-                link
-            ]
-            
-            # Debug row data
-            print(f"Gainers row data: {new_row}")
-            
-            # Ensure row length matches headers
-            if len(new_row) < len(headers):
-                print(f"Gainers row has {len(new_row)} columns, expected {len(headers)}. Padding with None.")
-                new_row.extend([None] * (len(headers) - len(new_row)))
-            elif len(new_row) > len(headers):
-                print(f"Gainers row has {len(new_row)} columns, expected {len(headers)}. Truncating.")
-                new_row = new_row[:len(headers)]
-            
-            gainers_rows.append(new_row)
-        
-        gainers_df = pd.DataFrame(gainers_rows, columns=headers)
+        gainers_df = process_table(gainers_table, "Gainers")
         print(f"Gainers headers: {headers}")
         
-        # Losers table
+        # Process losers table
         losers_table = tables[1]
-        losers_rows = []
-        for tr in losers_table.find('tbody').find_all('tr'):
-            cells = tr.find_all('td')
-            if len(cells) < 6:  # Expect at least 6 columns
-                print(f"Losers: Skipping row with {len(cells)} columns, expected at least 6.")
-                continue
-            
-            # Extract coin name and symbol from the cell containing both (index 1)
-            name_cell = cells[1] if len(cells) > 1 else None
-            name, symbol = '', ''
-            if name_cell:
-                name_text = name_cell.text.strip()
-                # Split on newlines or whitespace
-                name_parts = re.split(r'\s*\n+\s*|\s{2,}', name_text)
-                name_parts = [part.strip() for part in name_parts if part.strip()]
-                name = name_parts[0] if name_parts else ''
-                symbol = name_parts[1] if len(name_parts) > 1 else ''
-            
-            # Extract link from name cell
-            coin_link = name_cell.find('a', href=re.compile(r'/en/coins/')) if name_cell else None
-            link = 'https://www.coingecko.com' + coin_link['href'] if coin_link else None
-            
-            # Select relevant columns: # (1), Price (3), Volume (4), 24h (5)
-            row = [cell.text.strip() for cell in cells]
-            new_row = [
-                row[1] if len(row) > 1 else None,  # #
-                name,
-                symbol,
-                row[3] if len(row) > 3 else None,  # Price
-                row[4] if len(row) > 4 else None,  # Volume
-                row[5] if len(row) > 5 else None,  # 24h
-                link
-            ]
-            
-            # Debug row data
-            print(f"Losers row data: {new_row}")
-            
-            # Ensure row length matches headers
-            if len(new_row) < len(headers):
-                print(f"Losers row has {len(new_row)} columns, expected {len(headers)}. Padding with None.")
-                new_row.extend([None] * (len(headers) - len(new_row)))
-            elif len(new_row) > len(headers):
-                print(f"Losers row has {len(new_row)} columns, expected {len(headers)}. Truncating.")
-                new_row = new_row[:len(headers)]
-            
-            losers_rows.append(new_row)
-        
-        losers_df = pd.DataFrame(losers_rows, columns=headers)
+        losers_df = process_table(losers_table, "Losers")
         print(f"Losers headers: {headers}")
         
         return gainers_df, losers_df

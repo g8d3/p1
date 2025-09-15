@@ -44,3 +44,18 @@ Last Updated
 Trust Score
 
 which are simply the columns of returned table.
+
+
+# gainer loser fix
+
+
+should be like:
+
+#,Name, Symbol,Price,Volume,24h,Link
+748,"OpenxAI","OPENX",$0.6071,"$1,264,598",60.7%,https:...
+
+link selector is:
+
+body > div.container > main > div.\[overflow-wrap\:anywhere\].xl\:tw-grid.xl\:tw-gap-x-9.xl\:tw-gap-y-4.xl\:tw-grid-cols-2.tw-flex-col > div.tw-flex-1.tw-mb-6 > div.tw-mb-3.tw-overflow-x-auto.\32 lg\:tw-overflow-x-visible.\32 lg\:tw-flex.\32 lg\:tw-justify-center > table > tbody > tr:nth-child(1) > td.tw-sticky.tw-left-\[51px\].md\:tw-left-\[72px\].tw-px-1.tw-py-2\.5.\32 lg\:tw-p-2\.5.tw-bg-inherit.tw-text-gray-900.dark\:tw-text-moon-50 > a
+
+tr:nth-child(1) changes for next rows.

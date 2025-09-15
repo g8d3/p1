@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchWindowException, WebDriverException
+from selenium.webdriver.common.keys import Keys
 import traceback
 import time
 
@@ -59,27 +60,56 @@ def fetch_page_content(url, timeout=10):
         # Attempt to open a new tab with retries
         print(f"Opening new tab for {url}")
         max_retries = 3
+        new_tab = None
         for attempt in range(max_retries):
             current_handles = set(driver.window_handles)
-            driver.execute_script("window.open('about:blank');")
-            time.sleep(1)  # Increased delay to ensure tab creation
-            new_handles = set(driver.window_handles) - current_handles
+            try:
+                driver.execute_script("window.open('about:blank');")
+                time.sleep(2)  # Increased delay for tab creation
+                new_handles = set(driver.window_handles) - current_handles
+                
+                if new_handles:
+                    new_tab = new_handles.pop()
+                    if new_tab == streamlit_tab or new_tab in initial_windows:
+                        print(f"Attempt {attempt + 1}: New tab is the Streamlit tab or an existing tab. Retrying.")
+                        driver.switch_to.window(new_tab)
+                        driver.close()  # Close the incorrect tab
+                        continue
+                    driver.switch_to.window(new_tab)
+                    print(f"Switched to new tab: {new_tab}")
+                    break
+                else:
+                    print(f"Attempt {attempt + 1}: Failed to open a new tab via window.open. Trying keyboard shortcut.")
+                    # Fallback: Use Ctrl+T to open a new tab
+                    driver.switch_to.window(driver.window_handles[0])
+                    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.CONTROL + 't')
+                    time.sleep(2)
+                    new_handles = set(driver.window_handles) - current_handles
+                    if new_handles:
+                        new_tab = new_handles.pop()
+                        if new_tab == streamlit_tab or new_tab in initial_windows:
+                            print(f"Attempt {attempt + 1}: New tab from shortcut is the Streamlit tab or an existing tab. Retrying.")
+                            driver.switch_to.window(new_tab)
+                            driver.close()
+                            continue
+                        driver.switch_to.window(new_tab)
+                        print(f"Switched to new tab (via shortcut): {new_tab}")
+                        break
+                    else:
+                        print(f"Attempt {attempt + 1}: Failed to open a new tab via shortcut.")
+            except Exception as e:
+                print(f"Attempt {attempt + 1}: Error opening new tab: {str(e)}")
             
-            if new_handles:
-                new_tab = new_handles.pop()
-                if new_tab == streamlit_tab or new_tab in initial_windows:
-                    print(f"Attempt {attempt + 1}: New tab is the Streamlit tab or an existing tab. Retrying.")
-                    continue
-                driver.switch_to.window(new_tab)
-                print(f"Switched to new tab: {new_tab}")
-                break
-            else:
-                print(f"Attempt {attempt + 1}: Failed to open a new tab. Retrying.")
-                if attempt == max_retries - 1:
-                    st.error("Failed to open a new tab for scraping after multiple attempts.")
-                    print("Failed to open a new tab for scraping after multiple attempts.")
-                    return None
-                time.sleep(1)  # Wait before retrying
+            if attempt == max_retries - 1:
+                st.error("Failed to open a new tab for scraping after multiple attempts.")
+                print("Failed to open a new tab for scraping after multiple attempts.")
+                return None
+            time.sleep(2)  # Wait before retrying
+
+        if not new_tab:
+            st.error("No new tab created after all attempts.")
+            print("No new tab created after all attempts.")
+            return None
 
         # Navigate to the URL in the new tab
         driver.get(url)

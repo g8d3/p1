@@ -59,3 +59,12 @@ link selector is:
 body > div.container > main > div.\[overflow-wrap\:anywhere\].xl\:tw-grid.xl\:tw-gap-x-9.xl\:tw-gap-y-4.xl\:tw-grid-cols-2.tw-flex-col > div.tw-flex-1.tw-mb-6 > div.tw-mb-3.tw-overflow-x-auto.\32 lg\:tw-overflow-x-visible.\32 lg\:tw-flex.\32 lg\:tw-justify-center > table > tbody > tr:nth-child(1) > td.tw-sticky.tw-left-\[51px\].md\:tw-left-\[72px\].tw-px-1.tw-py-2\.5.\32 lg\:tw-p-2\.5.tw-bg-inherit.tw-text-gray-900.dark\:tw-text-moon-50 > a
 
 tr:nth-child(1) changes for next rows.
+
+is not working, use these selectors:
+
+name, tbody td:nth-child(3) div > div
+symbol, tbody td:nth-child(3) div > div > div
+link, tbody td:nth-child(3) a, get href from this
+coin id, tbody td:nth-child(3) a > img, extract from src attr
+
+for img src like "https://assets.coingecko.com/coins/images/22553/standard"  you should extract 22553

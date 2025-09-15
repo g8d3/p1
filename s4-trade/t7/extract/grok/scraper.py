@@ -98,33 +98,33 @@ def scrape_gainers_losers(url):
                     print(f"{table_name}: Skipping row with {len(cells)} columns, expected at least 6.")
                     continue
                 
-                # Extract data from the sticky td (second column)
-                name_cell = cells[1] if len(cells) > 1 else None
+                # Extract data from the third column (td:nth-child(3))
+                name_cell = cells[2] if len(cells) > 2 else None
                 name, symbol, coin_id, link = '', '', None, None
                 if name_cell:
-                    # Find the <a> tag within the sticky td
-                    name_link = name_cell.find('a', class_='tw-sticky')
+                    # Find the <a> tag in the third column
+                    name_link = name_cell.find('a')
                     if name_link:
-                        # Extract Name (first div)
+                        # Extract Name (tbody td:nth-child(3) div > div)
                         name_div = name_link.find('div')
                         if name_div and name_div.find('div'):
                             name = name_div.find('div').text.strip()
-                            # Extract Symbol (child div of name_div)
+                            # Extract Symbol (tbody td:nth-child(3) div > div > div)
                             symbol_div = name_div.find('div').find('div')
                             symbol = symbol_div.text.strip() if symbol_div else ''
                         
-                        # Extract Coin ID from img src
+                        # Extract Link (tbody td:nth-child(3) a)
+                        link = 'https://www.coingecko.com' + name_link['href'] if 'href' in name_link.attrs else None
+                        
+                        # Extract Coin ID (tbody td:nth-child(3) a > img)
                         img_tag = name_link.find('img')
                         if img_tag and 'src' in img_tag.attrs:
                             img_src = img_tag['src']
-                            # Extract numeric ID from src (e.g., '22553' from 'https://assets.coingecko.com/coins/images/22553/standard')
+                            # Extract numeric ID (e.g., '22553' from 'https://assets.coingecko.com/coins/images/22553/standard')
                             match = re.search(r'/coins/images/(\d+)/', img_src)
                             coin_id = match.group(1) if match else None
-                        
-                        # Extract Link from <a> href
-                        link = 'https://www.coingecko.com' + name_link['href'] if 'href' in name_link.attrs else None
                     else:
-                        print(f"{table_name}: No <a> tag with class 'tw-sticky' found in name cell for row.")
+                        print(f"{table_name}: No <a> tag found in third column for row.")
                 
                 # Select relevant columns: # (1), Price (3), Volume (4), 24h (5)
                 row = [cell.text.strip() for cell in cells]
@@ -226,8 +226,7 @@ def parse_markets_page(content):
         print(f"Stack trace:\n{traceback.format_exc()}")
         return None
 
-# Function to fetch coin details
-def fetch_coin_details(coin_url):
+def fetch_coin_details(coin_url, coin_id=None):
     try:
         content = fetch_page_content(coin_url)
         if not content:
@@ -236,8 +235,10 @@ def fetch_coin_details(coin_url):
         
         metrics = extract_metrics(soup)
         
-        main_div = soup.select_one('body > div.container > main > div')
-        coin_id = main_div.get('data-coin-id') if main_div else None
+        # Use provided coin_id if available, else extract from page
+        if not coin_id:
+            main_div = soup.select_one('body > div.container > main > div')
+            coin_id = main_div.get('data-coin-id') if main_div else None
         
         spot_df = None
         perp_df = None

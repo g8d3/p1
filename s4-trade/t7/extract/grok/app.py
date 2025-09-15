@@ -58,18 +58,18 @@ if st.button("Scrape Trending, Gainers, and Losers"):
     if trending_df is not None:
         for _, row in trending_df.iterrows():
             if pd.notna(row['Link']) and row['Link']:
-                coin_name = row['Coin'] if 'Coin' in row else row.get('Name', 'Unknown')
-                all_coins[coin_name] = row['Link']
+                coin_name = row['Name'] if 'Name' in row else 'Unknown'
+                all_coins[coin_name] = {'Link': row['Link'], 'Coin ID': None}  # No Coin ID in trending_df
     if gainers_df is not None:
         for _, row in gainers_df.iterrows():
             if pd.notna(row['Link']) and row['Link']:
                 coin_name = row['Name'] if 'Name' in row else 'Unknown'
-                all_coins[coin_name] = row['Link']
+                all_coins[coin_name] = {'Link': row['Link'], 'Coin ID': row.get('Coin ID', None)}
     if losers_df is not None:
         for _, row in losers_df.iterrows():
             if pd.notna(row['Link']) and row['Link']:
                 coin_name = row['Name'] if 'Name' in row else 'Unknown'
-                all_coins[coin_name] = row['Link']
+                all_coins[coin_name] = {'Link': row['Link'], 'Coin ID': row.get('Coin ID', None)}
     
     st.session_state['all_coins'] = all_coins
 
@@ -77,8 +77,10 @@ if 'all_coins' in st.session_state and st.session_state['all_coins']:
     selected_coin = st.selectbox("Select a coin to view details", list(st.session_state['all_coins'].keys()))
     
     if st.button("Fetch Details for Selected Coin"):
-        coin_url = st.session_state['all_coins'][selected_coin]
-        metrics, spot_df, perp_df = fetch_coin_details(coin_url)
+        coin_data = st.session_state['all_coins'][selected_coin]
+        coin_url = coin_data['Link']
+        coin_id = coin_data['Coin ID']
+        metrics, spot_df, perp_df = fetch_coin_details(coin_url, coin_id=coin_id)
         
         st.subheader(f"Details for {selected_coin}")
         

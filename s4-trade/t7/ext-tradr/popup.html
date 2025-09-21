@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tradr</title>
+  <style>
+    body { width: 300px; padding: 10px; }
+    label { display: block; margin-top: 10px; }
+    input, textarea { width: 100%; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h3>Tradr Extension</h3>
+  <label>Preset:</label>
+  <select id="preset">
+    <option value="">Custom</option>
+    <option value="coingecko-gainers">CoinGecko Gainers/Losers (1h)</option>
+    <option value="local-test">Local Test Table</option>
+  </select>
+  
+  <label>Interval (seconds):</label>
+  <input type="number" id="interval" min="1">
+  
+  <label>URL:</label>
+  <input type="url" id="url">
+  
+  <label>JS Code:</label>
+  <textarea id="jsCode" rows="10"></textarea>
+  
+  <label>Sink:</label>
+  <select id="sink">
+    <option value="clipboard">Clipboard</option>
+    <option value="csv">Download CSV</option>
+    <option value="post">Post to URL</option>
+  </select>
+  
+  <label id="postUrlLabel" style="display:none;">Post URL:</label>
+  <input type="url" id="postUrl" style="display:none;">
+  
+  <button id="save">Save Settings</button>
+  <button id="runOnce">Run Once</button>
+  <button id="start">Start Schedule</button>
+  <button id="stop">Stop Schedule</button>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

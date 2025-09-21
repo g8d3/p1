@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Tradr Extension",
+  "version": "1.0",
+  "description": "Scheduled URL visitor with JS execution",
+  "permissions": [
+    "alarms",
+    "storage",
+    "activeTab",
+    "scripting",
+    "system.display",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Tradr"
+  }
+}

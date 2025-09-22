@@ -34,11 +34,11 @@ async function executeScheduledTask() {
         try {
           new Function(code)();
         } catch (e) {
-          alert('Code error: ' + e);
+          chrome.runtime.sendMessage({ action: 'showError', error: 'Code error: ' + e + (e.stack ? '\n' + e.stack : '') });
         }
       },
       args: [jsCode, sink, postUrl]
-    });
+    }).catch(e => chrome.runtime.sendMessage({ action: 'showError', error: 'Execute error: ' + e }));
   };
 
   const tabInfo = await chrome.tabs.get(tab.id);

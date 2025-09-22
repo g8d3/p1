@@ -35,6 +35,7 @@ function onPresetChange() {
     document.getElementById('interval').value = 3600;
     document.getElementById('url').value = 'https://www.coingecko.com/en/crypto-gainers-losers';
     document.getElementById('jsCode').value = `setTimeout(function() {
+  alert('Timeout running');
   var table = document.querySelector('table');
   if (!table) {
     tradrSink('Table not found');
@@ -66,7 +67,7 @@ function onPresetChange() {
   });
   var data = [headers].concat(rows);
   tradrSink(data);
-}, 2000);`;
+}, 5000);`;
   } else if (preset === 'local-test') {
     document.getElementById('interval').value = 10;
     document.getElementById('url').value = 'http://localhost:8080/test.html';

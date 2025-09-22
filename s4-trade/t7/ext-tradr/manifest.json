@@ -6,6 +6,7 @@
   "permissions": [
     "alarms",
     "storage",
+    "activeTab",
     "scripting",
     "system.display",
     "tabs"

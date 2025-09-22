@@ -16,6 +16,7 @@ async function executeScheduledTask() {
       target: { tabId: tab.id },
       world: 'MAIN',
       func: (code, sinkType, postUrl) => {
+        alert('Script injected');
         window.tradrSink = (data) => {
           if (sinkType === 'clipboard') {
             navigator.clipboard.writeText(typeof data === 'string' ? data : JSON.stringify(data)).catch(e => alert('Clipboard error: ' + e));
@@ -32,7 +33,7 @@ async function executeScheduledTask() {
           }
         };
         try {
-          new Function(code)();
+          eval(code);
         } catch (e) {
           chrome.runtime.sendMessage({ action: 'showError', error: 'Code error: ' + e + (e.stack ? '\n' + e.stack : '') });
         }

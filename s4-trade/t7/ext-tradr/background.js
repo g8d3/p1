@@ -18,8 +18,8 @@ async function executeScheduledTask() {
       func: (code, sinkType, postUrl) => {
         window.tradrSink = (data) => {
           window.postMessage({ action: 'debug', message: 'Sink called with data: ' + JSON.stringify(data).substring(0, 100) }, '*');
-          if (sinkType === 'clipboard') {
-            navigator.clipboard.writeText(typeof data === 'string' ? data : JSON.stringify(data)).catch(e => window.postMessage({ action: 'debug', message: 'Clipboard error: ' + e }, '*'));
+          if (sinkType === 'display') {
+            window.postMessage({ action: 'displayData', data: data }, '*');
           } else if (sinkType === 'csv') {
             const csv = data.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
             window.postMessage({ action: 'debug', message: 'CSV: ' + csv.substring(0, 100) }, '*');
@@ -76,6 +76,8 @@ chrome.runtime.onMessage.addListener((message) => {
     executeScheduledTask();
   } else if (message.action === 'debug') {
     chrome.runtime.sendMessage({ action: 'showDebug', message: message.message });
+  } else if (message.action === 'displayData') {
+    chrome.runtime.sendMessage({ action: 'showData', data: message.data });
   }
 });
 

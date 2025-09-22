@@ -29,7 +29,7 @@
   
   <label>Sink:</label>
   <select id="sink">
-    <option value="clipboard">Clipboard</option>
+    <option value="display">Display in Popup</option>
     <option value="csv">Download CSV</option>
     <option value="post">Post to URL</option>
   </select>
@@ -44,6 +44,7 @@
   
   <div id="message" style="margin-top: 10px; color: green; display: none;"></div>
   <div id="error" style="margin-top: 10px; color: red; display: none;"></div>
+  <div id="data" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; max-height: 200px; overflow: auto; display: none;"></div>
   
   <script src="popup.js"></script>
 </body>

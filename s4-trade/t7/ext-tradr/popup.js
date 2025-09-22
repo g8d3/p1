@@ -17,8 +17,16 @@ chrome.runtime.onMessage.addListener((message) => {
     showError(message.error);
   } else if (message.action === 'showDebug') {
     showMessage(message.message);
+  } else if (message.action === 'showData') {
+    showData(message.data);
   }
 });
+
+function showData(data) {
+  const dataDiv = document.getElementById('data');
+  dataDiv.textContent = JSON.stringify(data, null, 2);
+  dataDiv.style.display = 'block';
+}
 
 function loadSettings() {
   chrome.storage.sync.get(['interval', 'url', 'jsCode', 'sink', 'postUrl'], (result) => {

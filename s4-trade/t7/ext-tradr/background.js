@@ -16,12 +16,13 @@ async function executeScheduledTask() {
       target: { tabId: tab.id },
       world: 'MAIN',
       func: (code, sinkType, postUrl) => {
-        alert('Script injected');
         window.tradrSink = (data) => {
+          window.postMessage({ action: 'debug', message: 'Sink called with data: ' + JSON.stringify(data).substring(0, 100) }, '*');
           if (sinkType === 'clipboard') {
-            navigator.clipboard.writeText(typeof data === 'string' ? data : JSON.stringify(data)).catch(e => alert('Clipboard error: ' + e));
+            navigator.clipboard.writeText(typeof data === 'string' ? data : JSON.stringify(data)).catch(e => window.postMessage({ action: 'debug', message: 'Clipboard error: ' + e }, '*'));
           } else if (sinkType === 'csv') {
             const csv = data.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            window.postMessage({ action: 'debug', message: 'CSV: ' + csv.substring(0, 100) }, '*');
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -29,13 +30,15 @@ async function executeScheduledTask() {
             a.download = 'data.csv';
             a.click();
           } else if (sinkType === 'post') {
-            fetch(postUrl, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }).catch(e => alert('Post error: ' + e));
+            fetch(postUrl, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }).catch(e => window.postMessage({ action: 'debug', message: 'Post error: ' + e }, '*'));
           }
         };
+        console.log('Code to eval:', code);
         try {
           eval(code);
         } catch (e) {
-          chrome.runtime.sendMessage({ action: 'showError', error: 'Code error: ' + e + (e.stack ? '\n' + e.stack : '') });
+          console.error('Code error:', e);
+          window.postMessage({ action: 'showError', error: 'Code error: ' + e + (e.stack ? '\n' + e.stack : '') }, '*');
         }
       },
       args: [jsCode, sink, postUrl]
@@ -71,6 +74,8 @@ chrome.runtime.onMessage.addListener((message) => {
     clearSchedule();
   } else if (message.action === 'runOnce') {
     executeScheduledTask();
+  } else if (message.action === 'debug') {
+    chrome.runtime.sendMessage({ action: 'showDebug', message: message.message });
   }
 });
 
@@ -82,7 +87,7 @@ chrome.action.onClicked.addListener(async () => {
     url: 'popup.html',
     type: 'popup',
     width: 350,
-    height: 400,
+    height: 800,
     top: 50,
     left: screenWidth - 400
   });

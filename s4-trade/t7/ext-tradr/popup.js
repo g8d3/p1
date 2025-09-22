@@ -14,7 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message.action === 'showError') {
-    alert(message.error);
+    showError(message.error);
+  } else if (message.action === 'showDebug') {
+    showMessage(message.message);
   }
 });
 
@@ -31,56 +33,24 @@ function loadSettings() {
 
 function onPresetChange() {
   const preset = document.getElementById('preset').value;
-  if (preset === 'coingecko-gainers') {
-    document.getElementById('interval').value = 3600;
-    document.getElementById('url').value = 'https://www.coingecko.com/en/crypto-gainers-losers';
-    document.getElementById('jsCode').value = `setTimeout(function() {
-  alert('Timeout running');
-  var table = document.querySelector('table');
-  if (!table) {
-    tradrSink('Table not found');
-    return;
-  }
-  var headers = Array.from(table.rows[0].cells).slice(1).map(function(cell) { return cell.textContent.trim(); });
-  var rows = Array.from(table.rows).slice(1).map(function(row) {
-    var cells = Array.from(row.cells);
-    var texts = cells.map(function(cell) { return cell.textContent.trim(); });
-    var linkCell = cells[2];
-    var a = linkCell ? linkCell.querySelector('a') : null;
-    var href = a ? a.href : '';
-    var img = linkCell ? linkCell.querySelector('img') : null;
-    var src = img ? img.src : '';
-    var parts = src.split('/');
-    var imageId = parts[5] || '';
-    var nameSymbol = texts[2] ? texts[2].split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
-    var processedRow = [
-      texts[1] || '',
-      nameSymbol[0] || '',
-      nameSymbol[1] || '',
-      texts[3] || '',
-      texts[4] || '',
-      texts[5] || '',
-      href,
-      imageId
-    ];
-    return processedRow;
-  });
-  var data = [headers].concat(rows);
-  tradrSink(data);
-}, 5000);`;
-  } else if (preset === 'local-test') {
-    document.getElementById('interval').value = 10;
-    document.getElementById('url').value = 'http://localhost:8080/test.html';
-    document.getElementById('jsCode').value = `try {
-  const table = document.querySelector('table');
-  if (!table) throw 'Table not found';
-  const data = Array.from(table.rows).slice(1).map(row => 
-    Array.from(row.cells).map(cell => cell.textContent.trim())
-  );
-  tradrSink(data);
-} catch (e) {
-  tradrSink('Error: ' + e);
-}`;
+  if (preset) {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('presets/' + preset + '.js');
+    script.onload = () => {
+      document.getElementById('interval').value = presetInterval;
+      document.getElementById('url').value = presetUrl;
+      document.getElementById('jsCode').value = presetCode.toString().slice(12, -1).trim();
+      document.head.removeChild(script);
+    };
+    script.onerror = () => {
+      showError('Failed to load preset script');
+      document.head.removeChild(script);
+    };
+    document.head.appendChild(script);
+  } else {
+    document.getElementById('interval').value = '';
+    document.getElementById('url').value = '';
+    document.getElementById('jsCode').value = '';
   }
 }
 

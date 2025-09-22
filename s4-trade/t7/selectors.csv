@@ -1,0 +1,22 @@
+name,selector
+trending_table,table
+tbody,tbody
+rows,tr
+cells,td
+coin_link,a[href*="/en/coins/"]
+tables,table
+name_link,a
+name_div,div
+symbol_div,div > div
+img_tag,img
+stats_table,#gecko-coin-page-container > div[class*="2lg:tw-row-span-2"] > div:nth-child(2) > table
+th,th
+td,td
+contract_div,#gecko-coin-page-container > div[class*="2lg:tw-row-span-2"] > div.tw-relative[class*="2lg:tw-mb-6"] > div:nth-child(1) > div.tw-my-auto
+markets_table,table
+thead,thead
+headers,th
+markets_tbody,tbody
+markets_rows,tr
+markets_cells,td
+main_div,body > div.container > main > div

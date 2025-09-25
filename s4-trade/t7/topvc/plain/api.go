@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type DexConfig struct {
@@ -18,11 +19,11 @@ type DexConfig struct {
 var dexConfigs = map[string]DexConfig{
 	"uniswap":     {"0x1", "0x1c87257f5e8609940bc751a07bb085bb7f8cdbe"},
 	"pancakeswap": {"0x38", "0x10ed43c718714eb63d5aa57b78b54704e256024e"},     // BSC
-	"aerodrome":   {"0x1", "0x6b75a6f6c4c47c3a43b5aDisallowed"},               // Need correct address
+	"aerodrome":   {"0x2105", "0x6b75a6f6c4c47c3a43b5a6c3a43b5a6c3a43b5a6"},   // Base
 	"raydium":     {"solana", "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"}, // Solana
 	"orca":        {"solana", "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"},
 	"meteora":     {"solana", "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5Ua"},
-	"hyperliquid": {"0x1", "0x123"}, // Placeholder
+	"hyperliquid": {"0xa4b1", "0x123"}, // Arbitrum, placeholder
 }
 
 type Token struct {
@@ -37,7 +38,7 @@ type ApiResponse struct {
 	Tokens []Token `json:"tokens"`
 }
 
-func fetchTokens(dex string, n, m int) ([]Token, []Token, error) {
+func fetchTokens(dex string, n, m int, timeframe string) ([]Token, []Token, error) {
 	config, ok := dexConfigs[dex]
 	if !ok {
 		return nil, nil, fmt.Errorf("unknown dex: %s", dex)
@@ -56,6 +57,7 @@ func fetchTokens(dex string, n, m int) ([]Token, []Token, error) {
 	req.Header.Set("X-API-Key", apiKey)
 	q := req.URL.Query()
 	q.Add("limit", strconv.Itoa(max(n, m)*2))
+	q.Add("timeframe", timeframe)
 	req.URL.RawQuery = q.Encode()
 
 	client := &http.Client{}
@@ -109,4 +111,47 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func printTable(title string, tokens []Token) {
+	fmt.Println(title)
+	fmt.Printf("%-10s %-20s %-15s %-15s %-10s\n", "Symbol", "Address", "Volume", "Change %", "Price")
+	fmt.Println(strings.Repeat("-", 80))
+	for _, t := range tokens {
+		fmt.Printf("%-10s %-20s %-15.2f %-15.2f %-10.2f\n", t.TokenSymbol, t.TokenAddress[:18]+"...", t.Volume24h, t.PriceChangePercentage24h, t.UsdPrice)
+	}
+	fmt.Println()
+}
+
+func main() {
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: go run . <N> <M>")
+		os.Exit(1)
+	}
+	n, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		fmt.Println("Invalid N")
+		os.Exit(1)
+	}
+	m, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		fmt.Println("Invalid M")
+		os.Exit(1)
+	}
+
+	timeframes := []string{"1h", "30m", "5m"}
+	dexes := []string{"uniswap", "pancakeswap", "aerodrome", "raydium", "orca", "meteora"}
+
+	for _, tf := range timeframes {
+		fmt.Printf("Timeframe: %s\n", tf)
+		for _, dex := range dexes {
+			volumeTokens, changeTokens, err := fetchTokens(dex, n, m, tf)
+			if err != nil {
+				fmt.Printf("Error fetching %s for %s: %v\n", dex, tf, err)
+				continue
+			}
+			printTable(fmt.Sprintf("DEX: %s - Top Volume Tokens", dex), volumeTokens)
+			printTable(fmt.Sprintf("DEX: %s - Top Change Tokens", dex), changeTokens)
+		}
+	}
 }

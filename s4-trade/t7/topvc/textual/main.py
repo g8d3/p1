@@ -2,7 +2,8 @@
 
 import os
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Header, Footer, Input, Button, Label, ScrollView
+from textual.widgets import DataTable, Header, Footer, Input, Button, Label
+from textual.scroll_view import ScrollView
 from textual.containers import Vertical, Horizontal
 import requests
 import asyncio
@@ -71,21 +72,21 @@ class TopVCTable(App):
             config = DEX_CONFIG[dex]
             url = f"https://deep-index.moralis.io/api/v2.2/erc20/{config['chain']}/dex/{config['exchange']}/tokens"
             params = {"limit": max(self.N, self.M) * 2}  # fetch more to sort
-            response = requests.get(url, headers=headers, params=params)
+            response = await asyncio.to_thread(requests.get, url, headers=headers, params=params)
             if response.status_code == 200:
                 data = response.json()
                 tokens = data.get("tokens", [])
                 # Sort for volume
-                volume_tokens = sorted(tokens, key=lambda t: float(t.get("volume24h", 0)), reverse=True)[:self.N]
+                volume_tokens = sorted(tokens, key=lambda t: float(t.get("volume_24h", 0)), reverse=True)[:self.N]
                 # Sort for change
                 change_tokens = sorted(tokens, key=lambda t: float(t.get("price_change_percentage_24h", 0)), reverse=True)[:self.M]
                 for tf in TIMEFRAMES:
                     for token in volume_tokens:
                         row = (
                             dex, tf, "Volume",
-                            token.get("address", ""),
-                            token.get("symbol", ""),
-                            f"{float(token.get('volume24h', 0)):.0f}",
+                            token.get("token_address", ""),
+                            token.get("token_symbol", ""),
+                            f"{float(token.get('volume_24h', 0)):.0f}",
                             f"{float(token.get('price_change_percentage_24h', 0)):.2f}%",
                             f"{float(token.get('usd_price', 0)):.4f}"
                         )
@@ -93,9 +94,9 @@ class TopVCTable(App):
                     for token in change_tokens:
                         row = (
                             dex, tf, "Change",
-                            token.get("address", ""),
-                            token.get("symbol", ""),
-                            f"{float(token.get('volume24h', 0)):.0f}",
+                            token.get("token_address", ""),
+                            token.get("token_symbol", ""),
+                            f"{float(token.get('volume_24h', 0)):.0f}",
                             f"{float(token.get('price_change_percentage_24h', 0)):.2f}%",
                             f"{float(token.get('usd_price', 0)):.4f}"
                         )

@@ -11,3 +11,5 @@ meteora
 hyperliquid
 
 work in a new folder called topvc, and write this prompt in a md file there for the registry
+
+N and M can be changed by the user.

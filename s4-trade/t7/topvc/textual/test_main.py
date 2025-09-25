@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from textual.testing import AppTest
-from main import TopVCTable
+from topvc.textual.main import TopVCTable
 
 @pytest.fixture
 def sample_api_response():

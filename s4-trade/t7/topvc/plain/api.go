@@ -17,13 +17,13 @@ type DexConfig struct {
 }
 
 var dexConfigs = map[string]DexConfig{
-	"uniswap":     {"0x1", "0x1c87257f5e8609940bc751a07bb085bb7f8cdbe"},
-	"pancakeswap": {"0x38", "0x10ed43c718714eb63d5aa57b78b54704e256024e"},     // BSC
-	"aerodrome":   {"0x2105", "0x6b75a6f6c4c47c3a43b5a6c3a43b5a6c3a43b5a6"},   // Base
-	"raydium":     {"solana", "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"}, // Solana
-	"orca":        {"solana", "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"},
-	"meteora":     {"solana", "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5Ua"},
-	"hyperliquid": {"0xa4b1", "0x123"}, // Arbitrum, placeholder
+	"uniswap":     {"0x1", "uniswap-v3"},
+	"pancakeswap": {"0x38", "pancakeswap-v2"},
+	"aerodrome":   {"0x2105", "aerodrome"},
+	"raydium":     {"solana", "raydium"},
+	"orca":        {"solana", "orca"},
+	"meteora":     {"solana", "meteora"},
+	"hyperliquid": {"0xa4b1", "hyperliquid"},
 }
 
 type Token struct {
@@ -49,15 +49,15 @@ func fetchTokens(dex string, n, m int, timeframe string) ([]Token, []Token, erro
 		return nil, nil, fmt.Errorf("MORALIS_API_KEY not set")
 	}
 
-	url := fmt.Sprintf("https://deep-index.moralis.io/api/v2.2/erc20/%s/dex/%s/tokens", config.Chain, config.Exchange)
+	url := fmt.Sprintf("https://deep-index.moralis.io/api/v2.2/erc20/exchange/%s/tokens", config.Exchange)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	req.Header.Set("X-API-Key", apiKey)
 	q := req.URL.Query()
+	q.Add("chain", config.Chain)
 	q.Add("limit", strconv.Itoa(max(n, m)*2))
-	q.Add("timeframe", timeframe)
 	req.URL.RawQuery = q.Encode()
 
 	client := &http.Client{}
@@ -85,16 +85,20 @@ func fetchTokens(dex string, n, m int, timeframe string) ([]Token, []Token, erro
 	tokens := apiResp.Tokens
 
 	// Sort for volume
-	sort.Slice(tokens, func(i, j int) bool {
-		return tokens[i].Volume24h > tokens[j].Volume24h
+	volumeTokens := make([]Token, len(tokens))
+	copy(volumeTokens, tokens)
+	sort.Slice(volumeTokens, func(i, j int) bool {
+		return volumeTokens[i].Volume24h > volumeTokens[j].Volume24h
 	})
-	volumeTokens := tokens[:min(n, len(tokens))]
+	volumeTokens = volumeTokens[:min(n, len(volumeTokens))]
 
 	// Sort for change
-	sort.Slice(tokens, func(i, j int) bool {
-		return tokens[i].PriceChangePercentage24h > tokens[j].PriceChangePercentage24h
+	changeTokens := make([]Token, len(tokens))
+	copy(changeTokens, tokens)
+	sort.Slice(changeTokens, func(i, j int) bool {
+		return changeTokens[i].PriceChangePercentage24h > changeTokens[j].PriceChangePercentage24h
 	})
-	changeTokens := tokens[:min(m, len(tokens))]
+	changeTokens = changeTokens[:min(m, len(changeTokens))]
 
 	return volumeTokens, changeTokens, nil
 }
@@ -118,7 +122,11 @@ func printTable(title string, tokens []Token) {
 	fmt.Printf("%-10s %-20s %-15s %-15s %-10s\n", "Symbol", "Address", "Volume", "Change %", "Price")
 	fmt.Println(strings.Repeat("-", 80))
 	for _, t := range tokens {
-		fmt.Printf("%-10s %-20s %-15.2f %-15.2f %-10.2f\n", t.TokenSymbol, t.TokenAddress[:18]+"...", t.Volume24h, t.PriceChangePercentage24h, t.UsdPrice)
+		addr := t.TokenAddress
+		if len(addr) > 18 {
+			addr = addr[:18] + "..."
+		}
+		fmt.Printf("%-10s %-20s %-15.2f %-15.2f %-10.2f\n", t.TokenSymbol, addr, t.Volume24h, t.PriceChangePercentage24h, t.UsdPrice)
 	}
 	fmt.Println()
 }
@@ -139,11 +147,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	timeframes := []string{"1h", "30m", "5m"}
+	timeframes := []string{"oneHour", "thirtyMinutes", "fiveMinutes"}
 	dexes := []string{"uniswap", "pancakeswap", "aerodrome", "raydium", "orca", "meteora"}
 
+	timeframeDisplay := map[string]string{"oneHour": "1h", "thirtyMinutes": "30m", "fiveMinutes": "5m"}
 	for _, tf := range timeframes {
-		fmt.Printf("Timeframe: %s\n", tf)
+		fmt.Printf("Timeframe: %s\n", timeframeDisplay[tf])
 		for _, dex := range dexes {
 			volumeTokens, changeTokens, err := fetchTokens(dex, n, m, tf)
 			if err != nil {

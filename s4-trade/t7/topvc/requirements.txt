@@ -1,0 +1,6 @@
+textual[testing]
+requests
+moralis
+pytest
+pytest-asyncio
+pytest-mock

@@ -27,24 +27,36 @@
   <label>JS Code:</label>
   <textarea id="jsCode" rows="10"></textarea>
   
-  <label>Sink:</label>
-  <select id="sink">
-    <option value="display">Display in Popup</option>
-    <option value="csv">Download CSV</option>
-    <option value="post">Post to URL</option>
-  </select>
+   <label>Sink:</label>
+   <select id="sink">
+     <option value="display">Display in Popup</option>
+     <option value="csv">Download CSV</option>
+     <option value="post">Post to URL</option>
+   </select>
+
+   <label id="postUrlLabel" style="display:none;">Post URL:</label>
+   <input type="url" id="postUrl" style="display:none;">
+
+   <label>OpenAI API Key:</label>
+   <input type="password" id="apiKey">
+
+   <label>OpenAI Base URL:</label>
+   <input type="url" id="baseUrl" value="https://api.openai.com/v1">
+
+   <label>OpenAI Model:</label>
+   <input type="text" id="model" value="gpt-3.5-turbo">
   
-  <label id="postUrlLabel" style="display:none;">Post URL:</label>
-  <input type="url" id="postUrl" style="display:none;">
+   <button id="save">Save Settings</button>
+   <button id="testAPI">Test API</button>
+   <button id="runOnce">Run Once</button>
+   <button id="start">Start Schedule</button>
+   <button id="stop">Stop Schedule</button>
+   <button id="startAutonomous">Start Autonomous Mode</button>
   
-  <button id="save">Save Settings</button>
-  <button id="runOnce">Run Once</button>
-  <button id="start">Start Schedule</button>
-  <button id="stop">Stop Schedule</button>
-  
-  <div id="message" style="margin-top: 10px; color: green; display: none;"></div>
-  <div id="error" style="margin-top: 10px; color: red; display: none;"></div>
-  <div id="data" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; max-height: 200px; overflow: auto; display: none;"></div>
+   <div id="message" style="margin-top: 10px; color: green; display: none;"></div>
+   <div id="error" style="margin-top: 10px; color: red; display: none;"></div>
+   <div id="aiLog" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; max-height: 150px; overflow: auto; background: #f9f9f9; font-family: monospace; font-size: 12px; display: none;"></div>
+   <div id="data" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; max-height: 200px; overflow: auto; display: none;"></div>
   
   <script src="popup.js"></script>
 </body>

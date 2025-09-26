@@ -6,20 +6,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('preset').addEventListener('change', onPresetChange);
   document.getElementById('sink').addEventListener('change', onSinkChange);
   
-  document.getElementById('save').addEventListener('click', saveSettings);
-  document.getElementById('runOnce').addEventListener('click', runOnce);
-  document.getElementById('start').addEventListener('click', startSchedule);
-  document.getElementById('stop').addEventListener('click', stopSchedule);
+   document.getElementById('save').addEventListener('click', saveSettings);
+   document.getElementById('testAPI').addEventListener('click', testAPI);
+   document.getElementById('runOnce').addEventListener('click', runOnce);
+   document.getElementById('start').addEventListener('click', startSchedule);
+   document.getElementById('stop').addEventListener('click', stopSchedule);
+   document.getElementById('startAutonomous').addEventListener('click', startAutonomous);
 });
 
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.action === 'showError') {
-    showError(message.error);
-  } else if (message.action === 'showDebug') {
-    showMessage(message.message);
-  } else if (message.action === 'showData') {
-    showData(message.data);
-  }
+   if (message.action === 'showError') {
+     showError(message.error);
+   } else if (message.action === 'showDebug') {
+     showAILog(message.message);
+   } else if (message.action === 'showData') {
+     showData(message.data);
+   }
 });
 
 function showData(data) {
@@ -29,14 +31,17 @@ function showData(data) {
 }
 
 function loadSettings() {
-  chrome.storage.sync.get(['interval', 'url', 'jsCode', 'sink', 'postUrl'], (result) => {
-    document.getElementById('interval').value = result.interval || '';
-    document.getElementById('url').value = result.url || '';
-    document.getElementById('jsCode').value = result.jsCode || '';
-    document.getElementById('sink').value = result.sink || 'clipboard';
-    document.getElementById('postUrl').value = result.postUrl || '';
-    onSinkChange(); // to show/hide postUrl
-  });
+   chrome.storage.sync.get(['interval', 'url', 'jsCode', 'sink', 'postUrl', 'apiKey', 'baseUrl', 'model'], (result) => {
+     document.getElementById('interval').value = result.interval || '';
+     document.getElementById('url').value = result.url || '';
+     document.getElementById('jsCode').value = result.jsCode || '';
+     document.getElementById('sink').value = result.sink || 'display';
+     document.getElementById('postUrl').value = result.postUrl || '';
+     document.getElementById('apiKey').value = result.apiKey || '';
+     document.getElementById('baseUrl').value = result.baseUrl || 'https://api.openai.com/v1';
+     document.getElementById('model').value = result.model || 'gpt-3.5-turbo';
+     onSinkChange(); // to show/hide postUrl
+   });
 }
 
 function onPresetChange() {
@@ -76,14 +81,17 @@ function onSinkChange() {
 }
 
 function saveSettings() {
-  const interval = document.getElementById('interval').value;
-  const url = document.getElementById('url').value;
-  const jsCode = document.getElementById('jsCode').value;
-  const sink = document.getElementById('sink').value;
-  const postUrl = document.getElementById('postUrl').value;
-  
-  chrome.storage.sync.set({ interval: parseInt(interval), url, jsCode, sink, postUrl });
-  showMessage('Settings saved');
+   const interval = document.getElementById('interval').value;
+   const url = document.getElementById('url').value;
+   const jsCode = document.getElementById('jsCode').value;
+   const sink = document.getElementById('sink').value;
+   const postUrl = document.getElementById('postUrl').value;
+   const apiKey = document.getElementById('apiKey').value;
+   const baseUrl = document.getElementById('baseUrl').value;
+   const model = document.getElementById('model').value;
+
+   chrome.storage.sync.set({ interval: parseInt(interval), url, jsCode, sink, postUrl, apiKey, baseUrl, model });
+   showMessage('Settings saved');
 }
 
 function runOnce() {
@@ -101,10 +109,17 @@ function showMessage(text) {
 }
 
 function showError(text) {
-  const err = document.getElementById('error');
-  err.textContent = text;
-  err.style.display = 'block';
-  // Don't auto-hide errors
+   const err = document.getElementById('error');
+   err.textContent = text;
+   err.style.display = 'block';
+   // Don't auto-hide errors
+}
+
+function showAILog(text) {
+   const log = document.getElementById('aiLog');
+   log.style.display = 'block';
+   log.textContent += new Date().toLocaleTimeString() + ': ' + text + '\n';
+   log.scrollTop = log.scrollHeight;
 }
 
 function startSchedule() {
@@ -118,6 +133,16 @@ function startSchedule() {
 }
 
 function stopSchedule() {
-  chrome.runtime.sendMessage({ action: 'clearSchedule' });
-  showMessage('Schedule stopped');
+   chrome.runtime.sendMessage({ action: 'clearSchedule' });
+   showMessage('Schedule stopped');
+}
+
+function startAutonomous() {
+   chrome.runtime.sendMessage({ action: 'startAutonomous' });
+   showMessage('Autonomous mode started');
+}
+
+function testAPI() {
+   chrome.runtime.sendMessage({ action: 'testAPI' });
+   showMessage('Testing API...');
 }

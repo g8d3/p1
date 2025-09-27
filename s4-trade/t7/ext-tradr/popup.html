@@ -3,61 +3,97 @@
 <head>
   <title>Tradr</title>
   <style>
-    body { width: 300px; padding: 10px; }
-    label { display: block; margin-top: 10px; }
-    input, textarea { width: 100%; }
-    button { margin-top: 10px; }
+    body { width: 320px; padding: 10px; font-family: Arial, sans-serif; }
+    fieldset { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    legend { font-weight: bold; }
+    label { display: block; margin-top: 5px; }
+    input, textarea, select { width: 100%; box-sizing: border-box; }
+    button { margin: 5px 2px 0 0; padding: 5px 10px; }
+    .actions { display: flex; flex-wrap: wrap; }
+    .log { border: 1px solid #ccc; padding: 5px; max-height: 150px; overflow: auto; background: #f9f9f9; font-family: monospace; font-size: 12px; }
+    .session-item { margin: 5px 0; padding: 5px; border: 1px solid #ddd; cursor: pointer; }
+    .session-item:hover { background: #eee; }
   </style>
 </head>
 <body>
   <h3>Tradr Extension</h3>
-  <label>Preset:</label>
-  <select id="preset">
-    <option value="">Custom</option>
-    <option value="coingecko">CoinGecko Gainers/Losers (1h)</option>
-    <option value="local">Local Test Table</option>
-  </select>
-  
-  <label>Interval (seconds):</label>
-  <input type="number" id="interval" min="1">
-  
-  <label>URL:</label>
-  <input type="url" id="url">
-  
-  <label>JS Code:</label>
-  <textarea id="jsCode" rows="10"></textarea>
-  
-   <label>Sink:</label>
-   <select id="sink">
-     <option value="display">Display in Popup</option>
-     <option value="csv">Download CSV</option>
-     <option value="post">Post to URL</option>
-   </select>
 
-   <label id="postUrlLabel" style="display:none;">Post URL:</label>
-   <input type="url" id="postUrl" style="display:none;">
+  <fieldset>
+    <legend>Scraping Configuration</legend>
+    <label>Preset:</label>
+    <select id="preset">
+      <option value="">Custom</option>
+      <option value="coingecko">CoinGecko Gainers/Losers (1h)</option>
+      <option value="local">Local Test Table</option>
+    </select>
 
-   <label>OpenAI API Key:</label>
-   <input type="password" id="apiKey">
+    <label>Interval (seconds):</label>
+    <input type="number" id="interval" min="1">
 
-   <label>OpenAI Base URL:</label>
-   <input type="url" id="baseUrl" value="https://api.openai.com/v1">
+    <label>URL:</label>
+    <input type="url" id="url">
 
-   <label>OpenAI Model:</label>
-   <input type="text" id="model" value="gpt-3.5-turbo">
-  
-   <button id="save">Save Settings</button>
-   <button id="testAPI">Test API</button>
-   <button id="runOnce">Run Once</button>
-   <button id="start">Start Schedule</button>
-   <button id="stop">Stop Schedule</button>
-   <button id="startAutonomous">Start Autonomous Mode</button>
-  
-   <div id="message" style="margin-top: 10px; color: green; display: none;"></div>
-   <div id="error" style="margin-top: 10px; color: red; display: none;"></div>
-   <div id="aiLog" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; max-height: 150px; overflow: auto; background: #f9f9f9; font-family: monospace; font-size: 12px; display: none;"></div>
-   <div id="data" style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; max-height: 200px; overflow: auto; display: none;"></div>
-  
+    <label>JS Code:</label>
+    <textarea id="jsCode" rows="8"></textarea>
+
+    <label>Sink:</label>
+    <select id="sink">
+      <option value="display">Display in Popup</option>
+      <option value="csv">Download CSV</option>
+      <option value="post">Post to URL</option>
+    </select>
+
+    <label id="postUrlLabel" style="display:none;">Post URL:</label>
+    <input type="url" id="postUrl" style="display:none;">
+  </fieldset>
+
+  <fieldset>
+    <legend>AI Configuration</legend>
+    <label>OpenAI API Key:</label>
+    <input type="password" id="apiKey">
+
+    <label>OpenAI Base URL:</label>
+    <input type="url" id="baseUrl" value="https://api.openai.com/v1">
+
+    <label>OpenAI Model:</label>
+    <input type="text" id="model" value="gpt-3.5-turbo">
+
+    <label>Max Sessions to Keep:</label>
+    <input type="number" id="maxSessions" min="1" max="50" value="10">
+  </fieldset>
+
+  <fieldset>
+    <legend>Actions</legend>
+    <div class="actions">
+      <button id="save">Save Settings</button>
+      <button id="testAPI">Test API</button>
+      <button id="runOnce">Run Once</button>
+      <button id="start">Start Schedule</button>
+      <button id="stop">Stop Schedule</button>
+      <button id="startAutonomous">Start Autonomous</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Output</legend>
+    <div id="message" style="color: green; display: none;"></div>
+    <div id="error" style="color: red; display: none;"></div>
+    <div id="aiLog" class="log" style="display: none;"></div>
+    <div id="data" class="log" style="display: none;"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sessions</legend>
+    <div class="actions">
+      <button id="saveSession">Save Current Session</button>
+      <button id="loadSession">Load Selected</button>
+      <button id="deleteSession">Delete Selected</button>
+    </div>
+    <label>Session:</label>
+    <select id="sessionSelect" size="5"></select>
+    <div id="sessionContent" class="log" style="display: none;"></div>
+  </fieldset>
+
   <script src="popup.js"></script>
 </body>
 </html>

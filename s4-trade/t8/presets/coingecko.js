@@ -1,5 +1,7 @@
 /*
-https://www.coingecko.com/price_charts/<href>/usd/<time>.json
+https://www.coingecko.com/price_charts/<href last>/usd/<time>.json
+
+href last is the last part of the href of the coin page, in https://www.coingecko.com/en/coins/xxxxx, it is xxxxx
 
 times: max, 7_days, 24_hours, 30_days, 90_days, custom?from=1758621747&to=1758968689
 

@@ -1,0 +1,79 @@
+{
+  "name": "Tradr Extension",
+  "version": "1.0.0",
+  "description": "AI-powered trading data scraper",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "ui": {
+    "popup": {
+      "fields": [
+        {"id": "preset", "type": "select", "label": "Preset", "options": ["coingecko", "local"]},
+        {"id": "interval", "type": "number", "label": "Interval (seconds)"},
+        {"id": "url", "type": "url", "label": "URL"},
+        {"id": "jsCode", "type": "textarea", "label": "JS Code", "rows": 8},
+        {"id": "sink", "type": "select", "label": "Sink", "options": ["display", "csv", "post"]},
+        {"id": "postUrl", "type": "url", "label": "Post URL", "conditional": "sink=post"},
+        {"id": "apiKey", "type": "password", "label": "OpenAI API Key"},
+        {"id": "baseUrl", "type": "url", "label": "Base URL", "default": "https://api.openai.com/v1"},
+        {"id": "model", "type": "text", "label": "Model", "default": "gpt-3.5-turbo"},
+        {"id": "maxSessions", "type": "number", "label": "Max Sessions", "default": 10}
+      ],
+      "buttons": [
+        {"id": "save", "label": "Save Settings", "action": "saveSettings"},
+        {"id": "testAPI", "label": "Test API", "action": "testAPI"},
+        {"id": "runOnce", "label": "Run Once", "action": "runOnce"},
+        {"id": "start", "label": "Start Schedule", "action": "setSchedule"},
+        {"id": "stop", "label": "Stop Schedule", "action": "clearSchedule"},
+        {"id": "startAutonomous", "label": "Start Autonomous", "action": "startAutonomous"}
+      ],
+      "outputs": [
+        {"id": "message", "type": "message"},
+        {"id": "error", "type": "error"},
+        {"id": "aiLog", "type": "log"},
+        {"id": "data", "type": "dataTable"}
+      ],
+      "sessions": {
+        "select": {"id": "sessionSelect", "size": 5},
+        "buttons": [
+          {"id": "saveSession", "label": "Save Current Session", "action": "saveCurrentSession"},
+          {"id": "loadSession", "label": "Load Selected", "action": "loadSelectedSession"},
+          {"id": "deleteSession", "label": "Delete Selected", "action": "deleteSelectedSession"},
+          {"id": "exportSession", "label": "Export Selected to File", "action": "exportSelectedSession"}
+        ],
+        "content": {"id": "sessionContent", "type": "sessionTable"}
+      }
+    }
+  },
+  "actions": {
+    "saveSettings": {"handler": "saveSettings"},
+    "testAPI": {"handler": "testAPIConnection"},
+    "runOnce": {"handler": "executeScheduledTask"},
+    "setSchedule": {"handler": "setSchedule", "param": "interval"},
+    "clearSchedule": {"handler": "clearSchedule"},
+    "startAutonomous": {"handler": "startAutonomousMode"},
+    "saveCurrentSession": {"handler": "saveCurrentSession"},
+    "loadSelectedSession": {"handler": "loadSelectedSession"},
+    "deleteSelectedSession": {"handler": "deleteSelectedSession"},
+    "exportSelectedSession": {"handler": "exportSelectedSession"}
+  },
+  "ai": {
+    "settings": ["apiKey", "baseUrl", "model"],
+    "prompts": {
+      "sites": "prompts/sites.txt",
+      "scrape": "prompts/scrape.txt",
+      "structure": "prompts/structure.txt",
+      "indicator": "prompts/indicator.txt",
+      "strategy": "prompts/strategy.txt"
+    }
+  },
+  "storage": {
+    "sync": ["interval", "url", "jsCode", "sink", "postUrl", "apiKey", "baseUrl", "model", "maxSessions", "sessions"]
+  }
+}

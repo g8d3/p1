@@ -1,0 +1,1 @@
+Suggest 3 popular crypto data websites for scraping market data, like prices, volumes, etc. Return as a JSON array of URLs.

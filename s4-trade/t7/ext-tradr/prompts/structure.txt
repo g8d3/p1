@@ -1,0 +1,1 @@
+Analyze this unstructured data and define a structured "data box" (schema) for it: {data}. Return a JSON schema or description.

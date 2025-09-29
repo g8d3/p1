@@ -1,0 +1,1 @@
+Write JavaScript code to extract data from {url}. The data should include: {dataDescription}. The code should be executable and call window.tradrSink(data) where data is an array of objects.

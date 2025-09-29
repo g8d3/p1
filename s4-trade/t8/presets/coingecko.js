@@ -8,7 +8,7 @@ times: max, 7_days, 24_hours, 30_days, 90_days, custom?from=1758621747&to=175896
 
 https://www.coingecko.com/en/coins/<imageId>/markets/<cex|dex|all>/<perpetuals|spot>/<field>_<asc|desc>
 
-fields for spot: volume, price, trust_score, rank volume_percentage, upper_depth, lower_depth, spread, rank, volume_percentage
+fields: volume, price, trust_score, rank volume_percentage, upper_depth, lower_depth, spread, rank, volume_percentage
 
 
 fields not confirmed: liquidity, liquidity_score, adjusted_volume_24h, adjusted_volume_24h_rank

@@ -1,0 +1,43 @@
+var presetInterval = 3600;
+var presetUrl = 'https://www.coingecko.com/en/crypto-gainers-losers';
+var presetCode = function() {
+  setTimeout(function() {
+    try {
+      console.log('Looking for table');
+      var table = document.querySelector('table');
+      console.log('Table:', table);
+      if (!table) {
+        tradrSink('Table not found');
+        return;
+      }
+      var headers = Array.from(table.rows[0].cells).slice(1).map(function(cell) { return cell.textContent.trim(); });
+      var rows = Array.from(table.rows).slice(1).map(function(row) {
+        var cells = Array.from(row.cells);
+        var texts = cells.map(function(cell) { return cell.textContent.trim(); });
+        var linkCell = cells[2];
+        var a = linkCell ? linkCell.querySelector('a') : null;
+        var href = a ? a.href : '';
+        var img = linkCell ? linkCell.querySelector('img') : null;
+        var src = img ? img.src : '';
+        var parts = src.split('/');
+        var imageId = parts[5] || '';
+        var nameSymbol = texts[2] ? texts[2].split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
+        var processedRow = [
+          texts[1] || '',
+          nameSymbol[0] || '',
+          nameSymbol[1] || '',
+          texts[3] || '',
+          texts[4] || '',
+          texts[5] || '',
+          href,
+          imageId
+        ];
+        return processedRow;
+      });
+      var data = [headers].concat(rows);
+      tradrSink(data);
+    } catch (e) {
+      tradrSink('Error: ' + e);
+    }
+  }, 5000);
+};

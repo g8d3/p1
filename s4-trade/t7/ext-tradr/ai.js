@@ -12,16 +12,28 @@ async function getAISettings() {
   });
 }
 
-async function callOpenAI(prompt) {
+async function callOpenAI(prompt, systemMessage = null) {
   const settings = await getAISettings();
   if (!settings.apiKey) {
     throw new Error('OpenAI API key is not set in extension settings. Please enter your API key in the popup.');
   }
 
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showDebug',
+      message: `AI Prompt: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`
+    });
+  }
+
+  const messages = systemMessage ? [
+    { role: 'system', content: systemMessage },
+    { role: 'user', content: prompt }
+  ] : [{ role: 'user', content: prompt }];
+
   const url = `${settings.baseUrl}/chat/completions`;
   const body = JSON.stringify({
     model: settings.model,
-    messages: [{ role: 'user', content: prompt }],
+    messages: messages,
     max_completion_tokens: 1000
   });
 
@@ -55,27 +67,80 @@ async function callOpenAI(prompt) {
     throw new Error(`Unexpected OpenAI API response format. Response: ${JSON.stringify(data)}`);
   }
 
-  return data.choices[0].message.content.trim();
+  const content = data.choices[0].message.content.trim();
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showDebug',
+      message: `AI Response: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`
+    });
+  }
+
+  return content;
 }
 
 async function generateScrapingCode(url, dataDescription) {
-  const prompt = `Write JavaScript code to scrape data from ${url}. The data should include: ${dataDescription}. Return only the function code that extracts and returns the data as an array or object.`;
-  return await callOpenAI(prompt);
+  const prompt = `Write JavaScript code to extract data from ${url}. The data should include: ${dataDescription}. The code should be executable and call window.tradrSink(data) where data is an array of objects.`;
+  const systemMessage = 'You are a helpful assistant that generates JavaScript code for web data extraction. Always provide executable JavaScript code when asked.';
+  const response = await callOpenAI(prompt, systemMessage);
+  // Send debug info about the generated code
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showDebug',
+      message: `AI Generated Code: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+    });
+  }
+  if (!response || response.trim().length === 0) {
+    throw new Error(`AI returned empty code for URL: ${url}, Data: ${dataDescription}`);
+  }
+  return response;
 }
 
 async function structureData(unstructuredData) {
   const prompt = `Analyze this unstructured data and define a structured "data box" (schema) for it: ${JSON.stringify(unstructuredData)}. Return a JSON schema or description.`;
-  return await callOpenAI(prompt);
+  const systemMessage = 'You are a helpful assistant that analyzes data and creates structured schemas.';
+  const response = await callOpenAI(prompt, systemMessage);
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showDebug',
+      message: `AI Structured Data: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+    });
+  }
+  if (!response || response.trim().length === 0) {
+    throw new Error(`AI returned empty structured data for: ${JSON.stringify(unstructuredData).substring(0, 200)}`);
+  }
+  return response;
 }
 
 async function createIndicator(dataBox, indicatorType) {
   const prompt = `Create a ${indicatorType} indicator for this data structure: ${JSON.stringify(dataBox)}. Return JavaScript code for the indicator calculation.`;
-  return await callOpenAI(prompt);
+  const systemMessage = 'You are a helpful assistant that generates JavaScript code for technical indicators. Always provide executable JavaScript code when asked.';
+  const response = await callOpenAI(prompt, systemMessage);
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showDebug',
+      message: `AI Created ${indicatorType} Indicator: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+    });
+  }
+  if (!response || response.trim().length === 0) {
+    throw new Error(`AI returned empty ${indicatorType} indicator code for data: ${JSON.stringify(dataBox).substring(0, 200)}`);
+  }
+  return response;
 }
 
 async function generateBacktestStrategy(dataBox, indicators) {
   const prompt = `Based on this data box: ${JSON.stringify(dataBox)} and indicators: ${JSON.stringify(indicators)}, create a trading strategy with entry/exit rules. Return the strategy logic in JavaScript.`;
-  return await callOpenAI(prompt);
+  const systemMessage = 'You are a helpful assistant that generates JavaScript code for trading strategies. Always provide executable JavaScript code when asked.';
+  const response = await callOpenAI(prompt, systemMessage);
+  if (typeof chrome !== 'undefined' && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: 'showDebug',
+      message: `AI Generated Strategy: ${response.substring(0, 100)}${response.length > 100 ? '...' : ''}`
+    });
+  }
+  if (!response || response.trim().length === 0) {
+    throw new Error(`AI returned empty strategy code for data: ${JSON.stringify(dataBox).substring(0, 200)}, indicators: ${JSON.stringify(indicators).substring(0, 200)}`);
+  }
+  return response;
 }
 
 // Export functions for use in other scripts

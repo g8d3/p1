@@ -10,9 +10,18 @@
     input, textarea, select { width: 100%; box-sizing: border-box; }
     button { margin: 5px 2px 0 0; padding: 5px 10px; }
     .actions { display: flex; flex-wrap: wrap; }
-    .log { border: 1px solid #ccc; padding: 5px; max-height: 150px; overflow: auto; background: #f9f9f9; font-family: monospace; font-size: 12px; }
-    .session-item { margin: 5px 0; padding: 5px; border: 1px solid #ddd; cursor: pointer; }
-    .session-item:hover { background: #eee; }
+     .log { border: 1px solid #ccc; padding: 5px; max-height: 150px; overflow: auto; background: #f9f9f9; font-family: monospace; font-size: 12px; }
+     .session-item { margin: 5px 0; padding: 5px; border: 1px solid #ddd; cursor: pointer; }
+     .session-item:hover { background: #eee; }
+     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+     th { background-color: #f2f2f2; cursor: pointer; }
+     th:hover { background-color: #e0e0e0; }
+     tr:nth-child(even) { background-color: #f9f9f9; }
+     tr:hover { background-color: #f1f1f1; }
+     .pagination { margin-top: 10px; text-align: center; }
+     .pagination button { margin: 0 5px; padding: 5px 10px; }
+     .filter-input { margin-bottom: 10px; width: 100%; padding: 5px; }
   </style>
 </head>
 <body>
@@ -74,24 +83,39 @@
     </div>
   </fieldset>
 
-  <fieldset>
-    <legend>Output</legend>
-    <div id="message" style="color: green; display: none;"></div>
-    <div id="error" style="color: red; display: none;"></div>
-    <div id="aiLog" class="log" style="display: none;"></div>
-    <div id="data" class="log" style="display: none;"></div>
-  </fieldset>
+   <fieldset>
+     <legend>Output</legend>
+     <div id="message" style="color: green; display: none;"></div>
+     <div id="error" style="color: red; display: none;"></div>
+     <div id="aiLog" class="log" style="display: none;"></div>
+     <div id="dataContainer" style="display: none;">
+       <input type="text" id="dataFilter" class="filter-input" placeholder="Filter data...">
+       <table id="dataTable">
+         <thead id="dataTableHead"></thead>
+         <tbody id="dataTableBody"></tbody>
+       </table>
+       <div class="pagination" id="dataPagination"></div>
+     </div>
+   </fieldset>
 
   <fieldset>
     <legend>Sessions</legend>
-    <div class="actions">
-      <button id="saveSession">Save Current Session</button>
-      <button id="loadSession">Load Selected</button>
-      <button id="deleteSession">Delete Selected</button>
-    </div>
-    <label>Session:</label>
-    <select id="sessionSelect" size="5"></select>
-    <div id="sessionContent" class="log" style="display: none;"></div>
+     <div class="actions">
+       <button id="saveSession">Save Current Session</button>
+       <button id="loadSession">Load Selected</button>
+       <button id="deleteSession">Delete Selected</button>
+       <button id="exportSession">Export Selected to File</button>
+     </div>
+     <label>Session:</label>
+     <select id="sessionSelect" size="5"></select>
+     <div id="sessionContainer" style="display: none;">
+       <input type="text" id="sessionFilter" class="filter-input" placeholder="Filter session data...">
+       <table id="sessionTable">
+         <thead id="sessionTableHead"></thead>
+         <tbody id="sessionTableBody"></tbody>
+       </table>
+       <div class="pagination" id="sessionPagination"></div>
+     </div>
   </fieldset>
 
   <script src="popup.js"></script>

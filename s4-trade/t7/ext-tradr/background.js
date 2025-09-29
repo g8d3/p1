@@ -99,10 +99,10 @@ async function startAutonomousMode() {
 
       for (const url of sites) {
         chrome.runtime.sendMessage({ action: 'showDebug', message: `AI: Generating scraping code for ${url}...` });
-        // Generate scraping code for each site
-        const codePrompt = `Write JavaScript code to scrape crypto market data from ${url}. Extract data like coin names, prices, volumes. Return the function code.`;
-        currentSession.messages.push({ role: 'user', content: codePrompt });
-        const jsCode = await callOpenAI(codePrompt);
+         // Generate scraping code for each site
+         const codePrompt = `Write JavaScript code to extract cryptocurrency data from ${url}. Extract coin names, prices, and volumes. The code should be executable and call window.tradrSink(data) where data is an array of objects.`;
+         currentSession.messages.push({ role: 'user', content: codePrompt });
+         const jsCode = await callOpenAI(codePrompt);
         currentSession.messages.push({ role: 'assistant', content: jsCode });
         chrome.runtime.sendMessage({ action: 'showDebug', message: `AI: Code generated for ${url}, executing...` });
 

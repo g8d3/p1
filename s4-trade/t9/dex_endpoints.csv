@@ -1,0 +1,12 @@
+DEX,Market Info Endpoint,Funding Rates Endpoint
+Aster,N/A,GET /fapi/v1/fundingRate
+Hyperliquid,POST /info (type: metaAndAssetCtxs),POST /info (type: fundingHistory)
+Lighter,GET /markets,GET /funding
+EdgeX,N/A (on-chain via explorer),N/A (on-chain via explorer)
+Pacifica,N/A (on-chain via explorer),N/A (on-chain via explorer)
+Paradex,GET /markets,GET /v1/funding
+Apex,GET /markets,N/A (subgraph)
+Jupiter,GET /price or /quote,GET /v1/funding-rates
+GRVT,GET /markets,N/A (on-chain)
+Aden,GET /markets (Orderly API),N/A (Orderly API)
+Avantis,N/A (on-chain),N/A (on-chain)

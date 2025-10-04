@@ -23,22 +23,26 @@ const dexes = {
   hyperliquid: {
     baseUrl: 'https://api.hyperliquid.xyz',
     fundingEndpoint: '/info',
-    marketEndpoint: '/info'
+    marketEndpoint: '/info',
+    enabled: true
   },
   lighter: {
     baseUrl: 'https://api.lighter.xyz',
     fundingEndpoint: '/funding',
-    marketEndpoint: '/markets'
+    marketEndpoint: '/markets',
+    enabled: true
   },
   paradex: {
     baseUrl: 'https://api.paradex.trade',
     fundingEndpoint: '/v1/funding',
-    marketEndpoint: '/markets'
+    marketEndpoint: '/markets',
+    enabled: true
   },
   jupiter: {
     baseUrl: 'https://api.jup.ag',
     fundingEndpoint: '/v1/funding-rates',
-    marketEndpoint: '/price'
+    marketEndpoint: '/price',
+    enabled: true
   },
   // Add others as needed
 };
@@ -73,7 +77,9 @@ async function fetchFundingRates(dex) {
 app.get('/api/funding-rates', async (req, res) => {
   const results = {};
   for (const dex of Object.keys(dexes)) {
-    results[dex] = await fetchFundingRates(dex);
+    if (dexes[dex].enabled) {
+      results[dex] = await fetchFundingRates(dex);
+    }
   }
   res.json(results);
 });
@@ -82,7 +88,9 @@ app.get('/api/funding-rates', async (req, res) => {
 app.get('/api/arbitrage', async (req, res) => {
   const rates = {};
   for (const dex of Object.keys(dexes)) {
-    rates[dex] = await fetchFundingRates(dex);
+    if (dexes[dex].enabled) {
+      rates[dex] = await fetchFundingRates(dex);
+    }
   }
 
   // Simple arbitrage logic: find max and min rates per asset
@@ -90,6 +98,19 @@ app.get('/api/arbitrage', async (req, res) => {
   // Assume assets like BTC, ETH
   // This is placeholder; need to parse actual data
   res.json({ opportunities, rawRates: rates });
+});
+
+// Endpoint to get current DEX configurations
+app.get('/api/config', (req, res) => {
+  res.json(dexes);
+});
+
+// Endpoint to update DEX configurations (full CRUD)
+app.put('/api/config', express.json(), (req, res) => {
+  const newDexes = req.body;
+  // Replace the entire dexes object
+  Object.assign(dexes, newDexes);
+  res.json(dexes);
 });
 
 if (require.main === module) {

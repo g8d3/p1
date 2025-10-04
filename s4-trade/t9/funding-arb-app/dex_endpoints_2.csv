@@ -1,0 +1,12 @@
+dex,funding rate endpoint,body,body test,docs
+Aster,https://www.asterdex.com/fapi/v1/premiumIndex,,,https://docs.asterdex.com/product/aster-perpetual-pro/api/api-documentation#exchange-information
+Hyperliquid,https://api.hyperliquid.xyz/info,,,
+Lighter,wss://mainnet.zklighter.elliot.ai/stream,"{""type"":""subscribe"",""channel"":""market_stats/all""}","{""type"":""subscribe"",""channel"":""market_stats/0""}",https://apidocs.lighter.xyz/docs/websocket-reference
+edgeX,https://pro.edgex.exchange/api/v1/public/meta/getMetaData,,,
+Pacifica,https://api.pacifica.fi/api/v1/info,,,https://docs.pacifica.fi/api-documentation/api/rest-api/markets/get-market-info
+Paradex,https://api.prod.paradex.trade/v1/markets/summary,,,https://docs.paradex.trade/api/prod/markets/get-markets-summary
+ApeX Protocol,https://omni.apex.exchange/api/v3/funding,,,https://api-docs.pro.apex.exchange/#account-get-funding-rate
+Jupiter,no perp,,,
+GRVT,no web3 auth,,,
+ADEN,https://api.orderly.org/v1/public/funding_rates,,,
+Avantis,no easy way ,,,

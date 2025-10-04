@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const WebSocket = require('ws');
 require('dotenv').config();
 
 const app = express();
@@ -27,24 +28,52 @@ const dexes = {
     enabled: true
   },
   lighter: {
-    baseUrl: 'https://api.lighter.xyz',
-    fundingEndpoint: '/funding',
-    marketEndpoint: '/markets',
+    wsUrl: 'wss://mainnet.zklighter.elliot.ai/stream',
+    subscribeMessage: JSON.stringify({"type": "subscribe", "channel": "market_stats/all"}),
     enabled: true
   },
   paradex: {
-    baseUrl: 'https://api.paradex.trade',
-    fundingEndpoint: '/v1/funding',
-    marketEndpoint: '/markets',
+    baseUrl: 'https://api.prod.paradex.trade',
+    fundingEndpoint: '/v1/markets/summary',
+    marketEndpoint: '/v1/markets/summary',
     enabled: true
   },
   jupiter: {
     baseUrl: 'https://api.jup.ag',
     fundingEndpoint: '/v1/funding-rates',
     marketEndpoint: '/price',
+    enabled: false // No perpetual futures support
+  },
+  aster: {
+    baseUrl: 'https://www.asterdex.com',
+    fundingEndpoint: '/fapi/v1/premiumIndex',
+    marketEndpoint: '/fapi/v1/premiumIndex',
     enabled: true
   },
-  // Add others as needed
+  edgex: {
+    baseUrl: 'https://pro.edgex.exchange',
+    fundingEndpoint: '/api/v1/public/meta/getMetaData',
+    marketEndpoint: '/api/v1/public/meta/getMetaData',
+    enabled: true
+  },
+  pacifica: {
+    baseUrl: 'https://api.pacifica.fi',
+    fundingEndpoint: '/api/v1/info',
+    marketEndpoint: '/api/v1/info',
+    enabled: true
+  },
+  apex: {
+    baseUrl: 'https://omni.apex.exchange',
+    fundingEndpoint: '/api/v3/funding',
+    marketEndpoint: '/api/v3/funding',
+    enabled: true
+  },
+  aden: {
+    baseUrl: 'https://api.orderly.org',
+    fundingEndpoint: '/v1/public/funding_rates',
+    marketEndpoint: '/v1/public/funding_rates',
+    enabled: true
+  }
 };
 
 // Function to fetch funding rates
@@ -60,13 +89,48 @@ async function fetchFundingRates(dex) {
         startTime: Date.now() - 24 * 60 * 60 * 1000, // last 24h
         endTime: Date.now()
       });
+    } else if (dex === 'lighter') {
+      // WebSocket connection for Lighter
+      response = await new Promise((resolve, reject) => {
+        const ws = new WebSocket(config.wsUrl);
+        let dataReceived = false;
+
+        ws.on('open', () => {
+          ws.send(config.subscribeMessage);
+        });
+
+        ws.on('message', (data) => {
+          try {
+            const parsedData = JSON.parse(data.toString());
+            if (!dataReceived) {
+              dataReceived = true;
+              ws.close();
+              resolve(parsedData);
+            }
+          } catch (err) {
+            console.error('Error parsing Lighter WebSocket data:', err);
+          }
+        });
+
+        ws.on('error', (error) => {
+          reject(error);
+        });
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          if (!dataReceived) {
+            ws.close();
+            reject(new Error('Timeout waiting for Lighter data'));
+          }
+        }, 10000);
+      });
     } else if (dex === 'jupiter') {
       response = await axios.get(`${config.baseUrl}${config.fundingEndpoint}`);
     } else {
       response = await axios.get(`${config.baseUrl}${config.fundingEndpoint}`);
     }
 
-    return response.data;
+    return response.data || response;
   } catch (error) {
     console.error(`Error fetching ${dex} funding rates:`, error.message);
     return null;

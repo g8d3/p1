@@ -350,11 +350,9 @@ function App() {
                   setNewMapping({ name: '', query: '' });
                 }
               }}>Add Mapping</button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+             </div>
+           </div>
+     </div>
   )
 }
 

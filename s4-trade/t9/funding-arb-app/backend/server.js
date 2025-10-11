@@ -3,6 +3,7 @@ const axios = require('axios');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const WebSocket = require('ws');
+const jq = require('node-jq');
 require('dotenv').config();
 
 const app = express();
@@ -18,6 +19,9 @@ const limiter = rateLimit({
 app.use(limiter);
 
 const PORT = process.env.PORT || 5000;
+
+// Mappings
+let mappings = { default: '', array: '.[]', data: '.data' };
 
 // DEX configurations
 const dexes = {
@@ -130,7 +134,20 @@ async function fetchFundingRates(dex) {
       response = await axios.get(`${config.baseUrl}${config.fundingEndpoint}`);
     }
 
-    return response.data || response;
+    let data = response.data || response;
+
+    // Apply jq mapping if present
+    const mappingQuery = mappings[config.responseMapping] || config.responseMapping;
+    if (mappingQuery) {
+      try {
+        data = await jq.json(data, mappingQuery);
+      } catch (jqError) {
+        console.error(`Error applying jq mapping for ${dex}:`, jqError.message);
+        // Return original data if jq fails
+      }
+    }
+
+    return data;
   } catch (error) {
     console.error(`Error fetching ${dex} funding rates:`, error.message);
     return null;
@@ -175,6 +192,18 @@ app.put('/api/config', express.json(), (req, res) => {
   // Replace the entire dexes object
   Object.assign(dexes, newDexes);
   res.json(dexes);
+});
+
+// Endpoint to get mappings
+app.get('/api/mappings', (req, res) => {
+  res.json(mappings);
+});
+
+// Endpoint to update mappings
+app.put('/api/mappings', express.json(), (req, res) => {
+  const newMappings = req.body;
+  Object.assign(mappings, newMappings);
+  res.json(mappings);
 });
 
 if (require.main === module) {

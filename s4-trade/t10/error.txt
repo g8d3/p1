@@ -1,0 +1,32 @@
+0 verbose cli /home/vuos/.config/nvm/versions/node/v22.14.0/bin/node /home/vuos/.config/nvm/versions/node/v22.14.0/bin/npm
+1 info using npm@11.2.0
+2 info using node@v22.14.0
+3 silly config load:file:/home/vuos/.config/nvm/versions/node/v22.14.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/vuos/code/p1/s4-trade/t10/directus-app/.npmrc
+5 silly config load:file:/home/vuos/.npmrc
+6 silly config load:file:/home/vuos/.config/nvm/versions/node/v22.14.0/etc/npmrc
+7 verbose title npm run dev
+8 verbose argv "run" "dev"
+9 verbose logfile logs-max:10 dir:/home/vuos/.npm/_logs/2025-10-14T00_08_00_550Z-
+10 verbose logfile /home/vuos/.npm/_logs/2025-10-14T00_08_00_550Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 verbose stack Error: Missing script: "dev"
+13 verbose stack
+13 verbose stack To see a list of scripts, run:
+13 verbose stack   npm run
+13 verbose stack     at #run (/home/vuos/.config/nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/commands/run-script.js:111:13)
+13 verbose stack     at async RunScript.exec (/home/vuos/.config/nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/commands/run-script.js:40:7)
+13 verbose stack     at async Npm.exec (/home/vuos/.config/nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/npm.js:208:9)
+13 verbose stack     at async module.exports (/home/vuos/.config/nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/cli/entry.js:67:5)
+14 error Missing script: "dev"
+14 error
+14 error To see a list of scripts, run:
+14 error   npm run
+15 verbose cwd /home/vuos/code/p1/s4-trade/t10/directus-app
+16 verbose os Linux 6.8.0-85-generic
+17 verbose node v22.14.0
+18 verbose npm  v11.2.0
+19 verbose exit 1
+20 verbose code 1
+21 error A complete log of this run can be found in: /home/vuos/.npm/_logs/2025-10-14T00_08_00_550Z-debug-0.log

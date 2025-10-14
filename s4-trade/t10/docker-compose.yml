@@ -1,6 +1,8 @@
 services:
   database:
-    image: postgis/postgis:13-master
+    image: postgis/postgis:latest
+    ports:
+      - 5432:5432
     volumes:
       - ./data/database:/var/lib/postgresql/data
     environment:
@@ -55,5 +57,5 @@ services:
       ADMIN_EMAIL: "admin@example.com"
       ADMIN_PASSWORD: "123123123"
 
-      PUBLIC_URL: "REPLACE_WITH_YOUR_URL"
+      #PUBLIC_URL: "REPLACE_WITH_YOUR_URL"
 

@@ -5,9 +5,14 @@
 
 DB_NAME="dex_arb"
 DB_USER="postgres"
-DB_PASS=""  # Empty for trust auth; set if needed
+DB_PASS=${DB_PASS:-""}  # Set via env var: export DB_PASS=yourpassword
 DB_HOST="localhost"
 DB_PORT="5432"
+
+# Set PGPASSWORD to avoid prompts if password is set
+if [ -n "$DB_PASS" ]; then
+    export PGPASSWORD="$DB_PASS"
+fi
 
 # Check if PostgreSQL is running
 if ! pg_isready -h $DB_HOST -p $DB_PORT > /dev/null 2>&1; then
@@ -16,7 +21,8 @@ if ! pg_isready -h $DB_HOST -p $DB_PORT > /dev/null 2>&1; then
     sleep 2
 fi
 
-# Create DB if not exists
+# Drop and create DB
+psql -h $DB_HOST -p $DB_PORT -U $DB_USER -c "DROP DATABASE IF EXISTS $DB_NAME;" -d postgres
 psql -h $DB_HOST -p $DB_PORT -U $DB_USER -c "CREATE DATABASE $DB_NAME;" -d postgres
 
 # Run schema creation
@@ -35,7 +41,7 @@ fi
 npm install -g @directus/cli
 
 # Create Directus project
-npx create-directus-project directus-app --preset postgres
+npx create-directus-project directus-app
 
 # Configure .env in directus-app
 cat > directus-app/.env <<EOF

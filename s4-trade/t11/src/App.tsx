@@ -111,7 +111,7 @@ function App() {
       }
       // Add more as needed
     } catch (error) {
-      const errorMsg = `Error generating wallet for ${network}: ${error instanceof Error ? error.message : String(error)}`
+      const errorMsg = `Error generating wallet for ${network}: ${error instanceof Error ? error.message : String(error)}\nStack: ${error instanceof Error ? error.stack : 'No stack'}`
       console.error(errorMsg)
       setErrors(prev => [...prev, errorMsg])
       return {
@@ -176,7 +176,7 @@ function App() {
       {errors.length > 0 && (
         <div>
           <h3>Errors:</h3>
-          <pre>{errors.join('\n')}</pre>
+          <pre style={{ maxHeight: '200px', overflow: 'auto' }}>{errors.join('\n')}</pre>
         </div>
       )}
     </div>

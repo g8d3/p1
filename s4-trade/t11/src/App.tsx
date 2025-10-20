@@ -36,7 +36,7 @@ const networks = [
 function App() {
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [connected, setConnected] = useState(false)
-  const [signer, setSigner] = useState<ethers.Signer | null>(null)
+  // const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -47,23 +47,25 @@ function App() {
   }, [])
 
   const connectWallet = async () => {
-    if (window.ethereum) {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      await provider.send("eth_requestAccounts", [])
-      const signer = await provider.getSigner()
-      setSigner(signer)
-      setConnected(true)
-    } else {
-      alert('Please install MetaMask')
-    }
+    // if (window.ethereum) {
+    //   const provider = new ethers.BrowserProvider(window.ethereum)
+    //   await provider.send("eth_requestAccounts", [])
+    //   const signer = await provider.getSigner()
+    //   setSigner(signer)
+    //   setConnected(true)
+    // } else {
+    //   alert('Please install MetaMask')
+    // }
+    setConnected(true)
   }
 
   const generateWallets = async () => {
-    if (!signer) return
+    // if (!signer) return
     setLoading(true)
-    const message = 'Generate wallets'
-    const signature = await signer.signMessage(message)
-    const seed = ethers.keccak256(signature)
+    // const message = 'Generate wallets'
+    // const signature = await signer.signMessage(message)
+    // const seed = ethers.keccak256(signature)
+    const seed = '0x' + Math.random().toString(16).substr(2, 64)
 
     const newWallets: Wallet[] = []
     for (const network of networks) {
@@ -105,6 +107,7 @@ function App() {
   return (
     <div className="app">
       <h1>Wallet Generator</h1>
+      <p>App loaded</p>
       {!connected ? (
         <button onClick={connectWallet}>Connect Wallet</button>
       ) : (

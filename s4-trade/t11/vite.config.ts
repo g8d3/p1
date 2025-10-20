@@ -10,6 +10,11 @@ export default defineConfig({
   resolve: {
     alias: {
       crypto: 'crypto-browserify',
+      process: 'process/browser',
     },
+  },
+  define: {
+    global: 'globalThis',
+    'process.env': {},
   },
 })

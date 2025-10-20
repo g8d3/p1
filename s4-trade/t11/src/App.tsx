@@ -27,6 +27,7 @@ interface Wallet {
   network: string
   address: string
   privateKey: string
+  error?: string
 }
 
 const networks = [
@@ -38,6 +39,7 @@ function App() {
   const [connected, setConnected] = useState(false)
   const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<string[]>([])
 
   useEffect(() => {
     const savedWallets = localStorage.getItem('wallets')
@@ -109,14 +111,23 @@ function App() {
       }
       // Add more as needed
     } catch (error) {
-      console.error(`Error generating wallet for ${network}:`, error)
+      const errorMsg = `Error generating wallet for ${network}: ${error instanceof Error ? error.message : String(error)}`
+      console.error(errorMsg)
+      setErrors(prev => [...prev, errorMsg])
+      return {
+        id,
+        network,
+        address: 'Failed',
+        privateKey: 'Failed',
+        error: error instanceof Error ? error.message : String(error)
+      }
     }
     // Placeholder for others
     return {
       id,
       network,
-      address: `0x${Math.random().toString(16).substr(2, 40)}`,
-      privateKey: `0x${Math.random().toString(16).substr(2, 64)}`
+      address: 'Not implemented',
+      privateKey: 'Not implemented'
     }
   }
 
@@ -146,6 +157,7 @@ function App() {
             <th>Network</th>
             <th>Address</th>
             <th>Private Key</th>
+            <th>Error</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -155,11 +167,18 @@ function App() {
               <td>{wallet.network}</td>
               <td>{wallet.address}</td>
               <td>{wallet.privateKey}</td>
+              <td>{wallet.error || ''}</td>
               <td><button onClick={() => deleteWallet(wallet.id)}>Delete</button></td>
             </tr>
           ))}
         </tbody>
       </table>
+      {errors.length > 0 && (
+        <div>
+          <h3>Errors:</h3>
+          <pre>{errors.join('\n')}</pre>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,7 +1,26 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
+import { BtcWallet } from '@okxweb3/coin-bitcoin'
 import { EthWallet } from '@okxweb3/coin-ethereum'
+import { AptosWallet } from '@okxweb3/coin-aptos'
+import { CosmosWallet } from '@okxweb3/coin-cosmos'
+import { EosWallet } from '@okxweb3/coin-eos'
+import { StxWallet } from '@okxweb3/coin-stacks'
+import { StarknetWallet } from '@okxweb3/coin-starknet'
+import { SuiWallet } from '@okxweb3/coin-sui'
+import { NearWallet } from '@okxweb3/coin-near'
+import { TrxWallet } from '@okxweb3/coin-tron'
+import { TonWallet } from '@okxweb3/coin-ton'
+import { AdaWallet } from '@okxweb3/coin-cardano'
+import { SolWallet } from '@okxweb3/coin-solana'
+import { KaspaWallet } from '@okxweb3/coin-kaspa'
 import './App.css'
+
+declare global {
+  interface Window {
+    ethereum?: any
+  }
+}
 
 interface Wallet {
   id: string
@@ -58,21 +77,66 @@ function App() {
 
   const generateWalletForNetwork = async (network: string, seed: string): Promise<Wallet> => {
     const id = Date.now().toString() + Math.random()
-    if (network === 'ethereum') {
-      const wallet = EthWallet.generateWallet({ seed })
-      return {
-        id,
-        network,
-        address: wallet.address,
-        privateKey: wallet.privateKey
-      }
+    let wallet: any
+    let WalletClass: any
+    switch (network) {
+      case 'bitcoin':
+        WalletClass = BtcWallet
+        break
+      case 'ethereum':
+        WalletClass = EthWallet
+        break
+      case 'aptos':
+        WalletClass = AptosWallet
+        break
+      case 'cosmos':
+        WalletClass = CosmosWallet
+        break
+      case 'eos':
+        WalletClass = EosWallet
+        break
+      case 'stacks':
+        WalletClass = StxWallet
+        break
+      case 'starknet':
+        WalletClass = StarknetWallet
+        break
+      case 'sui':
+        WalletClass = SuiWallet
+        break
+      case 'near':
+        WalletClass = NearWallet
+        break
+      case 'tron':
+        WalletClass = TrxWallet
+        break
+      case 'ton':
+        WalletClass = TonWallet
+        break
+      case 'cardano':
+        WalletClass = AdaWallet
+        break
+      case 'solana':
+        WalletClass = SolWallet
+        break
+      case 'kaspa':
+        WalletClass = KaspaWallet
+        break
+      default:
+        return {
+          id,
+          network,
+          address: `0x${Math.random().toString(16).substr(2, 40)}`,
+          privateKey: `0x${Math.random().toString(16).substr(2, 64)}`
+        }
     }
-    // Placeholder for others
+    const walletInstance = new WalletClass()
+    wallet = await walletInstance.getNewAddress({ privateKey: seed })
     return {
       id,
       network,
-      address: `0x${Math.random().toString(16).substr(2, 40)}`,
-      privateKey: `0x${Math.random().toString(16).substr(2, 64)}`
+      address: wallet.address,
+      privateKey: wallet.privateKey
     }
   }
 

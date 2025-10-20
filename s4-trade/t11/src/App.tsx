@@ -133,8 +133,9 @@ function App() {
       }
       // Add more as needed
     } catch (error) {
+      console.error(`Error generating wallet for ${network}:`, error)
+      console.trace(error)
       const errorMsg = `Error generating wallet for ${network}: ${error instanceof Error ? error.message : String(error)}\nStack: ${error instanceof Error ? error.stack : 'No stack'}`
-      console.error(errorMsg)
       setErrors(prev => [...prev, errorMsg])
       return {
         id,

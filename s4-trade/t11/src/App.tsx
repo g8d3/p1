@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 // import { BtcWallet } from '@okxweb3/coin-bitcoin'
-// import { EthWallet } from '@okxweb3/coin-ethereum'
+import { EthWallet } from '@okxweb3/coin-ethereum'
 // import { AptosWallet } from '@okxweb3/coin-aptos'
 // import { CosmosWallet } from '@okxweb3/coin-cosmos'
 // import { EosWallet } from '@okxweb3/coin-eos'
@@ -36,7 +36,7 @@ const networks = [
 function App() {
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [connected, setConnected] = useState(false)
-  // const [signer, setSigner] = useState<ethers.Signer | null>(null)
+  const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -47,25 +47,23 @@ function App() {
   }, [])
 
   const connectWallet = async () => {
-    // if (window.ethereum) {
-    //   const provider = new ethers.BrowserProvider(window.ethereum)
-    //   await provider.send("eth_requestAccounts", [])
-    //   const signer = await provider.getSigner()
-    //   setSigner(signer)
-    //   setConnected(true)
-    // } else {
-    //   alert('Please install MetaMask')
-    // }
-    setConnected(true)
+    if (window.ethereum) {
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      await provider.send("eth_requestAccounts", [])
+      const signer = await provider.getSigner()
+      setSigner(signer)
+      setConnected(true)
+    } else {
+      alert('Please install MetaMask')
+    }
   }
 
   const generateWallets = async () => {
-    // if (!signer) return
+    if (!signer) return
     setLoading(true)
-    // const message = 'Generate wallets'
-    // const signature = await signer.signMessage(message)
-    // const seed = ethers.keccak256(signature)
-    const seed = '0x' + Math.random().toString(16).substr(2, 64)
+    const message = 'Generate wallets'
+    const signature = await signer.signMessage(message)
+    const seed = ethers.keccak256(signature)
 
     const newWallets: Wallet[] = []
     for (const network of networks) {
@@ -79,7 +77,17 @@ function App() {
 
   const generateWalletForNetwork = async (network: string, seed: string): Promise<Wallet> => {
     const id = Date.now().toString() + Math.random()
-    // Placeholder for now
+    if (network === 'ethereum') {
+      const walletInstance = new EthWallet()
+      const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+      return {
+        id,
+        network,
+        address: wallet.address,
+        privateKey: seed // or wallet.privateKey if available
+      }
+    }
+    // Placeholder for others
     return {
       id,
       network,

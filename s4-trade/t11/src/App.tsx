@@ -91,7 +91,8 @@ function App() {
       } else if (network === 'bitcoin') {
         const { BtcWallet } = await import('@okxweb3/coin-bitcoin')
         const walletInstance = new BtcWallet()
-        const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+        const privateKeyBuffer = Buffer.from(seed.slice(2), 'hex')
+        const wallet = await walletInstance.getNewAddress({ privateKey: privateKeyBuffer })
         return {
           id,
           network,

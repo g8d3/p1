@@ -7,5 +7,6 @@ export default defineConfig({
   plugins: [react(), nodePolyfills({ globals: { Buffer: true } })],
   define: {
     global: 'globalThis',
+    Buffer: 'Buffer',
   },
 })

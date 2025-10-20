@@ -7,6 +7,9 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  optimizeDeps: {
+    include: ['buffer'],
+  },
   resolve: {
     alias: {
       crypto: 'crypto-browserify',
@@ -16,6 +19,7 @@ export default defineConfig({
       https: 'https-browserify',
       os: 'os-browserify',
       url: 'url',
+      Buffer: 'buffer',
     },
   },
 })

@@ -4,9 +4,11 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), nodePolyfills({ globals: { Buffer: true } })],
+  plugins: [react(), nodePolyfills({ include: ['buffer'], globals: { Buffer: true } })],
   define: {
     global: 'globalThis',
-    Buffer: 'Buffer',
+  },
+  optimizeDeps: {
+    include: ['@okxweb3/coin-ethereum', '@okxweb3/crypto-lib', 'buffer'],
   },
 })

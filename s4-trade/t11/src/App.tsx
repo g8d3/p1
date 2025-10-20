@@ -110,6 +110,26 @@ function App() {
           address: wallet.address,
           privateKey: seed
         }
+      } else if (network === 'cosmos') {
+        const { CosmosWallet } = await import('@okxweb3/coin-cosmos')
+        const walletInstance = new CosmosWallet()
+        const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+        return {
+          id,
+          network,
+          address: wallet.address,
+          privateKey: seed
+        }
+      } else if (network === 'eos') {
+        const { EosWallet } = await import('@okxweb3/coin-eos')
+        const walletInstance = new EosWallet()
+        const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+        return {
+          id,
+          network,
+          address: wallet.address,
+          privateKey: seed
+        }
       }
       // Add more as needed
     } catch (error) {

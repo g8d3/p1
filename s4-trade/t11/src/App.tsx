@@ -77,14 +77,39 @@ function App() {
 
   const generateWalletForNetwork = async (network: string, seed: string): Promise<Wallet> => {
     const id = Date.now().toString() + Math.random()
-    if (network === 'ethereum') {
-      const wallet = new ethers.Wallet(seed)
-      return {
-        id,
-        network,
-        address: wallet.address,
-        privateKey: seed
+    try {
+      if (network === 'ethereum') {
+        const wallet = new ethers.Wallet(seed)
+        return {
+          id,
+          network,
+          address: wallet.address,
+          privateKey: seed
+        }
+      } else if (network === 'bitcoin') {
+        const { BtcWallet } = await import('@okxweb3/coin-bitcoin')
+        const walletInstance = new BtcWallet()
+        const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+        return {
+          id,
+          network,
+          address: wallet.address,
+          privateKey: seed
+        }
+      } else if (network === 'aptos') {
+        const { AptosWallet } = await import('@okxweb3/coin-aptos')
+        const walletInstance = new AptosWallet()
+        const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+        return {
+          id,
+          network,
+          address: wallet.address,
+          privateKey: seed
+        }
       }
+      // Add more as needed
+    } catch (error) {
+      console.error(`Error generating wallet for ${network}:`, error)
     }
     // Placeholder for others
     return {

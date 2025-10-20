@@ -84,7 +84,7 @@ function App() {
         id,
         network,
         address: wallet.address,
-        privateKey: seed // or wallet.privateKey if available
+        privateKey: seed
       }
     }
     // Placeholder for others
@@ -93,16 +93,6 @@ function App() {
       network,
       address: `0x${Math.random().toString(16).substr(2, 40)}`,
       privateKey: `0x${Math.random().toString(16).substr(2, 64)}`
-    }
-  }
-    }
-    const walletInstance = new WalletClass()
-    wallet = await walletInstance.getNewAddress({ privateKey: seed })
-    return {
-      id,
-      network,
-      address: wallet.address,
-      privateKey: wallet.privateKey
     }
   }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 // import { BtcWallet } from '@okxweb3/coin-bitcoin'
-import { EthWallet } from '@okxweb3/coin-ethereum'
+// import { EthWallet } from '@okxweb3/coin-ethereum'
 // import { AptosWallet } from '@okxweb3/coin-aptos'
 // import { CosmosWallet } from '@okxweb3/coin-cosmos'
 // import { EosWallet } from '@okxweb3/coin-eos'
@@ -78,6 +78,7 @@ function App() {
   const generateWalletForNetwork = async (network: string, seed: string): Promise<Wallet> => {
     const id = Date.now().toString() + Math.random()
     if (network === 'ethereum') {
+      const { EthWallet } = await import('@okxweb3/coin-ethereum')
       const walletInstance = new EthWallet()
       const wallet = await walletInstance.getNewAddress({ privateKey: seed })
       return {

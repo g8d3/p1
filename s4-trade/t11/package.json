@@ -1,0 +1,46 @@
+{
+  "name": "wallet-generator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@okxweb3/coin-aptos": "^1.2.2",
+    "@okxweb3/coin-base": "^1.1.6",
+    "@okxweb3/coin-bitcoin": "^1.2.1",
+    "@okxweb3/coin-cardano": "^1.0.0",
+    "@okxweb3/coin-cosmos": "^1.0.0",
+    "@okxweb3/coin-eos": "^1.0.0",
+    "@okxweb3/coin-ethereum": "^1.1.2",
+    "@okxweb3/coin-kaspa": "^1.0.0",
+    "@okxweb3/coin-near": "^1.0.0",
+    "@okxweb3/coin-solana": "^1.0.0",
+    "@okxweb3/coin-stacks": "^1.0.0",
+    "@okxweb3/coin-starknet": "^1.0.0",
+    "@okxweb3/coin-sui": "^1.0.0",
+    "@okxweb3/coin-ton": "^1.0.0",
+    "@okxweb3/coin-tron": "^1.0.0",
+    "@okxweb3/crypto-lib": "^1.0.13",
+    "ethers": "^6.15.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.15",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "patch-package": "^8.0.1",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  }
+}

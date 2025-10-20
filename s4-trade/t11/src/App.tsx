@@ -102,7 +102,8 @@ function App() {
       } else if (network === 'aptos') {
         const { AptosWallet } = await import('@okxweb3/coin-aptos')
         const walletInstance = new AptosWallet()
-        const wallet = await walletInstance.getNewAddress({ privateKey: seed })
+        const privateKeyBuffer = Buffer.from(seed.slice(2), 'hex')
+        const wallet = await walletInstance.getNewAddress({ privateKey: privateKeyBuffer })
         return {
           id,
           network,

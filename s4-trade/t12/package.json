@@ -1,0 +1,52 @@
+{
+  "name": "browser-wallet-crud",
+  "version": "1.0.0",
+  "description": "A library for building browser CRUD applications for wallets without a server",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "demo": "vite demo --host",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "wallet",
+    "ethereum",
+    "crud",
+    "browser",
+    "no-server"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bs58": "^4.0.4",
+    "@types/crypto-js": "^4.2.2",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vite-plugin-dts": "^3.5.3"
+  },
+  "dependencies": {
+    "crypto-js": "^4.1.1",
+    "ethers": "^6.7.0",
+    "idb": "^7.1.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "tweetnacl": "^1.0.3",
+    "bs58": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}

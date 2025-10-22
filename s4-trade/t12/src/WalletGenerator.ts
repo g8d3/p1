@@ -13,7 +13,7 @@ export class WalletGenerator {
       const privateKey = ethers.hexlify(keypair.secretKey.slice(0, 32)) // private key is first 32 bytes
 
       return {
-        id: `${signature}-${index}`,
+        id: `${signature}-${network}-${index}`,
         address: publicKey,
         privateKey,
         network,
@@ -25,7 +25,7 @@ export class WalletGenerator {
       const wallet = new ethers.Wallet(seed)
 
       return {
-        id: `${signature}-${index}`,
+        id: `${signature}-${network}-${index}`,
         address: wallet.address,
         privateKey: wallet.privateKey,
         network,
@@ -34,10 +34,10 @@ export class WalletGenerator {
     }
   }
 
-  static generateWallets(signature: string, count: number, network: string): Wallet[] {
+  static generateWallets(signature: string, startIndex: number, count: number, network: string): Wallet[] {
     const wallets: Wallet[] = []
     for (let i = 0; i < count; i++) {
-      wallets.push(this.generateWallet(signature, i, network))
+      wallets.push(this.generateWallet(signature, startIndex + i, network))
     }
     return wallets
   }

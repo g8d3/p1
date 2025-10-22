@@ -27,12 +27,12 @@ export class WalletManager {
     return address
   }
 
-  async generateWallets(count: number, network: string = 'ethereum'): Promise<Wallet[]> {
+  async generateWallets(startIndex: number, count: number, network: string = 'ethereum'): Promise<Wallet[]> {
     if (!this.signature) {
       throw new Error('Must authenticate first')
     }
 
-    const wallets = WalletGenerator.generateWallets(this.signature, count, network)
+    const wallets = WalletGenerator.generateWallets(this.signature, startIndex, count, network)
 
     if (this.storage) {
       for (const wallet of wallets) {

@@ -34,7 +34,7 @@ function Demo() {
   const generateWallets = async () => {
     try {
       const currentCount = generatedCounts[network] || 0
-      await manager.generateWallets(count + currentCount, network)
+      await manager.generateWallets(currentCount, count, network)
       loadWallets()
     } catch (error) {
       alert('Error: ' + error.message)

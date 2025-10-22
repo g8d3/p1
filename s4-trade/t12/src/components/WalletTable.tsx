@@ -6,13 +6,17 @@ interface WalletTableProps {
   onDelete: (id: string) => void
   onExport: (wallet: Wallet) => void
   onCopy: (address: string) => void
+  onSignMessage?: (walletId: string) => void
+  onSignTransaction?: (walletId: string) => void
 }
 
 export const WalletTable: React.FC<WalletTableProps> = ({
   wallets,
   onDelete,
   onExport,
-  onCopy
+  onCopy,
+  onSignMessage,
+  onSignTransaction
 }) => {
   const [isDark, setIsDark] = useState(true)
 
@@ -41,11 +45,13 @@ export const WalletTable: React.FC<WalletTableProps> = ({
                 <td className="address-cell">{wallet.address}</td>
                 <td>{wallet.network}</td>
                 <td>{wallet.createdAt.toLocaleDateString()}</td>
-                <td>
-                  <button onClick={() => onCopy(wallet.address)}>Copy</button>
-                  <button onClick={() => onExport(wallet)}>Export</button>
-                  <button onClick={() => onDelete(wallet.id)}>Delete</button>
-                </td>
+                 <td>
+                   <button onClick={() => onCopy(wallet.address)}>Copy</button>
+                   <button onClick={() => onExport(wallet)}>Export</button>
+                   {onSignMessage && <button onClick={() => onSignMessage(wallet.id)}>Sign Msg</button>}
+                   {onSignTransaction && <button onClick={() => onSignTransaction(wallet.id)}>Sign Tx</button>}
+                   <button onClick={() => onDelete(wallet.id)}>Delete</button>
+                 </td>
               </tr>
             ))}
           </tbody>

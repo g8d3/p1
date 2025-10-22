@@ -2,6 +2,9 @@ import { WalletConnector } from './WalletConnector'
 import { WalletGenerator } from './WalletGenerator'
 import { Storage } from './Storage'
 import { Wallet, WalletManagerConfig } from './types'
+import { ethers } from 'ethers'
+import nacl from 'tweetnacl'
+import bs58 from 'bs58'
 
 export class WalletManager {
   private connector: WalletConnector
@@ -66,5 +69,49 @@ export class WalletManager {
 
   copyAddress(address: string): void {
     navigator.clipboard.writeText(address)
+  }
+
+  async signMessage(walletId: string, message: string): Promise<string> {
+    if (!this.storage) {
+      throw new Error('Storage not initialized')
+    }
+
+    const wallet = await this.storage.getWallet(walletId)
+    if (!wallet) {
+      throw new Error('Wallet not found')
+    }
+
+    if (wallet.network === 'solana') {
+      const messageBytes = new TextEncoder().encode(message)
+      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes('0x' + wallet.privateKey))
+      const signature = nacl.sign.detached(messageBytes, keypair.secretKey)
+      return bs58.encode(signature)
+    } else {
+      // EVM
+      const ethersWallet = new ethers.Wallet(wallet.privateKey)
+      return await ethersWallet.signMessage(message)
+    }
+  }
+
+  async signTransaction(walletId: string, tx: any): Promise<string> {
+    if (!this.storage) {
+      throw new Error('Storage not initialized')
+    }
+
+    const wallet = await this.storage.getWallet(walletId)
+    if (!wallet) {
+      throw new Error('Wallet not found')
+    }
+
+    if (wallet.network === 'solana') {
+      // For Solana, tx is expected to be a Transaction object
+      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes('0x' + wallet.privateKey))
+      tx.sign(keypair)
+      return bs58.encode(tx.serialize())
+    } else {
+      // EVM
+      const ethersWallet = new ethers.Wallet(wallet.privateKey)
+      return await ethersWallet.signTransaction(tx)
+    }
   }
 }

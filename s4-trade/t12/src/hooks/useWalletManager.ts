@@ -67,6 +67,30 @@ export const useWalletManager = () => {
     alert('Address copied')
   }, [manager])
 
+  const signMessage = useCallback(async (walletId: string, message: string) => {
+    try {
+      const signature = await manager.signMessage(walletId, message)
+      navigator.clipboard.writeText(signature)
+      alert('Signature copied to clipboard')
+      return signature
+    } catch (error) {
+      alert('Error signing message: ' + (error as Error).message)
+      throw error
+    }
+  }, [manager])
+
+  const signTransaction = useCallback(async (walletId: string, tx: any) => {
+    try {
+      const signedTx = await manager.signTransaction(walletId, tx)
+      navigator.clipboard.writeText(signedTx)
+      alert('Signed transaction copied to clipboard')
+      return signedTx
+    } catch (error) {
+      alert('Error signing transaction: ' + (error as Error).message)
+      throw error
+    }
+  }, [manager])
+
   const disconnect = useCallback(() => {
     setAuthenticated(false)
     setWallets([])
@@ -86,6 +110,8 @@ export const useWalletManager = () => {
     deleteWallet,
     exportWallet,
     copyAddress,
+    signMessage,
+    signTransaction,
     disconnect
   }
 }

@@ -27,6 +27,8 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     deleteWallet,
     exportWallet,
     copyAddress,
+    signMessage,
+    signTransaction,
     disconnect
   } = useWalletManager()
 
@@ -51,6 +53,25 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
       await generateWallets()
     } catch (error) {
       alert('Error: ' + (error as Error).message)
+    }
+  }
+
+  const handleSignMessage = async (walletId: string) => {
+    const message = prompt('Enter message to sign:')
+    if (message) {
+      await signMessage(walletId, message)
+    }
+  }
+
+  const handleSignTransaction = async (walletId: string) => {
+    const txJson = prompt('Enter transaction JSON to sign:')
+    if (txJson) {
+      try {
+        const tx = JSON.parse(txJson)
+        await signTransaction(walletId, tx)
+      } catch (error) {
+        alert('Invalid JSON: ' + (error as Error).message)
+      }
     }
   }
 
@@ -94,6 +115,8 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
             onDelete={deleteWallet}
             onExport={exportWallet}
             onCopy={copyAddress}
+            onSignMessage={handleSignMessage}
+            onSignTransaction={handleSignTransaction}
           />
         </div>
       )}

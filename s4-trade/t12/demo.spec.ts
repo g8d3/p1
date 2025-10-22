@@ -1,23 +1,37 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('http://localhost:5176');
-  await page.waitForLoadState('networkidle');
-
   // Mock MetaMask
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     (window as any).ethereum = {
       request: async (args: any) => {
         if (args.method === 'eth_requestAccounts') {
           return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e'];
         } else if (args.method === 'personal_sign') {
           return '0x1234567890abcdef'; // Mock signature
+        } else if (args.method === 'eth_accounts') {
+          return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e'];
+        }
+        return null;
+      },
+      send: async (method: string, params: any[]) => {
+        if (method === 'eth_requestAccounts') {
+          return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e'];
+        } else if (method === 'personal_sign') {
+          return '0x1234567890abcdef';
+        } else if (method === 'eth_accounts') {
+          return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e'];
         }
         return null;
       },
       isMetaMask: true,
+      on: () => {},
+      removeListener: () => {},
     };
   });
+
+  await page.goto('http://localhost:5176');
+  await page.waitForLoadState('networkidle');
 });
 
 test('demo loads without console errors', async ({ page }) => {
@@ -171,6 +185,9 @@ test('sign message', async ({ page }) => {
   // Click Sign Msg (manual: 5-10s, auto: <2s)
   await page.click('table tbody tr:first-child button:has-text("Sign Msg")');
 
+  // Wait for signature to be copied
+  await page.waitForFunction(() => (window as any).copiedText, { timeout: 10000 });
+
   // Check signature copied
   const copied = await page.evaluate(() => (window as any).copiedText);
   expect(copied).toBeTruthy();
@@ -193,11 +210,14 @@ test('sign transaction', async ({ page }) => {
         }
       }
     });
-    (window as any).prompt = () => '{"to": "0x123", "value": "1000000000000000000"}';
+    (window as any).prompt = () => '{"to": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", "value": "1000000000000000000", "chainId": 1, "gasLimit": "21000"}';
   });
 
   // Click Sign Tx (manual: 5-10s, auto: <2s)
   await page.click('table tbody tr:first-child button:has-text("Sign Tx")');
+
+  // Wait for signed tx to be copied
+  await page.waitForFunction(() => (window as any).copiedText, { timeout: 10000 });
 
   // Check signed tx copied
   const copied = await page.evaluate(() => (window as any).copiedText);

@@ -83,7 +83,7 @@ export class WalletManager {
 
     if (wallet.network === 'solana') {
       const messageBytes = new TextEncoder().encode(message)
-      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes('0x' + wallet.privateKey))
+      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes(wallet.privateKey))
       const signature = nacl.sign.detached(messageBytes, keypair.secretKey)
       return bs58.encode(signature)
     } else {
@@ -105,7 +105,7 @@ export class WalletManager {
 
     if (wallet.network === 'solana') {
       // For Solana, tx is expected to be a Transaction object
-      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes('0x' + wallet.privateKey))
+      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes(wallet.privateKey))
       tx.sign(keypair)
       return bs58.encode(tx.serialize())
     } else {

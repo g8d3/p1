@@ -8,7 +8,7 @@ function Demo() {
   const [authenticated, setAuthenticated] = useState(false)
   const [network, setNetwork] = useState('ethereum')
   const [count, setCount] = useState(5)
-  const [generatedCounts, setGeneratedCounts] = useState<{ [key: string]: number }>({})
+  const [generatedCounts, setGeneratedCounts] = useState<{ [key: string]: { count: number, maxIndex: number } }>({})
 
   const handleAuthenticate = async () => {
     try {
@@ -23,18 +23,24 @@ function Demo() {
   const loadWallets = async () => {
     const w = await manager.getWallets()
     setWallets(w)
-    // Update generated counts
-    const counts: { [key: string]: number } = {}
+    // Update generated counts and max indices
+    const stats: { [key: string]: { count: number, maxIndex: number } } = {}
     w.forEach(wallet => {
-      counts[wallet.network] = (counts[wallet.network] || 0) + 1
+      const index = parseInt(wallet.id.split('-').pop()!)
+      if (!stats[wallet.network]) {
+        stats[wallet.network] = { count: 0, maxIndex: -1 }
+      }
+      stats[wallet.network].count++
+      stats[wallet.network].maxIndex = Math.max(stats[wallet.network].maxIndex, index)
     })
-    setGeneratedCounts(counts)
+    setGeneratedCounts(stats)
   }
 
   const generateWallets = async () => {
     try {
-      const currentCount = generatedCounts[network] || 0
-      await manager.generateWallets(currentCount, count, network)
+      const stats = generatedCounts[network] || { count: 0, maxIndex: -1 }
+      const startIndex = stats.maxIndex + 1
+      await manager.generateWallets(startIndex, count, network)
       loadWallets()
     } catch (error) {
       alert('Error: ' + error.message)
@@ -94,7 +100,7 @@ function Demo() {
               Generate Wallets
             </button>
             <span style={{ marginLeft: '10px' }}>
-              Generated for {network}: {generatedCounts[network] || 0}
+              Generated for {network}: {generatedCounts[network]?.count || 0}
             </span>
           </div>
           <WalletTable

@@ -40,9 +40,13 @@ Tests cover all demo use cases, including wallet connection, generation, signing
 
 ## Usage
 
+For a complete example with all features (signing messages/transactions, themes, network selection), see the demo code in `src/components/WalletDemo.tsx`.
+
+Basic usage:
+
 ```typescript
 import { WalletManager, WalletTable } from 'browser-wallet-crud'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 
 function App() {
   const [manager] = useState(() => new WalletManager())
@@ -65,7 +69,7 @@ function App() {
   }
 
   const generateWallets = async () => {
-    await manager.generateWallets(5, 'ethereum') // or 'solana'
+    await manager.generateWallets(0, 5, 'ethereum') // startIndex, count, network
     loadWallets()
   }
 
@@ -83,6 +87,16 @@ function App() {
     manager.copyAddress(address)
   }
 
+  const signMessage = async (walletId, message) => {
+    const signature = await manager.signMessage(walletId, message)
+    console.log('Signature:', signature)
+  }
+
+  const signTransaction = async (walletId, tx) => {
+    const signedTx = await manager.signTransaction(walletId, tx)
+    console.log('Signed TX:', signedTx)
+  }
+
   return (
     <div>
       {!authenticated ? (
@@ -95,6 +109,8 @@ function App() {
             onDelete={deleteWallet}
             onExport={exportWallet}
             onCopy={copyAddress}
+            onSignMessage={(id) => signMessage(id, 'Hello World')}
+            onSignTransaction={(id) => signTransaction(id, { to: '0x...', value: '1000000000000000000' })}
           />
         </div>
       )}

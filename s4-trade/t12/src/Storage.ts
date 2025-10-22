@@ -20,7 +20,7 @@ export class Storage {
   private encryptionKey: string
 
   constructor(encryptionKey: string) {
-    this.encryptionKey = encryptionKey
+    this.encryptionKey = CryptoJS.SHA256(encryptionKey).toString()
   }
 
   async init(): Promise<void> {

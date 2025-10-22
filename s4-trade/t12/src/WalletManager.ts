@@ -17,7 +17,7 @@ export class WalletManager {
 
   async authenticate(): Promise<string> {
     const address = await this.connector.connect()
-    const message = 'Authenticate to generate wallets'
+    const message = 'Sign this message to authenticate and generate deterministic wallets. This does not cost gas and your keys stay secure.'
     this.signature = await this.connector.signMessage(message)
 
     if (!this.storage) {

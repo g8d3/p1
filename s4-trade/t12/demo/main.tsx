@@ -8,6 +8,7 @@ function Demo() {
   const [authenticated, setAuthenticated] = useState(false)
   const [network, setNetwork] = useState('ethereum')
   const [count, setCount] = useState(5)
+  const [generatedCounts, setGeneratedCounts] = useState<{ [key: string]: number }>({})
 
   const handleAuthenticate = async () => {
     try {
@@ -22,11 +23,18 @@ function Demo() {
   const loadWallets = async () => {
     const w = await manager.getWallets()
     setWallets(w)
+    // Update generated counts
+    const counts: { [key: string]: number } = {}
+    w.forEach(wallet => {
+      counts[wallet.network] = (counts[wallet.network] || 0) + 1
+    })
+    setGeneratedCounts(counts)
   }
 
   const generateWallets = async () => {
     try {
-      await manager.generateWallets(count, network)
+      const currentCount = generatedCounts[network] || 0
+      await manager.generateWallets(count + currentCount, network)
       loadWallets()
     } catch (error) {
       alert('Error: ' + error.message)
@@ -49,6 +57,12 @@ function Demo() {
     alert('Address copied')
   }
 
+  const disconnect = () => {
+    setAuthenticated(false)
+    setWallets([])
+    setGeneratedCounts({})
+  }
+
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
       <h1>Wallet CRUD Demo</h1>
@@ -57,6 +71,7 @@ function Demo() {
       ) : (
         <div>
           <div style={{ marginBottom: '20px' }}>
+            <button onClick={disconnect} style={{ marginRight: '10px' }}>Disconnect</button>
             <label>
               Network:
               <select value={network} onChange={(e) => setNetwork(e.target.value)}>
@@ -78,6 +93,9 @@ function Demo() {
             <button onClick={generateWallets} style={{ marginLeft: '10px' }}>
               Generate Wallets
             </button>
+            <span style={{ marginLeft: '10px' }}>
+              Generated for {network}: {generatedCounts[network] || 0}
+            </span>
           </div>
           <WalletTable
             wallets={wallets}

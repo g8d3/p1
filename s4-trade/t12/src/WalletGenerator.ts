@@ -10,7 +10,7 @@ export class WalletGenerator {
       const seedBytes = ethers.getBytes('0x' + seed)
       const keypair = nacl.sign.keyPair.fromSeed(seedBytes.slice(0, 32))
       const publicKey = bs58.encode(keypair.publicKey)
-      const privateKey = bs58.encode(keypair.secretKey)
+      const privateKey = ethers.hexlify(keypair.secretKey.slice(0, 32)) // private key is first 32 bytes
 
       return {
         id: `${signature}-${index}`,

@@ -1,72 +1,38 @@
-import React, { useState } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { WalletManager, WalletTable } from '../src/index'
+import { WalletTable, useWalletManager } from '../src/index'
 
 function Demo() {
-  const [manager] = useState(() => new WalletManager())
-  const [wallets, setWallets] = useState<any[]>([])
-  const [authenticated, setAuthenticated] = useState(false)
-  const [network, setNetwork] = useState('ethereum')
-  const [count, setCount] = useState(5)
-  const [generatedCounts, setGeneratedCounts] = useState<{ [key: string]: { count: number, maxIndex: number } }>({})
+  const {
+    wallets,
+    authenticated,
+    network,
+    setNetwork,
+    count,
+    setCount,
+    generatedCounts,
+    authenticate,
+    generateWallets,
+    deleteWallet,
+    exportWallet,
+    copyAddress,
+    disconnect
+  } = useWalletManager()
 
   const handleAuthenticate = async () => {
     try {
-      await manager.authenticate()
-      setAuthenticated(true)
-      loadWallets()
+      await authenticate()
     } catch (error) {
       alert('Error: ' + error.message)
     }
   }
 
-  const loadWallets = async () => {
-    const w = await manager.getWallets()
-    setWallets(w)
-    // Update generated counts and max indices
-    const stats: { [key: string]: { count: number, maxIndex: number } } = {}
-    w.forEach(wallet => {
-      const index = parseInt(wallet.id.split('-').pop()!)
-      if (!stats[wallet.network]) {
-        stats[wallet.network] = { count: 0, maxIndex: -1 }
-      }
-      stats[wallet.network].count++
-      stats[wallet.network].maxIndex = Math.max(stats[wallet.network].maxIndex, index)
-    })
-    setGeneratedCounts(stats)
-  }
-
-  const generateWallets = async () => {
+  const handleGenerateWallets = async () => {
     try {
-      const stats = generatedCounts[network] || { count: 0, maxIndex: -1 }
-      const startIndex = stats.maxIndex + 1
-      await manager.generateWallets(startIndex, count, network)
-      loadWallets()
+      await generateWallets()
     } catch (error) {
       alert('Error: ' + error.message)
     }
-  }
-
-  const deleteWallet = async (id: string) => {
-    await manager.deleteWallet(id)
-    loadWallets()
-  }
-
-  const exportWallet = (wallet: any) => {
-    const data = manager.exportWallet(wallet)
-    navigator.clipboard.writeText(JSON.stringify(data, null, 2))
-    alert('Copied to clipboard')
-  }
-
-  const copyAddress = (address: string) => {
-    manager.copyAddress(address)
-    alert('Address copied')
-  }
-
-  const disconnect = () => {
-    setAuthenticated(false)
-    setWallets([])
-    setGeneratedCounts({})
   }
 
   return (
@@ -96,7 +62,7 @@ function Demo() {
                 style={{ width: '60px', marginLeft: '5px' }}
               />
             </label>
-            <button onClick={generateWallets} style={{ marginLeft: '10px' }}>
+            <button onClick={handleGenerateWallets} style={{ marginLeft: '10px' }}>
               Generate Wallets
             </button>
             <span style={{ marginLeft: '10px' }}>

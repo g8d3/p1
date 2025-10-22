@@ -83,8 +83,8 @@ export class WalletManager {
 
     if (wallet.network === 'solana') {
       const messageBytes = new TextEncoder().encode(message)
-      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes(wallet.privateKey))
-      const signature = nacl.sign.detached(messageBytes, keypair.secretKey)
+      const secretKey = ethers.getBytes(wallet.privateKey)
+      const signature = nacl.sign.detached(messageBytes, secretKey)
       return bs58.encode(signature)
     } else {
       // EVM
@@ -105,7 +105,8 @@ export class WalletManager {
 
     if (wallet.network === 'solana') {
       // For Solana, tx is expected to be a Transaction object
-      const keypair = nacl.sign.keyPair.fromSecretKey(ethers.getBytes(wallet.privateKey))
+      const secretKey = ethers.getBytes(wallet.privateKey)
+      const keypair = nacl.sign.keyPair.fromSecretKey(secretKey)
       tx.sign(keypair)
       return bs58.encode(tx.serialize())
     } else {

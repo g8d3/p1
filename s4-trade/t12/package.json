@@ -5,13 +5,14 @@
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite",
-    "demo": "vite demo --host",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
-  },
+   "scripts": {
+     "build": "vite build",
+     "dev": "vite",
+     "demo": "vite demo --host",
+     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+     "preview": "vite preview",
+     "test": "playwright test"
+   },
   "keywords": [
     "wallet",
     "ethereum",
@@ -22,6 +23,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/bs58": "^4.0.4",
     "@types/crypto-js": "^4.2.2",
     "@types/react": "^18.2.0",
@@ -37,13 +39,13 @@
     "vite-plugin-dts": "^3.5.3"
   },
   "dependencies": {
+    "bs58": "^5.0.0",
     "crypto-js": "^4.1.1",
     "ethers": "^6.7.0",
     "idb": "^7.1.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "tweetnacl": "^1.0.3",
-    "bs58": "^5.0.0"
+    "tweetnacl": "^1.0.3"
   },
   "peerDependencies": {
     "react": "^18.0.0",

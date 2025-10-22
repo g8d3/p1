@@ -28,6 +28,16 @@ npm run demo
 
 This will start a development server with a demo application showcasing the wallet CRUD functionality.
 
+## Testing
+
+Run automated e2e tests to verify functionality:
+
+```bash
+npm run test
+```
+
+Tests cover all demo use cases, including wallet connection, generation, signing, and UI interactions. See [TESTING.md](TESTING.md) for details on testing approaches and [use-cases.md](use-cases.md) for documented user flows with time estimates.
+
 ## Usage
 
 ```typescript

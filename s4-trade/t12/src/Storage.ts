@@ -61,12 +61,17 @@ export class Storage {
     const stored = await this.db!.get('wallets', id)
     if (!stored) return null
 
-    return {
-      id: stored.id,
-      address: stored.address,
-      privateKey: this.decrypt(stored.encryptedPrivateKey),
-      network: stored.network,
-      createdAt: new Date(stored.createdAt)
+    try {
+      return {
+        id: stored.id,
+        address: stored.address,
+        privateKey: this.decrypt(stored.encryptedPrivateKey),
+        network: stored.network,
+        createdAt: new Date(stored.createdAt)
+      }
+    } catch (error) {
+      console.error('Failed to decrypt wallet', id, error)
+      return null
     }
   }
 
@@ -74,13 +79,20 @@ export class Storage {
     if (!this.db) await this.init()
 
     const storedWallets = await this.db!.getAll('wallets')
-    return storedWallets.map(stored => ({
-      id: stored.id,
-      address: stored.address,
-      privateKey: this.decrypt(stored.encryptedPrivateKey),
-      network: stored.network,
-      createdAt: new Date(stored.createdAt)
-    }))
+    return storedWallets.map(stored => {
+      try {
+        return {
+          id: stored.id,
+          address: stored.address,
+          privateKey: this.decrypt(stored.encryptedPrivateKey),
+          network: stored.network,
+          createdAt: new Date(stored.createdAt)
+        }
+      } catch (error) {
+        console.error('Failed to decrypt wallet', stored.id, error)
+        return null
+      }
+    }).filter(w => w !== null) as Wallet[]
   }
 
   async deleteWallet(id: string): Promise<void> {

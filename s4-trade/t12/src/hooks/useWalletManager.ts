@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { WalletManager, Wallet, Signature, RPCConfig, TransactionTemplate } from '../index'
+import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 
 export interface WalletStats {
   count: number
@@ -148,8 +149,24 @@ export const useWalletManager = () => {
 
     if (wallet.network === 'solana') {
       // For Solana transactions
-      // This is a simplified implementation - in a real app you'd use @solana/web3.js
-      throw new Error('Solana transaction building not implemented yet')
+      if (template.type === 'transfer') {
+        if (!template.to || !template.value) {
+          throw new Error('Solana transfer requires "to" address and "value" (in lamports)')
+        }
+
+        const transaction = new Transaction()
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: new PublicKey(wallet.address),
+            toPubkey: new PublicKey(template.to),
+            lamports: BigInt(template.value)
+          })
+        )
+
+        return transaction
+      } else {
+        throw new Error(`Solana transaction type "${template.type}" not implemented yet`)
+      }
     } else {
       // For EVM transactions
       const tx: any = {}

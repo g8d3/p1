@@ -5,14 +5,14 @@
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-   "scripts": {
-     "build": "vite build",
-     "dev": "vite",
-     "demo": "vite demo --host",
-     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-     "preview": "vite preview",
-     "test": "playwright test"
-   },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "demo": "vite demo --host",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "test": "playwright test"
+  },
   "keywords": [
     "wallet",
     "ethereum",
@@ -39,6 +39,7 @@
     "vite-plugin-dts": "^3.5.3"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.98.4",
     "bs58": "^5.0.0",
     "crypto-js": "^4.1.1",
     "ethers": "^6.7.0",

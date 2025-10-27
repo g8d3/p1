@@ -5,6 +5,7 @@ import { Wallet, WalletManagerConfig } from './types'
 import { ethers } from 'ethers'
 import nacl from 'tweetnacl'
 import bs58 from 'bs58'
+import { Keypair } from '@solana/web3.js'
 
 export class WalletManager {
   private connector: WalletConnector
@@ -104,9 +105,9 @@ export class WalletManager {
     }
 
     if (wallet.network === 'solana') {
-      // For Solana, tx is expected to be a Transaction object
+      // For Solana, tx is expected to be a Transaction object from @solana/web3.js
       const secretKey = ethers.getBytes(wallet.privateKey)
-      const keypair = nacl.sign.keyPair.fromSecretKey(secretKey)
+      const keypair = Keypair.fromSecretKey(secretKey)
       tx.sign(keypair)
       return bs58.encode(tx.serialize())
     } else {

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { WalletManager, Wallet, Signature, RPCConfig, TransactionTemplate, Notification } from '../index'
-import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
+import { PublicKey, SystemProgram, Transaction, Connection } from '@solana/web3.js'
 
 export interface WalletStats {
   count: number
@@ -230,26 +230,10 @@ export const useWalletManager = () => {
           throw new Error('No Solana RPC URL found')
         }
 
-        // Fetch recent blockhash from Solana RPC
-        const response = await fetch(solanaRpcUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'getRecentBlockhash',
-            params: []
-          }),
-        })
-
-        const result = await response.json()
-        if (result.error) {
-          throw new Error(`Failed to get recent blockhash: ${result.error.message}`)
-        }
-
-        const recentBlockhash = result.result.value.blockhash
+        // Use @solana/web3.js Connection to get recent blockhash
+        const connection = new Connection(solanaRpcUrl)
+        const { blockhash } = await connection.getLatestBlockhash()
+        const recentBlockhash = blockhash
 
         const transaction = new Transaction({
           recentBlockhash,

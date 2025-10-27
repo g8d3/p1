@@ -219,7 +219,38 @@ export const useWalletManager = () => {
           throw new Error('Solana transfer requires "to" address and "value" (in lamports)')
         }
 
-        const transaction = new Transaction()
+        // Get the RPC configuration for Solana
+        const rpcConfig = rpcConfigs.find(rpc => rpc.id === selectedRpc && rpc.network === 'solana')
+        if (!rpcConfig) {
+          throw new Error('No Solana RPC configuration found')
+        }
+
+        // Fetch recent blockhash from Solana RPC
+        const response = await fetch(rpcConfig.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getRecentBlockhash',
+            params: []
+          }),
+        })
+
+        const result = await response.json()
+        if (result.error) {
+          throw new Error(`Failed to get recent blockhash: ${result.error.message}`)
+        }
+
+        const recentBlockhash = result.result.value.blockhash
+
+        const transaction = new Transaction({
+          recentBlockhash,
+          feePayer: new PublicKey(wallet.address)
+        })
+
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: new PublicKey(wallet.address),

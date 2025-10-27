@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { WalletManager, Wallet, Signature, RPCConfig, TransactionTemplate, Notification } from '../index'
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 
@@ -44,6 +44,11 @@ export const useWalletManager = () => {
     { id: 'sol-devnet', name: 'Solana Devnet', url: 'https://api.devnet.solana.com', network: 'solana' }
   ])
   const [selectedRpc, setSelectedRpc] = useState<string>('eth-mainnet')
+
+  // Memoize current RPC config to prevent unnecessary re-renders
+  const currentRpcConfig = useMemo(() => {
+    return rpcConfigs.find(rpc => rpc.id === selectedRpc)
+  }, [rpcConfigs, selectedRpc])
 
   const loadWallets = useCallback(async () => {
     const w = await manager.getWallets()
@@ -206,7 +211,7 @@ export const useWalletManager = () => {
     return await manager.broadcastTransaction(signedTx, rpcConfig.url, rpcConfig.network, rpcConfig.chainId)
   }, [manager, rpcConfigs])
 
-  const buildTransaction = useCallback(async (walletId: string, template: TransactionTemplate): Promise<any> => {
+  const buildTransaction = useCallback(async (walletId: string, template: TransactionTemplate, rpcUrl?: string, chainId?: number): Promise<any> => {
     const wallet = wallets.find(w => w.id === walletId)
     if (!wallet) {
       throw new Error('Wallet not found')
@@ -219,14 +224,14 @@ export const useWalletManager = () => {
           throw new Error('Solana transfer requires "to" address and "value" (in lamports)')
         }
 
-        // Get the RPC configuration for Solana
-        const rpcConfig = rpcConfigs.find(rpc => rpc.id === selectedRpc && rpc.network === 'solana')
-        if (!rpcConfig) {
-          throw new Error('No Solana RPC configuration found')
+        // Use provided RPC URL or current config
+        const solanaRpcUrl = rpcUrl || (currentRpcConfig?.network === 'solana' ? currentRpcConfig.url : undefined)
+        if (!solanaRpcUrl) {
+          throw new Error('No Solana RPC URL found')
         }
 
         // Fetch recent blockhash from Solana RPC
-        const response = await fetch(rpcConfig.url, {
+        const response = await fetch(solanaRpcUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -265,7 +270,6 @@ export const useWalletManager = () => {
       }
     } else {
       // For EVM transactions
-      const rpcConfig = rpcConfigs.find(rpc => rpc.id === selectedRpc)
       const tx: any = {}
 
       if (template.to) tx.to = template.to
@@ -277,13 +281,15 @@ export const useWalletManager = () => {
       if (template.maxPriorityFeePerGas) tx.maxPriorityFeePerGas = template.maxPriorityFeePerGas
 
       // Include chainId for EVM transactions to prevent "invalid chain ID" errors
-      if (rpcConfig?.chainId) {
-        tx.chainId = rpcConfig.chainId
+      if (chainId) {
+        tx.chainId = chainId
+      } else if (currentRpcConfig?.chainId) {
+        tx.chainId = currentRpcConfig.chainId
       }
 
       return tx
     }
-  }, [wallets, rpcConfigs, selectedRpc])
+  }, [wallets, currentRpcConfig])
 
   const signAndBroadcastTransaction = useCallback(async (walletId: string, template: TransactionTemplate): Promise<string> => {
     try {

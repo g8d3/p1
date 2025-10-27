@@ -240,10 +240,24 @@ export const useWalletManager = () => {
           feePayer: new PublicKey(wallet.address)
         })
 
+        // Check if recipient account exists and has sufficient balance
+        const recipientPubkey = new PublicKey(template.to)
+        const recipientAccount = await connection.getAccountInfo(recipientPubkey)
+
+        if (!recipientAccount) {
+          // Account doesn't exist, check if the amount is enough for rent exemption
+          const rentExemption = await connection.getMinimumBalanceForRentExemption(0)
+          const amount = BigInt(template.value)
+
+          if (amount < rentExemption) {
+            throw new Error(`Recipient account doesn't exist. Minimum balance required: ${rentExemption} lamports, sending: ${amount} lamports`)
+          }
+        }
+
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: new PublicKey(wallet.address),
-            toPubkey: new PublicKey(template.to),
+            toPubkey: recipientPubkey,
             lamports: BigInt(template.value)
           })
         )

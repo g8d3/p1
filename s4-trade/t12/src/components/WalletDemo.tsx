@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { WalletTable, SignaturesTable, RPCConfigComponent, TransactionBuilder, useWalletManager } from '../index'
+import { WalletTable, SignaturesTable, NotificationTable, RPCConfigComponent, TransactionBuilder, useWalletManager } from '../index'
 
 interface WalletDemoProps {
   title?: string
@@ -25,6 +25,9 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     setCount,
     generatedCounts,
     signatures,
+    notifications,
+    addNotification,
+    removeNotification,
     rpcConfigs,
     setRpcConfigs,
     selectedRpc,
@@ -51,16 +54,36 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
   const handleAuthenticate = async () => {
     try {
       await authenticate()
+      addNotification({
+        type: 'success',
+        title: 'Wallet Connected',
+        message: 'Successfully connected to wallet'
+      })
     } catch (error) {
-      // Error will be handled by the hook and displayed in signatures table
+      addNotification({
+        type: 'error',
+        title: 'Connection Failed',
+        message: (error as Error).message,
+        autoHide: false
+      })
     }
   }
 
   const handleGenerateWallets = async () => {
     try {
       await generateWallets()
+      addNotification({
+        type: 'success',
+        title: 'Wallets Generated',
+        message: `Successfully generated ${count} wallets for ${network}`
+      })
     } catch (error) {
-      // Error will be handled by the hook and displayed in signatures table
+      addNotification({
+        type: 'error',
+        title: 'Wallet Generation Failed',
+        message: (error as Error).message,
+        autoHide: false
+      })
     }
   }
 
@@ -82,22 +105,48 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
   const handleSignTransaction = async (walletId: string) => {
     const txJson = prompt('Enter transaction JSON to sign:')
     if (txJson) {
-      await signTransaction(walletId, txJson)
+      try {
+        await signTransaction(walletId, txJson)
+      } catch (error) {
+        addNotification({
+          type: 'error',
+          title: 'Transaction Signing Failed',
+          message: (error as Error).message,
+          autoHide: false
+        })
+      }
     }
   }
 
   const handleAddRpc = (rpc: any) => {
     const newRpc = { ...rpc, id: `rpc-${Date.now()}` }
     setRpcConfigs([...rpcConfigs, newRpc])
+    addNotification({
+      type: 'success',
+      title: 'RPC Added',
+      message: `Added RPC "${rpc.name}" for ${rpc.network} network`
+    })
   }
 
   const handleRemoveRpc = (rpcId: string) => {
+    const rpcToRemove = rpcConfigs.find(rpc => rpc.id === rpcId)
     setRpcConfigs(rpcConfigs.filter(rpc => rpc.id !== rpcId))
+    if (rpcToRemove) {
+      addNotification({
+        type: 'info',
+        title: 'RPC Removed',
+        message: `Removed RPC "${rpcToRemove.name}"`
+      })
+    }
   }
 
   const handleBuildTransaction = (template: any) => {
-    // For now, just show the transaction JSON
-    alert('Transaction template: ' + JSON.stringify(template, null, 2))
+    addNotification({
+      type: 'info',
+      title: 'Transaction Template Built',
+      message: `Transaction template created: ${JSON.stringify(template, null, 2)}`,
+      autoHide: false
+    })
   }
 
   return (
@@ -181,6 +230,11 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
           {/* Tab Content */}
           {activeTab === 'wallets' && (
             <div>
+              <NotificationTable
+                notifications={notifications}
+                onRemove={removeNotification}
+                onCopy={handleCopy}
+              />
               <WalletTable
                 wallets={wallets}
                 onDelete={deleteWallet}
@@ -198,6 +252,11 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
 
           {activeTab === 'transactions' && (
             <div>
+              <NotificationTable
+                notifications={notifications}
+                onRemove={removeNotification}
+                onCopy={handleCopy}
+              />
               <RPCConfigComponent
                 rpcConfigs={rpcConfigs}
                 selectedRpc={selectedRpc}
@@ -214,13 +273,20 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
           )}
 
           {activeTab === 'rpc' && (
-            <RPCConfigComponent
-              rpcConfigs={rpcConfigs}
-              selectedRpc={selectedRpc}
-              onSelectRpc={setSelectedRpc}
-              onAddRpc={handleAddRpc}
-              onRemoveRpc={handleRemoveRpc}
-            />
+            <div>
+              <NotificationTable
+                notifications={notifications}
+                onRemove={removeNotification}
+                onCopy={handleCopy}
+              />
+              <RPCConfigComponent
+                rpcConfigs={rpcConfigs}
+                selectedRpc={selectedRpc}
+                onSelectRpc={setSelectedRpc}
+                onAddRpc={handleAddRpc}
+                onRemoveRpc={handleRemoveRpc}
+              />
+            </div>
           )}
         </div>
       )}

@@ -38,3 +38,13 @@ export interface TransactionTemplate {
   maxFeePerGas?: string
   maxPriorityFeePerGas?: string
 }
+
+export interface Notification {
+  id: string
+  type: 'success' | 'error' | 'info' | 'warning'
+  title: string
+  message: string
+  timestamp: Date
+  autoHide?: boolean
+  duration?: number
+}

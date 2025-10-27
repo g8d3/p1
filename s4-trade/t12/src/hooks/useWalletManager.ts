@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { WalletManager, Wallet, Signature, RPCConfig, TransactionTemplate } from '../index'
+import { WalletManager, Wallet, Signature, RPCConfig, TransactionTemplate, Notification } from '../index'
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 
 export interface WalletStats {
@@ -15,6 +15,28 @@ export const useWalletManager = () => {
   const [count, setCount] = useState(5)
   const [generatedCounts, setGeneratedCounts] = useState<{ [key: string]: WalletStats }>({})
   const [signatures, setSignatures] = useState<Signature[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: `notification-${Date.now()}-${Math.random()}`,
+      timestamp: new Date()
+    }
+    setNotifications(prev => [newNotification, ...prev])
+
+    // Auto-hide success notifications after 5 seconds
+    if (newNotification.autoHide !== false && newNotification.type === 'success') {
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== newNotification.id))
+      }, newNotification.duration || 5000)
+    }
+  }, [])
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+  }, [])
+
   const [rpcConfigs, setRpcConfigs] = useState<RPCConfig[]>([
     { id: 'eth-mainnet', name: 'Ethereum Mainnet', url: 'https://eth.llamarpc.com', network: 'ethereum', chainId: 1 },
     { id: 'eth-sepolia', name: 'Ethereum Sepolia', url: 'https://rpc.sepolia.org', network: 'ethereum', chainId: 11155111 },
@@ -68,13 +90,21 @@ export const useWalletManager = () => {
   const exportWallet = useCallback((wallet: Wallet) => {
     const data = manager.exportWallet(wallet)
     navigator.clipboard.writeText(JSON.stringify(data, null, 2))
-    alert('Copied to clipboard')
-  }, [manager])
+    addNotification({
+      type: 'success',
+      title: 'Wallet Exported',
+      message: `Wallet "${wallet.address}" data copied to clipboard`
+    })
+  }, [manager, addNotification])
 
   const copyAddress = useCallback((address: string) => {
     manager.copyAddress(address)
-    alert('Address copied')
-  }, [manager])
+    addNotification({
+      type: 'success',
+      title: 'Address Copied',
+      message: `${address} copied to clipboard`
+    })
+  }, [manager, addNotification])
 
   const signMessage = useCallback(async (walletId: string, message: string) => {
     try {
@@ -88,6 +118,11 @@ export const useWalletManager = () => {
         timestamp: new Date()
       }
       setSignatures(prev => [newSignature, ...prev])
+      addNotification({
+        type: 'success',
+        title: 'Message Signed',
+        message: `Message signed successfully with wallet ${walletId}`
+      })
       return signature
     } catch (error) {
       const errorSignature: Signature = {
@@ -100,9 +135,15 @@ export const useWalletManager = () => {
         error: (error as Error).message
       }
       setSignatures(prev => [errorSignature, ...prev])
+      addNotification({
+        type: 'error',
+        title: 'Message Signing Failed',
+        message: (error as Error).message,
+        autoHide: false
+      })
       throw error
     }
-  }, [manager])
+  }, [manager, addNotification])
 
   const signTransaction = useCallback(async (walletId: string, txInput: string) => {
     try {
@@ -117,6 +158,11 @@ export const useWalletManager = () => {
         timestamp: new Date()
       }
       setSignatures(prev => [newSignature, ...prev])
+      addNotification({
+        type: 'success',
+        title: 'Transaction Signed',
+        message: `Transaction signed successfully with wallet ${walletId}`
+      })
       return signedTx
     } catch (error) {
       const errorSignature: Signature = {
@@ -129,9 +175,15 @@ export const useWalletManager = () => {
         error: (error as Error).message
       }
       setSignatures(prev => [errorSignature, ...prev])
+      addNotification({
+        type: 'error',
+        title: 'Transaction Signing Failed',
+        message: (error as Error).message,
+        autoHide: false
+      })
       throw error
     }
-  }, [manager])
+  }, [manager, addNotification])
 
   const broadcastTransaction = useCallback(async (signedTx: string, rpcId: string): Promise<string> => {
     const rpcConfig = rpcConfigs.find(rpc => rpc.id === rpcId)
@@ -215,6 +267,12 @@ export const useWalletManager = () => {
       }
       setSignatures(prev => [broadcastSignature, ...prev])
 
+      addNotification({
+        type: 'success',
+        title: 'Transaction Broadcast',
+        message: `Transaction broadcast successfully. Hash: ${txHash}`
+      })
+
       return txHash
     } catch (error) {
       const errorSignature: Signature = {
@@ -227,6 +285,12 @@ export const useWalletManager = () => {
         error: (error as Error).message
       }
       setSignatures(prev => [errorSignature, ...prev])
+      addNotification({
+        type: 'error',
+        title: 'Transaction Broadcast Failed',
+        message: (error as Error).message,
+        autoHide: false
+      })
       throw error
     }
   }, [wallets, buildTransaction, signTransaction, broadcastTransaction, selectedRpc])
@@ -246,6 +310,9 @@ export const useWalletManager = () => {
     setCount,
     generatedCounts,
     signatures,
+    notifications,
+    addNotification,
+    removeNotification,
     rpcConfigs,
     setRpcConfigs,
     selectedRpc,

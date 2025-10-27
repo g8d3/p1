@@ -1,5 +1,5 @@
-import React from 'react'
-import { WalletTable, SignaturesTable, useWalletManager } from '../index'
+import React, { useState } from 'react'
+import { WalletTable, SignaturesTable, RPCConfigComponent, TransactionBuilder, useWalletManager } from '../index'
 
 interface WalletDemoProps {
   title?: string
@@ -14,6 +14,8 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
   defaultNetwork = 'ethereum',
   defaultCount = 5
 }) => {
+  const [activeTab, setActiveTab] = useState<'wallets' | 'transactions' | 'rpc'>('wallets')
+
   const {
     wallets,
     authenticated,
@@ -23,6 +25,10 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     setCount,
     generatedCounts,
     signatures,
+    rpcConfigs,
+    setRpcConfigs,
+    selectedRpc,
+    setSelectedRpc,
     authenticate,
     generateWallets,
     deleteWallet,
@@ -30,6 +36,7 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     copyAddress,
     signMessage,
     signTransaction,
+    signAndBroadcastTransaction,
     disconnect
   } = useWalletManager()
 
@@ -79,6 +86,20 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     }
   }
 
+  const handleAddRpc = (rpc: any) => {
+    const newRpc = { ...rpc, id: `rpc-${Date.now()}` }
+    setRpcConfigs([...rpcConfigs, newRpc])
+  }
+
+  const handleRemoveRpc = (rpcId: string) => {
+    setRpcConfigs(rpcConfigs.filter(rpc => rpc.id !== rpcId))
+  }
+
+  const handleBuildTransaction = (template: any) => {
+    // For now, just show the transaction JSON
+    alert('Transaction template: ' + JSON.stringify(template, null, 2))
+  }
+
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
       <h1>{title}</h1>
@@ -114,18 +135,93 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
               Generated for {network}: {generatedCounts[network]?.count || 0}
             </span>
           </div>
-           <WalletTable
-             wallets={wallets}
-             onDelete={deleteWallet}
-             onExport={exportWallet}
-             onCopy={copyAddress}
-             onSignMessage={handleSignMessage}
-             onSignTransaction={handleSignTransaction}
-           />
-           <SignaturesTable
-             signatures={signatures}
-             onCopy={handleCopy}
-           />
+
+          {/* Tab Navigation */}
+          <div style={{ marginBottom: '20px', borderBottom: '1px solid #ddd' }}>
+            <button
+              onClick={() => setActiveTab('wallets')}
+              style={{
+                padding: '10px 20px',
+                marginRight: '5px',
+                backgroundColor: activeTab === 'wallets' ? '#007bff' : '#f8f9fa',
+                color: activeTab === 'wallets' ? 'white' : 'black',
+                border: 'none',
+                borderRadius: '5px 5px 0 0'
+              }}
+            >
+              Wallets
+            </button>
+            <button
+              onClick={() => setActiveTab('transactions')}
+              style={{
+                padding: '10px 20px',
+                marginRight: '5px',
+                backgroundColor: activeTab === 'transactions' ? '#007bff' : '#f8f9fa',
+                color: activeTab === 'transactions' ? 'white' : 'black',
+                border: 'none',
+                borderRadius: '5px 5px 0 0'
+              }}
+            >
+              Transactions
+            </button>
+            <button
+              onClick={() => setActiveTab('rpc')}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: activeTab === 'rpc' ? '#007bff' : '#f8f9fa',
+                color: activeTab === 'rpc' ? 'white' : 'black',
+                border: 'none',
+                borderRadius: '5px 5px 0 0'
+              }}
+            >
+              RPC Config
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'wallets' && (
+            <div>
+              <WalletTable
+                wallets={wallets}
+                onDelete={deleteWallet}
+                onExport={exportWallet}
+                onCopy={copyAddress}
+                onSignMessage={handleSignMessage}
+                onSignTransaction={handleSignTransaction}
+              />
+              <SignaturesTable
+                signatures={signatures}
+                onCopy={handleCopy}
+              />
+            </div>
+          )}
+
+          {activeTab === 'transactions' && (
+            <div>
+              <RPCConfigComponent
+                rpcConfigs={rpcConfigs}
+                selectedRpc={selectedRpc}
+                onSelectRpc={setSelectedRpc}
+                onAddRpc={handleAddRpc}
+                onRemoveRpc={handleRemoveRpc}
+              />
+              <TransactionBuilder
+                wallets={wallets}
+                onBuildTransaction={handleBuildTransaction}
+                onSignAndBroadcast={signAndBroadcastTransaction}
+              />
+            </div>
+          )}
+
+          {activeTab === 'rpc' && (
+            <RPCConfigComponent
+              rpcConfigs={rpcConfigs}
+              selectedRpc={selectedRpc}
+              onSelectRpc={setSelectedRpc}
+              onAddRpc={handleAddRpc}
+              onRemoveRpc={handleRemoveRpc}
+            />
+          )}
         </div>
       )}
     </div>

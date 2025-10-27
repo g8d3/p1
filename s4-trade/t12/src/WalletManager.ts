@@ -115,4 +115,33 @@ export class WalletManager {
       return await ethersWallet.signTransaction(tx)
     }
   }
+
+  async broadcastTransaction(signedTx: string, rpcUrl: string, network: string): Promise<string> {
+    if (network === 'solana') {
+      // For Solana
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'sendTransaction',
+          params: [signedTx, { encoding: 'base58' }],
+        }),
+      })
+
+      const result = await response.json()
+      if (result.error) {
+        throw new Error(`Broadcast failed: ${result.error.message}`)
+      }
+      return result.result
+    } else {
+      // For EVM
+      const provider = new ethers.JsonRpcProvider(rpcUrl)
+      const txResponse = await provider.broadcastTransaction(signedTx)
+      return txResponse.hash
+    }
+  }
 }

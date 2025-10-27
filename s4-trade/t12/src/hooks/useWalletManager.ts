@@ -145,15 +145,27 @@ export const useWalletManager = () => {
     }
   }, [manager, addNotification])
 
-  const signTransaction = useCallback(async (walletId: string, txInput: string) => {
+  const signTransaction = useCallback(async (walletId: string, txInput: string | any) => {
     try {
-      const tx = JSON.parse(txInput)
+      let tx: any
+      let inputString: string
+
+      // Check if txInput is already a Solana Transaction object or needs parsing
+      if (typeof txInput === 'string') {
+        tx = JSON.parse(txInput)
+        inputString = txInput
+      } else {
+        // Assume it's already a transaction object (Solana Transaction)
+        tx = txInput
+        inputString = 'Solana Transaction Object'
+      }
+
       const signedTx = await manager.signTransaction(walletId, tx)
       const newSignature: Signature = {
         id: `tx-${Date.now()}`,
         type: 'transaction',
         walletId,
-        input: txInput,
+        input: inputString,
         output: signedTx,
         timestamp: new Date()
       }
@@ -165,11 +177,12 @@ export const useWalletManager = () => {
       })
       return signedTx
     } catch (error) {
+      const inputString = typeof txInput === 'string' ? txInput : 'Solana Transaction Object'
       const errorSignature: Signature = {
         id: `tx-error-${Date.now()}`,
         type: 'transaction',
         walletId,
-        input: txInput,
+        input: inputString,
         output: '',
         timestamp: new Date(),
         error: (error as Error).message

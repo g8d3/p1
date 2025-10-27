@@ -221,6 +221,7 @@ export const useWalletManager = () => {
       }
     } else {
       // For EVM transactions
+      const rpcConfig = rpcConfigs.find(rpc => rpc.id === selectedRpc)
       const tx: any = {}
 
       if (template.to) tx.to = template.to
@@ -231,9 +232,14 @@ export const useWalletManager = () => {
       if (template.maxFeePerGas) tx.maxFeePerGas = template.maxFeePerGas
       if (template.maxPriorityFeePerGas) tx.maxPriorityFeePerGas = template.maxPriorityFeePerGas
 
+      // Include chainId for EVM transactions to prevent "invalid chain ID" errors
+      if (rpcConfig?.chainId) {
+        tx.chainId = rpcConfig.chainId
+      }
+
       return tx
     }
-  }, [wallets])
+  }, [wallets, rpcConfigs, selectedRpc])
 
   const signAndBroadcastTransaction = useCallback(async (walletId: string, template: TransactionTemplate): Promise<string> => {
     try {

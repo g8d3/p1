@@ -1,5 +1,6 @@
 export { WalletManager } from './WalletManager'
 export { WalletTable } from './components/WalletTable'
+export { SignaturesTable } from './components/SignaturesTable'
 export { WalletDemo } from './components/WalletDemo'
 export { useWalletManager } from './hooks/useWalletManager'
-export type { Wallet } from './types'
+export type { Wallet, Signature } from './types'

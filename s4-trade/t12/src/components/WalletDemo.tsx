@@ -1,5 +1,5 @@
 import React from 'react'
-import { WalletTable, useWalletManager } from '../index'
+import { WalletTable, SignaturesTable, useWalletManager } from '../index'
 
 interface WalletDemoProps {
   title?: string
@@ -22,6 +22,7 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     count,
     setCount,
     generatedCounts,
+    signatures,
     authenticate,
     generateWallets,
     deleteWallet,
@@ -44,7 +45,7 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     try {
       await authenticate()
     } catch (error) {
-      alert('Error: ' + (error as Error).message)
+      // Error will be handled by the hook and displayed in signatures table
     }
   }
 
@@ -52,7 +53,15 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
     try {
       await generateWallets()
     } catch (error) {
-      alert('Error: ' + (error as Error).message)
+      // Error will be handled by the hook and displayed in signatures table
+    }
+  }
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error)
     }
   }
 
@@ -66,12 +75,7 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
   const handleSignTransaction = async (walletId: string) => {
     const txJson = prompt('Enter transaction JSON to sign:')
     if (txJson) {
-      try {
-        const tx = JSON.parse(txJson)
-        await signTransaction(walletId, tx)
-      } catch (error) {
-        alert('Invalid JSON: ' + (error as Error).message)
-      }
+      await signTransaction(walletId, txJson)
     }
   }
 
@@ -110,14 +114,18 @@ export const WalletDemo: React.FC<WalletDemoProps> = ({
               Generated for {network}: {generatedCounts[network]?.count || 0}
             </span>
           </div>
-          <WalletTable
-            wallets={wallets}
-            onDelete={deleteWallet}
-            onExport={exportWallet}
-            onCopy={copyAddress}
-            onSignMessage={handleSignMessage}
-            onSignTransaction={handleSignTransaction}
-          />
+           <WalletTable
+             wallets={wallets}
+             onDelete={deleteWallet}
+             onExport={exportWallet}
+             onCopy={copyAddress}
+             onSignMessage={handleSignMessage}
+             onSignTransaction={handleSignTransaction}
+           />
+           <SignaturesTable
+             signatures={signatures}
+             onCopy={handleCopy}
+           />
         </div>
       )}
     </div>

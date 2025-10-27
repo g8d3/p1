@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { WalletManager, Wallet } from '../index'
+import { WalletManager, Wallet, Signature } from '../index'
 
 export interface WalletStats {
   count: number
@@ -13,6 +13,7 @@ export const useWalletManager = () => {
   const [network, setNetwork] = useState('ethereum')
   const [count, setCount] = useState(5)
   const [generatedCounts, setGeneratedCounts] = useState<{ [key: string]: WalletStats }>({})
+  const [signatures, setSignatures] = useState<Signature[]>([])
 
   const loadWallets = useCallback(async () => {
     const w = await manager.getWallets()
@@ -70,23 +71,56 @@ export const useWalletManager = () => {
   const signMessage = useCallback(async (walletId: string, message: string) => {
     try {
       const signature = await manager.signMessage(walletId, message)
-      navigator.clipboard.writeText(signature)
-      alert('Signature copied to clipboard')
+      const newSignature: Signature = {
+        id: `msg-${Date.now()}`,
+        type: 'message',
+        walletId,
+        input: message,
+        output: signature,
+        timestamp: new Date()
+      }
+      setSignatures(prev => [newSignature, ...prev])
       return signature
     } catch (error) {
-      alert('Error signing message: ' + (error as Error).message)
+      const errorSignature: Signature = {
+        id: `msg-error-${Date.now()}`,
+        type: 'message',
+        walletId,
+        input: message,
+        output: '',
+        timestamp: new Date(),
+        error: (error as Error).message
+      }
+      setSignatures(prev => [errorSignature, ...prev])
       throw error
     }
   }, [manager])
 
-  const signTransaction = useCallback(async (walletId: string, tx: any) => {
+  const signTransaction = useCallback(async (walletId: string, txInput: string) => {
     try {
+      const tx = JSON.parse(txInput)
       const signedTx = await manager.signTransaction(walletId, tx)
-      navigator.clipboard.writeText(signedTx)
-      alert('Signed transaction copied to clipboard')
+      const newSignature: Signature = {
+        id: `tx-${Date.now()}`,
+        type: 'transaction',
+        walletId,
+        input: txInput,
+        output: signedTx,
+        timestamp: new Date()
+      }
+      setSignatures(prev => [newSignature, ...prev])
       return signedTx
     } catch (error) {
-      alert('Error signing transaction: ' + (error as Error).message)
+      const errorSignature: Signature = {
+        id: `tx-error-${Date.now()}`,
+        type: 'transaction',
+        walletId,
+        input: txInput,
+        output: '',
+        timestamp: new Date(),
+        error: (error as Error).message
+      }
+      setSignatures(prev => [errorSignature, ...prev])
       throw error
     }
   }, [manager])
@@ -105,6 +139,7 @@ export const useWalletManager = () => {
     count,
     setCount,
     generatedCounts,
+    signatures,
     authenticate,
     generateWallets,
     deleteWallet,

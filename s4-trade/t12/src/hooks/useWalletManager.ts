@@ -138,7 +138,7 @@ export const useWalletManager = () => {
     if (!rpcConfig) {
       throw new Error('RPC configuration not found')
     }
-    return await manager.broadcastTransaction(signedTx, rpcConfig.url, rpcConfig.network)
+    return await manager.broadcastTransaction(signedTx, rpcConfig.url, rpcConfig.network, rpcConfig.chainId)
   }, [manager, rpcConfigs])
 
   const buildTransaction = useCallback(async (walletId: string, template: TransactionTemplate): Promise<any> => {
@@ -185,9 +185,23 @@ export const useWalletManager = () => {
 
   const signAndBroadcastTransaction = useCallback(async (walletId: string, template: TransactionTemplate): Promise<string> => {
     try {
+      const wallet = wallets.find(w => w.id === walletId)
+      if (!wallet) {
+        throw new Error('Wallet not found')
+      }
+
       const tx = await buildTransaction(walletId, template)
-      const txJson = JSON.stringify(tx)
-      const signedTx = await signTransaction(walletId, txJson)
+      let signedTx: string
+
+      if (wallet.network === 'solana') {
+        // For Solana, pass the Transaction object directly
+        signedTx = await signTransaction(walletId, tx)
+      } else {
+        // For EVM, stringify the transaction object
+        const txJson = JSON.stringify(tx)
+        signedTx = await signTransaction(walletId, txJson)
+      }
+
       const txHash = await broadcastTransaction(signedTx, selectedRpc)
 
       // Add to signatures table
@@ -195,7 +209,7 @@ export const useWalletManager = () => {
         id: `broadcast-${Date.now()}`,
         type: 'transaction',
         walletId,
-        input: txJson,
+        input: wallet.network === 'solana' ? 'Solana Transaction Object' : JSON.stringify(tx),
         output: txHash,
         timestamp: new Date()
       }
@@ -215,7 +229,7 @@ export const useWalletManager = () => {
       setSignatures(prev => [errorSignature, ...prev])
       throw error
     }
-  }, [buildTransaction, signTransaction, broadcastTransaction, selectedRpc])
+  }, [wallets, buildTransaction, signTransaction, broadcastTransaction, selectedRpc])
 
   const disconnect = useCallback(() => {
     setAuthenticated(false)

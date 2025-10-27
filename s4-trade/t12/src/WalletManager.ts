@@ -117,7 +117,7 @@ export class WalletManager {
     }
   }
 
-  async broadcastTransaction(signedTx: string, rpcUrl: string, network: string): Promise<string> {
+  async broadcastTransaction(signedTx: string, rpcUrl: string, network: string, chainId?: number): Promise<string> {
     if (network === 'solana') {
       // For Solana
       const response = await fetch(rpcUrl, {
@@ -140,7 +140,9 @@ export class WalletManager {
       return result.result
     } else {
       // For EVM
-      const provider = new ethers.JsonRpcProvider(rpcUrl)
+      const provider = chainId
+        ? new ethers.JsonRpcProvider(rpcUrl, chainId)
+        : new ethers.JsonRpcProvider(rpcUrl)
       const txResponse = await provider.broadcastTransaction(signedTx)
       return txResponse.hash
     }

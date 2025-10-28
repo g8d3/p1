@@ -42,11 +42,11 @@ test.describe('Wallet Derivation', () => {
     await page.locator('text=Connect Wallet').click()
 
     // Check that both extensions are detected
-    await expect(page.locator('text=Connect MetaMask (EVM)')).toBeVisible()
-    await expect(page.locator('text=Connect Phantom (SVM)')).toBeVisible()
+    await expect(page.locator('text=Derive from MetaMask (EVM)')).toBeVisible()
+    await expect(page.locator('text=Derive from Phantom (SVM)')).toBeVisible()
   })
 
-  test('should connect MetaMask wallet successfully', async ({ page }) => {
+  test('should derive MetaMask wallet successfully', async ({ page }) => {
     // Mock MetaMask
     await page.addInitScript(() => {
       (window as any).ethereum = {
@@ -55,7 +55,7 @@ test.describe('Wallet Derivation', () => {
             return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e']
           }
           if (args.method === 'personal_sign') {
-            return '0x1234567890abcdef'
+            return '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef00'
           }
           return []
         }
@@ -67,16 +67,17 @@ test.describe('Wallet Derivation', () => {
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
 
-    // Click connect MetaMask
-    await page.locator('text=Connect MetaMask (EVM)').click()
+    // Click derive from MetaMask
+    await page.locator('text=Derive from MetaMask (EVM)').click()
 
-    // Check wallet appears in table
-    await expect(page.locator('text=MetaMask Wallet')).toBeVisible()
-    await expect(page.locator('text=0x74...f44e')).toBeVisible()
-    await expect(page.locator('text=Derived')).toBeVisible()
+    // Check derived wallet appears in table (address should be different from extension)
+    await expect(page.locator('text=MetaMask Derived')).toBeVisible()
+    await expect(page.locator('text=MetaMask')).toBeVisible() // Source column
+    // The derived address should not be the same as the extension address
+    await expect(page.locator('text=0x74...f44e')).not.toBeVisible()
   })
 
-  test('should connect Phantom wallet successfully', async ({ page }) => {
+  test('should derive Phantom wallet successfully', async ({ page }) => {
     // Mock Phantom
     await page.addInitScript(() => {
       (window as any).solana = {
@@ -84,7 +85,9 @@ test.describe('Wallet Derivation', () => {
         connect: async () => ({
           publicKey: { toString: () => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' }
         }),
-        signMessage: async () => ({ signature: new Uint8Array(64) }),
+        signMessage: async () => ({
+          signature: new Uint8Array(64).fill(1) // Mock signature
+        }),
         isConnected: true,
         publicKey: { toString: () => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' }
       }
@@ -95,13 +98,14 @@ test.describe('Wallet Derivation', () => {
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
 
-    // Click connect Phantom
-    await page.locator('text=Connect Phantom (SVM)').click()
+    // Click derive from Phantom
+    await page.locator('text=Derive from Phantom (SVM)').click()
 
-    // Check wallet appears in table
-    await expect(page.locator('text=Phantom Wallet')).toBeVisible()
-    await expect(page.locator('text=EPjF...Dt1v')).toBeVisible()
-    await expect(page.locator('text=Derived')).toBeVisible()
+    // Check derived wallet appears in table (address should be different from extension)
+    await expect(page.locator('text=Phantom Derived')).toBeVisible()
+    await expect(page.locator('text=Phantom')).toBeVisible() // Source column
+    // The derived address should not be the same as the extension address
+    await expect(page.locator('text=EPjF...Dt1v')).not.toBeVisible()
   })
 
   test('should handle MetaMask connection rejection', async ({ page }) => {
@@ -122,8 +126,8 @@ test.describe('Wallet Derivation', () => {
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
 
-    // Click connect MetaMask
-    await page.locator('text=Connect MetaMask (EVM)').click()
+    // Click derive from MetaMask
+    await page.locator('text=Derive from MetaMask (EVM)').click()
 
     // Check error appears
     await expect(page.locator('text=Errors (1)')).toBeVisible()
@@ -151,9 +155,9 @@ test.describe('Wallet Derivation', () => {
     await page.locator('text=Connect Wallet').click()
     await page.locator('text=Connect MetaMask (EVM)').click()
 
-    // Try to connect same wallet again
+    // Try to derive same wallet again
     await page.locator('text=Connect Wallet').click()
-    await page.locator('text=Connect MetaMask (EVM)').click()
+    await page.locator('text=Derive from MetaMask (EVM)').click()
 
     // Check error appears
     await expect(page.locator('text=Errors (1)')).toBeVisible()
@@ -181,13 +185,13 @@ test.describe('Wallet Derivation', () => {
 
     await page.goto('http://localhost:3000')
 
-    // Connect first wallet
+    // Derive first wallet
     await page.locator('text=Connect Wallet').click()
-    await page.locator('text=Connect MetaMask (EVM)').click()
+    await page.locator('text=Derive from MetaMask (EVM)').click()
 
-    // Connect second wallet (different account)
+    // Derive second wallet (different account)
     await page.locator('text=Connect Wallet').click()
-    await page.locator('text=Connect MetaMask (EVM)').click()
+    await page.locator('text=Derive from MetaMask (EVM)').click()
 
     // Check both wallets have unique names
     await expect(page.locator('text=MetaMask Wallet')).toBeVisible()

@@ -88,14 +88,14 @@ export function WalletsSection() {
         throw new Error(`Wallet with address ${formatAddress(walletData.address)} is already connected`)
       }
 
-      // Generate a default name
+      // Generate a default name for derived wallet
       const extensionName = extensionType === 'metamask' ? 'MetaMask' : 'Phantom'
-      let walletName = `${extensionName} Wallet`
+      let walletName = `${extensionName} Derived`
       let counter = 1
 
       // Ensure unique name
       while (wallets.some(w => w.name === walletName)) {
-        walletName = `${extensionName} Wallet ${counter}`
+        walletName = `${extensionName} Derived ${counter}`
         counter++
       }
 
@@ -148,12 +148,17 @@ export function WalletsSection() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Connect Wallet Extension</DialogTitle>
+                <DialogTitle>Derive Trading Wallet</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Connect your browser wallet extension to securely derive wallet addresses without storing private keys.
+                  Connect your browser wallet extension to create a new derived trading wallet. Your main wallet will sign a message to generate a unique trading address that this app controls.
                 </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Security:</strong> Your main wallet private key never leaves your browser extension. A new wallet is created for trading operations.
+                  </p>
+                </div>
                 {extensions.length === 0 ? (
                   <p className="text-center text-muted-foreground py-4">
                     No wallet extensions detected. Please install MetaMask or Phantom.
@@ -169,11 +174,11 @@ export function WalletsSection() {
                         variant="outline"
                       >
                         {connectingExtension === extension.type ? (
-                          <>Connecting...</>
+                          <>Deriving...</>
                         ) : (
                           <>
-                            <span className="mr-2">🔗</span>
-                            Connect {extension.name} ({extension.chain.toUpperCase()})
+                            <span className="mr-2">🔐</span>
+                            Derive from {extension.name} ({extension.chain.toUpperCase()})
                           </>
                         )}
                       </Button>
@@ -264,9 +269,9 @@ export function WalletsSection() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Address</TableHead>
+                <TableHead>Derived Address</TableHead>
                 <TableHead>Chain</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -287,7 +292,10 @@ export function WalletsSection() {
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-orange-100 text-orange-800'
                     }`}>
-                      {wallet.derivationType === 'derived' ? 'Derived' : 'Imported'}
+                      {wallet.derivationType === 'derived'
+                        ? (wallet.extensionType === 'metamask' ? 'MetaMask' : 'Phantom')
+                        : 'Manual Import'
+                      }
                     </span>
                   </TableCell>
                   <TableCell>

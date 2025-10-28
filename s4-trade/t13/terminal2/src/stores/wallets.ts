@@ -27,7 +27,7 @@ class WalletStore {
       id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
-      encryptedPrivateKey: wallet.encryptedPrivateKey ? encrypt(wallet.encryptedPrivateKey) : undefined,
+      encryptedPrivateKey: wallet.derivationType === 'imported' && wallet.encryptedPrivateKey ? encrypt(wallet.encryptedPrivateKey) : undefined,
     }
 
     await db.add('wallets', newWallet)
@@ -43,7 +43,9 @@ class WalletStore {
       ...existing,
       ...updates,
       updatedAt: new Date(),
-      encryptedPrivateKey: updates.encryptedPrivateKey ? encrypt(updates.encryptedPrivateKey) : existing.encryptedPrivateKey,
+      encryptedPrivateKey: updates.derivationType === 'imported' && updates.encryptedPrivateKey
+        ? encrypt(updates.encryptedPrivateKey)
+        : (updates.encryptedPrivateKey !== undefined ? updates.encryptedPrivateKey : existing.encryptedPrivateKey),
     }
 
     await db.put('wallets', updated)

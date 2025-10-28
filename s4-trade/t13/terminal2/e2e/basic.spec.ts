@@ -26,9 +26,9 @@ test.describe('DEX Trading Terminal', () => {
     await expect(page.locator('text=No presets configured')).toBeVisible()
   })
 
-  test('should be able to add a wallet', async ({ page }) => {
-    // Click add wallet button
-    await page.locator('text=Add Wallet').click()
+  test('should be able to import a wallet manually', async ({ page }) => {
+    // Click import wallet button
+    await page.locator('text=Import Wallet').click()
 
     // Fill wallet form
     await page.locator('input[placeholder="My Wallet"]').fill('Test Wallet')
@@ -40,6 +40,16 @@ test.describe('DEX Trading Terminal', () => {
     // Check wallet appears in table
     await expect(page.locator('text=Test Wallet')).toBeVisible()
     await expect(page.locator('text=0x74...f44e')).toBeVisible()
+    await expect(page.locator('text=Imported')).toBeVisible()
+  })
+
+  test('should show connect wallet dialog', async ({ page }) => {
+    // Click connect wallet button
+    await page.locator('text=Connect Wallet').click()
+
+    // Check connect dialog is open
+    await expect(page.locator('text=Connect Wallet Extension')).toBeVisible()
+    await expect(page.locator('text=Import Wallet Manually')).toBeVisible()
   })
 
   test('should be able to add an RPC endpoint', async ({ page }) => {

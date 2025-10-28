@@ -10,10 +10,14 @@ import { rpcStore } from '@/stores/rpc'
 import type { Wallet } from '@/types'
 import { formatAddress } from '@/lib/utils'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { detectExtensions, connectWallet, type ExtensionInfo } from '@/utils/walletDerivation'
 
 export function WalletsSection() {
   const [wallets, setWallets] = useState<Wallet[]>([])
+  const [extensions, setExtensions] = useState<ExtensionInfo[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false)
+  const [connectingExtension, setConnectingExtension] = useState<string | null>(null)
   const [newWallet, setNewWallet] = useState({
     name: '',
     address: '',
@@ -25,7 +29,13 @@ export function WalletsSection() {
   useEffect(() => {
     loadWallets()
     initializeRPCs()
+    detectWalletExtensions()
   }, [])
+
+  const detectWalletExtensions = () => {
+    const detectedExtensions = detectExtensions()
+    setExtensions(detectedExtensions)
+  }
 
   const loadWallets = async () => {
     try {
@@ -54,6 +64,7 @@ export function WalletsSection() {
         name: newWallet.name,
         address: newWallet.address,
         chain: newWallet.chain,
+        derivationType: 'imported',
         encryptedPrivateKey: newWallet.privateKey || undefined,
         isActive: wallets.length === 0, // Make first wallet active
       })
@@ -63,6 +74,43 @@ export function WalletsSection() {
       await loadWallets()
     } catch (error) {
       handleError(error as Error)
+    }
+  }
+
+  const handleConnectWallet = async (extensionType: 'metamask' | 'phantom') => {
+    try {
+      setConnectingExtension(extensionType)
+      const walletData = await connectWallet(extensionType)
+
+      // Check if wallet already exists
+      const existingWallet = wallets.find(w => w.address.toLowerCase() === walletData.address.toLowerCase())
+      if (existingWallet) {
+        throw new Error(`Wallet with address ${formatAddress(walletData.address)} is already connected`)
+      }
+
+      // Generate a default name
+      const extensionName = extensionType === 'metamask' ? 'MetaMask' : 'Phantom'
+      let walletName = `${extensionName} Wallet`
+      let counter = 1
+
+      // Ensure unique name
+      while (wallets.some(w => w.name === walletName)) {
+        walletName = `${extensionName} Wallet ${counter}`
+        counter++
+      }
+
+      await walletStore.create({
+        ...walletData,
+        name: walletName,
+        isActive: wallets.length === 0, // Make first wallet active
+      })
+
+      setIsConnectDialogOpen(false)
+      await loadWallets()
+    } catch (error) {
+      handleError(error as Error)
+    } finally {
+      setConnectingExtension(null)
     }
   }
 
@@ -88,11 +136,72 @@ export function WalletsSection() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Wallets</CardTitle>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>Add Wallet</Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex gap-2">
+          <Dialog open={isConnectDialogOpen} onOpenChange={(open) => {
+            setIsConnectDialogOpen(open)
+            if (open) {
+              detectWalletExtensions() // Refresh extensions when dialog opens
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Connect Wallet</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Connect Wallet Extension</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Connect your browser wallet extension to securely derive wallet addresses without storing private keys.
+                </p>
+                {extensions.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    No wallet extensions detected. Please install MetaMask or Phantom.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {extensions.map((extension) => (
+                      <Button
+                        key={extension.type}
+                        onClick={() => handleConnectWallet(extension.type)}
+                        disabled={connectingExtension === extension.type}
+                        className="w-full justify-start"
+                        variant="outline"
+                      >
+                        {connectingExtension === extension.type ? (
+                          <>Connecting...</>
+                        ) : (
+                          <>
+                            <span className="mr-2">🔗</span>
+                            Connect {extension.name} ({extension.chain.toUpperCase()})
+                          </>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Or import manually:</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setIsConnectDialogOpen(false)
+                      setIsCreateDialogOpen(true)
+                    }}
+                  >
+                    Import Wallet Manually
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Import Wallet</Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Wallet</DialogTitle>
             </DialogHeader>
@@ -142,7 +251,8 @@ export function WalletsSection() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         {wallets.length === 0 ? (
@@ -156,6 +266,7 @@ export function WalletsSection() {
                 <TableHead>Name</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>Chain</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -169,6 +280,15 @@ export function WalletsSection() {
                   </TableCell>
                   <TableCell>
                     <span className="capitalize">{wallet.chain}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                      wallet.derivationType === 'derived'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {wallet.derivationType === 'derived' ? 'Derived' : 'Imported'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     {wallet.isActive ? (

@@ -1,0 +1,73 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - heading [level=1]: DEX Trading Terminal
+          - paragraph: Manage your wallets, RPC endpoints, and trading presets
+        - generic:
+          - generic:
+            - heading [level=3]: Wallets
+            - generic:
+              - button [expanded]: Connect Wallet
+              - button: Import Wallet
+          - generic:
+            - paragraph: No wallets configured. Add your first wallet to get started.
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=3]: EVM RPC Endpoints
+              - button: Add RPC
+            - generic:
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - cell: Name
+                      - cell: URL
+                      - cell: Status
+                      - cell: Actions
+          - generic:
+            - generic:
+              - heading [level=3]: SVM RPC Endpoints
+            - generic:
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - cell: Name
+                      - cell: URL
+                      - cell: Status
+                      - cell: Actions
+        - generic:
+          - generic:
+            - heading [level=3]: Trading Presets
+            - button: Add Preset
+          - generic:
+            - paragraph: No presets configured. Create your first trading preset.
+        - generic:
+          - button: Errors (0)
+      - list:
+        - listitem [ref=e1]:
+          - generic [ref=e2]:
+            - generic [ref=e3]: Error
+            - generic [ref=e4]: User rejected the connection request
+          - button [ref=e5] [cursor=pointer]:
+            - img [ref=e6]
+  - dialog "Connect Wallet Extension" [ref=e10]:
+    - heading "Connect Wallet Extension" [level=2] [ref=e12]
+    - generic [ref=e13]:
+      - paragraph [ref=e14]: Connect your browser wallet extension to securely derive wallet addresses without storing private keys.
+      - button "🔗 Connect MetaMask (EVM)" [active] [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: 🔗
+        - text: Connect MetaMask (EVM)
+      - generic [ref=e18]:
+        - paragraph [ref=e19]: "Or import manually:"
+        - button "Import Wallet Manually" [ref=e20] [cursor=pointer]
+    - button "Close" [ref=e21] [cursor=pointer]:
+      - img [ref=e22]
+      - generic [ref=e25]: Close
+```

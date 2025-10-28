@@ -3,7 +3,9 @@ export interface Wallet {
   name: string;
   address: string;
   chain: 'evm' | 'svm';
+  derivationType: 'derived' | 'imported'; // derived from extension, imported with private key
   encryptedPrivateKey?: string; // Only for imported wallets, not derived
+  extensionType?: 'metamask' | 'phantom'; // Only for derived wallets
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

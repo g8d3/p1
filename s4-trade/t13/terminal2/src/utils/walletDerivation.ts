@@ -180,17 +180,25 @@ export async function deriveFromSignature(signature: string | Uint8Array, chain:
       }
     } else if (chain === 'svm') {
       // Create SVM wallet from entropy
-      const entropyBuffer = Buffer.from(entropy.slice(2), 'hex') // Remove 0x prefix
-      const keypair = Keypair.fromSeed(entropyBuffer.slice(0, 32)) // Use first 32 bytes as seed
+      const entropyBytes = ethers.getBytes(entropy) // Get Uint8Array from hex string
+      const seed = entropyBytes.slice(0, 32) // Use first 32 bytes as seed
+
+      // Ensure seed is exactly 32 bytes
+      if (seed.length !== 32) {
+        throw new Error(`Invalid seed length: ${seed.length}, expected 32`)
+      }
+
+      const keypair = Keypair.fromSeed(seed)
 
       return {
         address: keypair.publicKey.toString(),
-        privateKey: Buffer.from(keypair.secretKey).toString('hex'),
+        privateKey: Array.from(keypair.secretKey).map(b => b.toString(16).padStart(2, '0')).join(''),
       }
     } else {
       throw new Error(`Unsupported chain: ${chain}`)
     }
   } catch (error) {
+    console.error('Derivation error:', error)
     throw new WalletDerivationError(`Failed to derive wallet from signature: ${error}`)
   }
 }

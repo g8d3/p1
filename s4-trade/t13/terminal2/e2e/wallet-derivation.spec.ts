@@ -103,7 +103,7 @@ test.describe('Wallet Derivation', () => {
 
     // Check derived wallet appears in table (address should be different from extension)
     await expect(page.locator('text=Phantom Derived')).toBeVisible()
-    await expect(page.locator('text=Phantom')).toBeVisible() // Source column
+    await expect(page.locator('span').filter({ hasText: 'Phantom' })).toBeVisible() // Source column badge
     // The derived address should not be the same as the extension address
     await expect(page.locator('text=EPjF...Dt1v')).not.toBeVisible()
   })

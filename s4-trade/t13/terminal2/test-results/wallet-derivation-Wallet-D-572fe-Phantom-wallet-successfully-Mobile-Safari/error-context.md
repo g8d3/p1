@@ -20,18 +20,18 @@
                 - rowgroup:
                   - row:
                     - cell: Name
-                    - cell: Address
+                    - cell: Derived Address
                     - cell: Chain
-                    - cell: Type
+                    - cell: Source
                     - cell: Status
                     - cell: Actions
                 - rowgroup:
                   - row:
-                    - cell: MetaMask Wallet
-                    - cell: 0x74...f44e
-                    - cell: evm
+                    - cell: Phantom Derived
+                    - cell: Azqm...8Bu9
+                    - cell: svm
                     - cell:
-                      - generic: Derived
+                      - generic: Phantom
                     - cell:
                       - generic: Active
                     - cell:
@@ -72,17 +72,20 @@
         - generic:
           - button: Errors (0)
       - list
-  - dialog "Connect Wallet Extension" [ref=e2]:
-    - heading "Connect Wallet Extension" [level=2] [ref=e4]
+  - dialog "Derive Trading Wallet" [ref=e2]:
+    - heading "Derive Trading Wallet" [level=2] [ref=e4]
     - generic [ref=e5]:
-      - paragraph [ref=e6]: Connect your browser wallet extension to securely derive wallet addresses without storing private keys.
-      - button "🔗 Connect MetaMask (EVM)" [ref=e8] [cursor=pointer]:
-        - generic [ref=e9]: 🔗
-        - text: Connect MetaMask (EVM)
-      - generic [ref=e10]:
-        - paragraph [ref=e11]: "Or import manually:"
-        - button "Import Wallet Manually" [ref=e12] [cursor=pointer]
-    - button "Close" [ref=e13] [cursor=pointer]:
-      - img [ref=e14]
-      - generic [ref=e17]: Close
+      - paragraph [ref=e6]: Connect your browser wallet extension to create a new derived trading wallet. Your main wallet will sign a message to generate a unique trading address that this app controls.
+      - paragraph [ref=e8]:
+        - strong [ref=e9]: "Security:"
+        - text: Your main wallet private key never leaves your browser extension. A new wallet is created for trading operations.
+      - button "🔐 Derive from Phantom (SVM)" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 🔐
+        - text: Derive from Phantom (SVM)
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: "Or import manually:"
+        - button "Import Wallet Manually" [ref=e15] [cursor=pointer]
+    - button "Close" [ref=e16] [cursor=pointer]:
+      - img [ref=e17]
+      - generic [ref=e20]: Close
 ```

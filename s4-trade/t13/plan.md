@@ -9,6 +9,7 @@ Web app dex trading terminal that allows user to CRUD:
   - A percentage in volume is according: total assets for entries, assets in trade for exits.
 - RPCs to support EVM and SVM(Solana) networks
   - With default RPCs for most popular options
+- aggregators supporting 1inch and Jupiter
 
 User and developer experience:
 
@@ -18,3 +19,7 @@ User and developer experience:
 - Errors can be seen in table with timestamps whenever user or developer wants
 - No intrusive functions like `alert`, or `prompt` should be used
 - Things like derived addresses private keys or other private information should be saved encrypted
+- AI developer should follow a process similar to:
+  - Write e2e tests
+  - Verify tests run faster than manual testing
+  - 

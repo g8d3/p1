@@ -36,7 +36,7 @@ let db: IDBPDatabase<DexTerminalDB> | null = null
 export async function initDB(): Promise<IDBPDatabase<DexTerminalDB>> {
   if (db) return db
 
-  db = await openDB<DexTerminalDB>('dex-terminal', 1, {
+  db = await openDB<DexTerminalDB>('dex-terminal', 2, {
     upgrade(db) {
       // Wallets store
       const walletStore = db.createObjectStore('wallets', { keyPath: 'id' })

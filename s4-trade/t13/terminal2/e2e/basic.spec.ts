@@ -67,6 +67,16 @@ test.describe('DEX Trading Terminal', () => {
     await expect(page.locator('text=Test RPC')).toBeVisible()
   })
 
+  test('should show aggregators section', async ({ page }) => {
+    // Check aggregators section is present
+    await expect(page.locator('h3:has-text("Aggregators")')).toBeVisible()
+  })
+
+  test('should show trading section', async ({ page }) => {
+    // Check trading section is present
+    await expect(page.locator('h3:has-text("Trading")')).toBeVisible()
+  })
+
   test('should show error center', async ({ page }) => {
     // Error center should be visible as a button
     await expect(page.locator('text=Errors (0)')).toBeVisible()

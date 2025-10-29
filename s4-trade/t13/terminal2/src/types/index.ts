@@ -62,6 +62,9 @@ export interface Aggregator {
   type: '1inch' | 'jupiter';
   apiKey?: string;
   isActive: boolean;
+  priority: number; // For ordering in UI and quote selection
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ErrorLog {

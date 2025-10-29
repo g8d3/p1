@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { aggregatorStore } from '@/stores/aggregators'
 import { walletStore } from '@/stores/wallets'
 import { rpcStore } from '@/stores/rpc'
-import { AggregatorManager, type QuoteResponse } from '@/services/aggregators'
+import { AggregatorManager, type QuoteResponse, type SwapResponse } from '@/services/aggregators'
 import type { Aggregator, Wallet, RPC } from '@/types'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { ethers } from 'ethers'
+import { Connection, PublicKey, Transaction, sendAndConfirmTransaction, Keypair } from '@solana/web3.js'
 
 export function TradingSection() {
   const [aggregators, setAggregators] = useState<Aggregator[]>([])
@@ -17,6 +19,7 @@ export function TradingSection() {
   const [rpcs, setRpcs] = useState<RPC[]>([])
   const [quotes, setQuotes] = useState<QuoteResponse[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [executingTrade, setExecutingTrade] = useState<string | null>(null)
 
   const [tradeParams, setTradeParams] = useState({
     fromToken: '',
@@ -85,6 +88,92 @@ export function TradingSection() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const executeTrade = async (quote: QuoteResponse) => {
+    if (!tradeParams.walletId || !tradeParams.rpcId) {
+      handleError(new Error('Wallet and RPC must be selected'))
+      return
+    }
+
+    setExecutingTrade(quote.aggregator)
+
+    try {
+      const wallet = wallets.find(w => w.id === tradeParams.walletId)!
+      const rpc = rpcs.find(r => r.id === tradeParams.rpcId)!
+
+      // Get swap transaction data
+      const aggregatorManager = new AggregatorManager(aggregators)
+      const aggregator = aggregatorManager.getAggregator(quote.aggregator)
+      if (!aggregator) {
+        throw new Error(`Aggregator ${quote.aggregator} not found`)
+      }
+
+      const chainId = wallet.chain === 'evm' ? 1 : 101
+      const swapRequest = {
+        fromTokenAddress: quote.fromToken.address,
+        toTokenAddress: quote.toToken.address,
+        amount: quote.fromTokenAmount,
+        chainId,
+        fromAddress: wallet.address,
+        slippage: tradeParams.slippage,
+      }
+
+      const swapResponse: SwapResponse = await aggregator.getSwap(swapRequest)
+
+      // Execute based on chain
+      if (wallet.chain === 'evm') {
+        await executeEVMTrade(wallet, rpc, swapResponse.tx)
+      } else {
+        await executeSVMTrade(wallet, rpc, swapResponse.tx)
+      }
+
+      // Success - could show toast or update UI
+      alert('Trade executed successfully!')
+    } catch (error) {
+      handleError(error as Error)
+    } finally {
+      setExecutingTrade(null)
+    }
+  }
+
+  const executeEVMTrade = async (wallet: Wallet, rpc: RPC, txData: any) => {
+    if (!wallet.encryptedPrivateKey) {
+      throw new Error('Wallet private key not available')
+    }
+
+    const provider = new ethers.JsonRpcProvider(rpc.url)
+    const signer = new ethers.Wallet(wallet.encryptedPrivateKey, provider)
+
+    const tx = {
+      to: txData.to,
+      data: txData.data,
+      value: txData.value || '0x0',
+      gasLimit: txData.gas ? ethers.parseUnits(txData.gas, 'wei') : undefined,
+      gasPrice: txData.gasPrice ? ethers.parseUnits(txData.gasPrice, 'wei') : undefined,
+    }
+
+    const txResponse = await signer.sendTransaction(tx)
+    await txResponse.wait()
+
+    return txResponse.hash
+  }
+
+  const executeSVMTrade = async (wallet: Wallet, rpc: RPC, txData: any) => {
+    if (!wallet.encryptedPrivateKey) {
+      throw new Error('Wallet private key not available')
+    }
+
+    const connection = new Connection(rpc.url)
+    const secretKey = Uint8Array.from(wallet.encryptedPrivateKey.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)))
+    const keypair = Keypair.fromSecretKey(secretKey)
+
+    // For Jupiter, txData.data is the serialized transaction
+    const transaction = Transaction.from(Buffer.from(txData.data, 'base64'))
+
+    const signature = await sendAndConfirmTransaction(connection, transaction, [keypair])
+
+    return signature
   }
 
   const formatAmount = (amount: string, decimals: number = 18) => {
@@ -198,9 +287,14 @@ export function TradingSection() {
                       </p>
                     </div>
                   </div>
-                  <Button className="w-full mt-4" variant="outline">
-                    Execute Trade
-                  </Button>
+                   <Button
+                     className="w-full mt-4"
+                     variant="outline"
+                     onClick={() => executeTrade(quote)}
+                     disabled={executingTrade === quote.aggregator}
+                   >
+                     {executingTrade === quote.aggregator ? 'Executing...' : 'Execute Trade'}
+                   </Button>
                 </Card>
               ))}
             </div>

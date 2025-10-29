@@ -58,6 +58,9 @@ class AggregatorStore {
   }
 
   async initializeDefaultAggregators(): Promise<void> {
+    // First, clean up any duplicates
+    await this.removeDuplicates()
+
     // Create default aggregators only if they don't already exist
     const defaults = [
       {
@@ -81,6 +84,32 @@ class AggregatorStore {
       if (!existingNames.has(config.name)) {
         await this.create(config)
       }
+    }
+  }
+
+  async removeDuplicates(): Promise<void> {
+    const db = await getDB()
+    const all = await db.getAll('aggregators')
+
+    // Group by name and keep only the first occurrence of each
+    const seen = new Set<string>()
+    const duplicates: string[] = []
+
+    for (const agg of all) {
+      if (seen.has(agg.name)) {
+        duplicates.push(agg.id)
+      } else {
+        seen.add(agg.name)
+      }
+    }
+
+    // Delete duplicates
+    for (const id of duplicates) {
+      await db.delete('aggregators', id)
+    }
+
+    if (duplicates.length > 0) {
+      console.log(`Removed ${duplicates.length} duplicate aggregators`)
     }
   }
 

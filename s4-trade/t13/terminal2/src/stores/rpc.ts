@@ -79,6 +79,9 @@ class RPCStore {
   }
 
   async initializeDefaultRPCs(): Promise<void> {
+    // First, clean up any duplicates
+    await this.removeDuplicates()
+
     const db = await getDB()
 
     const defaultRPCs: Omit<RPC, 'id' | 'createdAt' | 'updatedAt'>[] = [
@@ -98,6 +101,32 @@ class RPCStore {
       if (existing.length === 0) {
         await this.create(rpc)
       }
+    }
+  }
+
+  async removeDuplicates(): Promise<void> {
+    const db = await getDB()
+    const all = await db.getAll('rpcs')
+
+    // Group by name and keep only the first occurrence of each
+    const seen = new Set<string>()
+    const duplicates: string[] = []
+
+    for (const rpc of all) {
+      if (seen.has(rpc.name)) {
+        duplicates.push(rpc.id)
+      } else {
+        seen.add(rpc.name)
+      }
+    }
+
+    // Delete duplicates
+    for (const id of duplicates) {
+      await db.delete('rpcs', id)
+    }
+
+    if (duplicates.length > 0) {
+      console.log(`Removed ${duplicates.length} duplicate RPCs`)
     }
   }
 }

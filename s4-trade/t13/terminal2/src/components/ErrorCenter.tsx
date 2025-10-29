@@ -12,6 +12,8 @@ export function ErrorCenter() {
 
   useEffect(() => {
     loadErrors()
+    const interval = setInterval(loadErrors, 1000) // Poll every second
+    return () => clearInterval(interval)
   }, [])
 
   const loadErrors = async () => {

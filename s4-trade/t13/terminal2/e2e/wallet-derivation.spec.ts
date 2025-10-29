@@ -6,11 +6,13 @@ test.describe('Wallet Derivation', () => {
   })
 
   test('should detect wallet extensions when available', async ({ page }) => {
-    // Mock extensions before loading the page
-    await page.addInitScript(() => {
+    await page.goto('http://localhost:3000')
+
+    // Mock extensions after page load
+    await page.evaluate(() => {
       // Mock MetaMask being available
-      (window as any).ethereum = {
-        request: async (args: any) => {
+      window.ethereum = {
+        request: function(args) {
           if (args.method === 'eth_requestAccounts') {
             return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e']
           }
@@ -25,18 +27,18 @@ test.describe('Wallet Derivation', () => {
       }
 
       // Mock Phantom being available
-      (window as any).solana = {
+      window.solana = {
         isPhantom: true,
-        connect: async () => ({
-          publicKey: { toString: () => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' }
-        }),
-        signMessage: async () => ({ signature: new Uint8Array(64) }),
+        connect: function() {
+          return {
+            publicKey: { toString: function() { return 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' } }
+          }
+        },
+        signMessage: function() { return { signature: new Uint8Array(64) } },
         isConnected: true,
-        publicKey: { toString: () => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' }
+        publicKey: { toString: function() { return 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' } }
       }
     })
-
-    await page.goto('http://localhost:3000')
 
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
@@ -47,10 +49,12 @@ test.describe('Wallet Derivation', () => {
   })
 
   test('should derive MetaMask wallet successfully', async ({ page }) => {
+    await page.goto('http://localhost:3000')
+
     // Mock MetaMask
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        request: async (args: any) => {
+    await page.evaluate(() => {
+      window.ethereum = {
+        request: function(args) {
           if (args.method === 'eth_requestAccounts') {
             return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e']
           }
@@ -62,8 +66,6 @@ test.describe('Wallet Derivation', () => {
       }
     })
 
-    await page.goto('http://localhost:3000')
-
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
 
@@ -72,28 +74,30 @@ test.describe('Wallet Derivation', () => {
 
     // Check derived wallet appears in table (address should be different from extension)
     await expect(page.locator('text=MetaMask Derived')).toBeVisible()
-    await expect(page.locator('text=MetaMask')).toBeVisible() // Source column
+    await expect(page.locator('span').filter({ hasText: 'MetaMask' })).toBeVisible() // Source column badge
     // The derived address should not be the same as the extension address
     await expect(page.locator('text=0x74...f44e')).not.toBeVisible()
   })
 
   test('should derive Phantom wallet successfully', async ({ page }) => {
+    await page.goto('http://localhost:3000')
+
     // Mock Phantom
-    await page.addInitScript(() => {
-      (window as any).solana = {
+    await page.evaluate(() => {
+      window.solana = {
         isPhantom: true,
-        connect: async () => ({
-          publicKey: { toString: () => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' }
-        }),
-        signMessage: async () => ({
-          signature: new Uint8Array(64).fill(1) // Mock signature
-        }),
+        connect: function() {
+          return {
+            publicKey: { toString: function() { return 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' } }
+          }
+        },
+        signMessage: function() {
+          return { signature: new Uint8Array(64).fill(1) }
+        },
         isConnected: true,
-        publicKey: { toString: () => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' }
+        publicKey: { toString: function() { return 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' } }
       }
     })
-
-    await page.goto('http://localhost:3000')
 
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
@@ -109,10 +113,12 @@ test.describe('Wallet Derivation', () => {
   })
 
   test('should handle MetaMask connection rejection', async ({ page }) => {
+    await page.goto('http://localhost:3000')
+
     // Mock MetaMask rejection
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        request: async (args: any) => {
+    await page.evaluate(() => {
+      window.ethereum = {
+        request: function(args) {
           if (args.method === 'eth_requestAccounts') {
             throw { code: 4001, message: 'User rejected the request' }
           }
@@ -120,8 +126,6 @@ test.describe('Wallet Derivation', () => {
         }
       }
     })
-
-    await page.goto('http://localhost:3000')
 
     // Open connect wallet dialog
     await page.locator('text=Connect Wallet').click()
@@ -134,10 +138,12 @@ test.describe('Wallet Derivation', () => {
   })
 
   test('should prevent duplicate wallet connections', async ({ page }) => {
+    await page.goto('http://localhost:3000')
+
     // Mock MetaMask
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        request: async (args: any) => {
+    await page.evaluate(() => {
+      window.ethereum = {
+        request: function(args) {
           if (args.method === 'eth_requestAccounts') {
             return ['0x742d35Cc6634C0532925a3b844Bc454e4438f44e']
           }
@@ -149,11 +155,9 @@ test.describe('Wallet Derivation', () => {
       }
     })
 
-    await page.goto('http://localhost:3000')
-
     // Connect wallet first time
     await page.locator('text=Connect Wallet').click()
-    await page.locator('text=Connect MetaMask (EVM)').click()
+    await page.locator('text=Derive from MetaMask (EVM)').click()
 
     // Try to derive same wallet again
     await page.locator('text=Connect Wallet').click()
@@ -164,11 +168,13 @@ test.describe('Wallet Derivation', () => {
   })
 
   test('should generate unique names for multiple wallets of same type', async ({ page }) => {
+    await page.goto('http://localhost:3000')
+
     // Mock MetaMask with dynamic account switching
-    await page.addInitScript(() => {
+    await page.evaluate(() => {
       let callCount = 0
-      (window as any).ethereum = {
-        request: async (args: any) => {
+      window.ethereum = {
+        request: function(args) {
           if (args.method === 'eth_requestAccounts') {
             callCount++
             return callCount === 1
@@ -183,8 +189,6 @@ test.describe('Wallet Derivation', () => {
       }
     })
 
-    await page.goto('http://localhost:3000')
-
     // Derive first wallet
     await page.locator('text=Connect Wallet').click()
     await page.locator('text=Derive from MetaMask (EVM)').click()
@@ -194,7 +198,7 @@ test.describe('Wallet Derivation', () => {
     await page.locator('text=Derive from MetaMask (EVM)').click()
 
     // Check both wallets have unique names
-    await expect(page.locator('text=MetaMask Wallet')).toBeVisible()
-    await expect(page.locator('text=MetaMask Wallet 2')).toBeVisible()
+    await expect(page.locator('text=MetaMask Derived')).toBeVisible()
+    await expect(page.locator('text=MetaMask Derived 1')).toBeVisible()
   })
 })

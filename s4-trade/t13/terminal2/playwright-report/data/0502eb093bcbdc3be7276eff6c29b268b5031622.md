@@ -1,0 +1,217 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - heading [level=1]: DEX Trading Terminal
+          - paragraph: Manage your wallets, RPC endpoints, aggregators, and execute trades
+        - generic:
+          - generic:
+            - heading [level=3]: Wallets
+            - generic:
+              - button [expanded]: Connect Wallet
+              - button: Import Wallet
+          - generic:
+            - paragraph: No wallets configured. Add your first wallet to get started.
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=3]: EVM RPC Endpoints
+              - button: Add RPC
+            - generic:
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - cell: Name
+                      - cell: URL
+                      - cell: Status
+                      - cell: Actions
+                  - rowgroup:
+                    - row:
+                      - cell:
+                        - text: Ethereum Mainnet
+                        - generic: Default
+                      - cell: https://eth.llamarpc.com
+                      - cell:
+                        - generic: Active
+                      - cell
+                    - row:
+                      - cell:
+                        - text: Ethereum Mainnet
+                        - generic: Default
+                      - cell: https://eth.llamarpc.com
+                      - cell:
+                        - generic: Active
+                      - cell
+                    - row:
+                      - cell:
+                        - text: Ethereum Mainnet
+                        - generic: Default
+                      - cell: https://eth.llamarpc.com
+                      - cell:
+                        - generic: Active
+                      - cell
+                    - row:
+                      - cell:
+                        - text: Ethereum Mainnet
+                        - generic: Default
+                      - cell: https://eth.llamarpc.com
+                      - cell:
+                        - generic: Active
+                      - cell
+          - generic:
+            - generic:
+              - heading [level=3]: SVM RPC Endpoints
+            - generic:
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - cell: Name
+                      - cell: URL
+                      - cell: Status
+                      - cell: Actions
+                  - rowgroup:
+                    - row:
+                      - cell:
+                        - text: Solana Mainnet
+                        - generic: Default
+                      - cell: https://api.mainnet-beta.solana.com
+                      - cell:
+                        - generic: Active
+                      - cell
+                    - row:
+                      - cell:
+                        - text: Solana Mainnet
+                        - generic: Default
+                      - cell: https://api.mainnet-beta.solana.com
+                      - cell:
+                        - generic: Active
+                      - cell
+                    - row:
+                      - cell:
+                        - text: Solana Mainnet
+                        - generic: Default
+                      - cell: https://api.mainnet-beta.solana.com
+                      - cell:
+                        - generic: Active
+                      - cell
+                    - row:
+                      - cell:
+                        - text: Solana Mainnet
+                        - generic: Default
+                      - cell: https://api.mainnet-beta.solana.com
+                      - cell:
+                        - generic: Active
+                      - cell
+        - generic:
+          - generic:
+            - heading [level=3]: Aggregators
+            - button: Add Aggregator
+          - generic:
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - cell: Name
+                    - cell: Type
+                    - cell: Priority
+                    - cell: Status
+                    - cell: Actions
+                - rowgroup:
+                  - row:
+                    - cell: Jupiter
+                    - cell: jupiter
+                    - cell:
+                      - spinbutton: "2"
+                    - cell:
+                      - switch [checked]
+                    - cell:
+                      - button: Delete
+                  - row:
+                    - cell: Jupiter
+                    - cell: jupiter
+                    - cell:
+                      - spinbutton: "2"
+                    - cell:
+                      - switch [checked]
+                    - cell:
+                      - button: Delete
+                  - row:
+                    - cell: 1inch
+                    - cell: 1inch
+                    - cell:
+                      - spinbutton: "1"
+                    - cell:
+                      - switch [checked]
+                    - cell:
+                      - button: Delete
+                  - row:
+                    - cell: 1inch
+                    - cell: 1inch
+                    - cell:
+                      - spinbutton: "1"
+                    - cell:
+                      - switch [checked]
+                    - cell:
+                      - button: Delete
+        - generic:
+          - generic:
+            - heading [level=3]: Trading
+          - generic:
+            - generic:
+              - generic:
+                - text: From Token
+                - textbox:
+                  - /placeholder: 0x...
+              - generic:
+                - text: To Token
+                - textbox:
+                  - /placeholder: 0x...
+              - generic:
+                - text: Amount
+                - spinbutton
+              - generic:
+                - text: Wallet
+                - combobox:
+                  - generic: Select wallet
+                  - img
+              - generic:
+                - text: RPC
+                - combobox:
+                  - generic: Select RPC
+                  - img
+              - generic:
+                - text: Slippage (%)
+                - spinbutton: "0.5"
+            - button: Get Quotes
+        - generic:
+          - generic:
+            - heading [level=3]: Trading Presets
+            - button: Add Preset
+          - generic:
+            - paragraph: No presets configured. Create your first trading preset.
+        - generic:
+          - button: Errors (0)
+      - list
+  - dialog "Derive Trading Wallet" [ref=e2]:
+    - heading "Derive Trading Wallet" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - paragraph [ref=e6]: Connect your browser wallet extension to create a new derived trading wallet. Your main wallet will sign a message to generate a unique trading address that this app controls.
+      - paragraph [ref=e8]:
+        - strong [ref=e9]: "Security:"
+        - text: Your main wallet private key never leaves your browser extension. A new wallet is created for trading operations.
+      - button "🔐 Derive from MetaMask (EVM)" [active] [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 🔐
+        - text: Derive from MetaMask (EVM)
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: "Or import manually:"
+        - button "Import Wallet Manually" [ref=e15] [cursor=pointer]
+    - button "Close" [ref=e16] [cursor=pointer]:
+      - img [ref=e17]
+      - generic [ref=e20]: Close
+```

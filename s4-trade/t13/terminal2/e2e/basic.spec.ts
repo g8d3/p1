@@ -48,7 +48,7 @@ test.describe('DEX Trading Terminal', () => {
     await page.locator('text=Connect Wallet').click()
 
     // Check connect dialog is open
-    await expect(page.locator('text=Connect Wallet Extension')).toBeVisible()
+    await expect(page.locator('text=Derive Trading Wallet')).toBeVisible()
     await expect(page.locator('text=Import Wallet Manually')).toBeVisible()
   })
 

@@ -58,7 +58,7 @@ class AggregatorStore {
   }
 
   async initializeDefaultAggregators(): Promise<void> {
-    // Create default aggregators only if they don't already exist
+    // Create default aggregators, ignore if they already exist
     const defaults = [
       {
         name: '1inch',
@@ -75,10 +75,10 @@ class AggregatorStore {
     ]
 
     for (const config of defaults) {
-      const existing = await this.getAll()
-      const alreadyExists = existing.some(agg => agg.name === config.name && agg.type === config.type)
-      if (!alreadyExists) {
+      try {
         await this.create(config)
+      } catch (error) {
+        // If it already exists, that's fine - ignore the error
       }
     }
   }

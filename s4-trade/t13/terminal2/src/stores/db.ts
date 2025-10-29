@@ -37,29 +37,38 @@ export async function initDB(): Promise<IDBPDatabase<DexTerminalDB>> {
   if (db) return db
 
   db = await openDB<DexTerminalDB>('dex-terminal', 2, {
-    upgrade(db) {
-      // Wallets store
-      const walletStore = db.createObjectStore('wallets', { keyPath: 'id' })
-      walletStore.createIndex('by-chain', 'chain')
+    upgrade(db, oldVersion, newVersion, transaction) {
+      console.log(`Upgrading database from ${oldVersion} to ${newVersion}`)
 
-      // Presets store
-      db.createObjectStore('presets', { keyPath: 'id' })
+      // Only create stores that don't exist
+      if (!db.objectStoreNames.contains('wallets')) {
+        const walletStore = db.createObjectStore('wallets', { keyPath: 'id' })
+        walletStore.createIndex('by-chain', 'chain')
+      }
 
-      // RPCs store
-      const rpcStore = db.createObjectStore('rpcs', { keyPath: 'id' })
-      rpcStore.createIndex('by-chain', 'chain')
+      if (!db.objectStoreNames.contains('presets')) {
+        db.createObjectStore('presets', { keyPath: 'id' })
+      }
 
-      // Aggregators store
-      db.createObjectStore('aggregators', { keyPath: 'id' })
+      if (!db.objectStoreNames.contains('rpcs')) {
+        const rpcStore = db.createObjectStore('rpcs', { keyPath: 'id' })
+        rpcStore.createIndex('by-chain', 'chain')
+      }
 
-      // Errors store
-      const errorStore = db.createObjectStore('errors', { keyPath: 'id' })
-      errorStore.createIndex('by-timestamp', 'timestamp')
+      if (!db.objectStoreNames.contains('aggregators')) {
+        db.createObjectStore('aggregators', { keyPath: 'id' })
+      }
 
-      // Trades store
-      const tradeStore = db.createObjectStore('trades', { keyPath: 'id' })
-      tradeStore.createIndex('by-wallet', 'walletId')
-      tradeStore.createIndex('by-status', 'status')
+      if (!db.objectStoreNames.contains('errors')) {
+        const errorStore = db.createObjectStore('errors', { keyPath: 'id' })
+        errorStore.createIndex('by-timestamp', 'timestamp')
+      }
+
+      if (!db.objectStoreNames.contains('trades')) {
+        const tradeStore = db.createObjectStore('trades', { keyPath: 'id' })
+        tradeStore.createIndex('by-wallet', 'walletId')
+        tradeStore.createIndex('by-status', 'status')
+      }
     },
   })
 

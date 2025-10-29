@@ -13,6 +13,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 export function AggregatorsSection() {
   const [aggregators, setAggregators] = useState<Aggregator[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   const [newAggregator, setNewAggregator] = useState({
     name: '',
     type: '1inch' as '1inch' | 'jupiter',
@@ -23,9 +24,12 @@ export function AggregatorsSection() {
   const { handleError } = useErrorHandler()
 
   useEffect(() => {
-    loadAggregators()
-    initializeAggregators()
-  }, [])
+    if (!isInitialized) {
+      loadAggregators()
+      initializeAggregators()
+      setIsInitialized(true)
+    }
+  }, [isInitialized])
 
   const loadAggregators = async () => {
     try {

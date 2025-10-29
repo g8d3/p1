@@ -12,6 +12,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 export function RPCSection() {
   const [rpcs, setRpcs] = useState<RPC[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   const [newRPC, setNewRPC] = useState({
     name: '',
     url: '',
@@ -20,9 +21,12 @@ export function RPCSection() {
   const { handleError } = useErrorHandler()
 
   useEffect(() => {
-    loadRPCs()
-    initializeRPCs()
-  }, [])
+    if (!isInitialized) {
+      loadRPCs()
+      initializeRPCs()
+      setIsInitialized(true)
+    }
+  }, [isInitialized])
 
   const initializeRPCs = async () => {
     try {

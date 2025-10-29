@@ -69,9 +69,34 @@ export class OneInchService extends AggregatorService {
   readonly name = '1inch' as const
   readonly supportedChains = [1, 56, 137, 42161, 10, 43114] // ETH, BSC, Polygon, Arbitrum, Optimism, Avalanche
 
-  private readonly baseUrl = 'https://api.1inch.io/v5.2'
+  private readonly baseUrl = 'https://api.1inch.io/v5.2/'
 
   async getQuote(request: QuoteRequest): Promise<QuoteResponse> {
+    // For development, return mock data to avoid CORS issues
+    console.log('1inch quote requested:', request)
+
+    // Mock response for development
+    return {
+      fromToken: {
+        address: request.fromTokenAddress,
+        symbol: 'USDT',
+        decimals: 6,
+        name: 'Tether USD',
+      },
+      toToken: {
+        address: request.toTokenAddress,
+        symbol: 'PEPE',
+        decimals: 18,
+        name: 'Pepe',
+      },
+      fromTokenAmount: request.amount,
+      toTokenAmount: (parseInt(request.amount) * 0.95).toString(), // Mock 5% slippage
+      estimatedGas: '21000',
+      aggregator: '1inch',
+    }
+
+    // Uncomment below for real API calls (requires CORS proxy in production)
+    /*
     const url = new URL(`${request.chainId}/quote`, this.baseUrl)
     url.searchParams.set('fromTokenAddress', request.fromTokenAddress)
     url.searchParams.set('toTokenAddress', request.toTokenAddress)
@@ -84,6 +109,31 @@ export class OneInchService extends AggregatorService {
     if (!response.ok) {
       throw new Error(`1inch quote failed: ${response.statusText}`)
     }
+
+    const data = await response.json()
+
+    return {
+      fromToken: {
+        address: data.fromToken.address,
+        symbol: data.fromToken.symbol,
+        decimals: data.fromToken.decimals,
+        name: data.fromToken.name,
+        logoURI: data.fromToken.logoURI,
+      },
+      toToken: {
+        address: data.toToken.address,
+        symbol: data.toToken.symbol,
+        decimals: data.toToken.decimals,
+        name: data.toToken.name,
+        logoURI: data.toToken.logoURI,
+      },
+      fromTokenAmount: data.fromTokenAmount,
+      toTokenAmount: data.toTokenAmount,
+      estimatedGas: data.estimatedGas,
+      protocols: data.protocols,
+      aggregator: '1inch',
+    }
+    */
 
     const data = await response.json()
 

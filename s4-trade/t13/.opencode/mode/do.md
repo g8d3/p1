@@ -34,9 +34,9 @@ AI developer should:
 - Use playwright in headed or UI mode to make sure everything is running perfectly before asking for human interaction
 - Read browser console and verify there are no errors
 - Push to git after each attempt
-- Compare what is on the current version with what a user would like, and iteratively write a file called uxdx.md that shows past, present and future aiming to create the best user and developer experience
+- Compare what is on the current version with what a user would like, and iteratively write files called uxdx/<datetime>.md that shows past, present and future aiming to create the best user and developer experience. Use your intuition to determine when a new file is needed, or if user tells you to use a new file you can use a new file.
 
-# uxdx.md file
+# uxdx/<datetime>.md files
 
 In this section I will be putting all those specific and concrete things where I see AI developer is doing things that seem suboptimal like:
 

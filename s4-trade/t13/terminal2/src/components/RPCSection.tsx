@@ -21,7 +21,17 @@ export function RPCSection() {
 
   useEffect(() => {
     loadRPCs()
+    initializeRPCs()
   }, [])
+
+  const initializeRPCs = async () => {
+    try {
+      await rpcStore.initializeDefaultRPCs()
+      await loadRPCs()
+    } catch (error) {
+      handleError(error as Error)
+    }
+  }
 
   const loadRPCs = async () => {
     try {

@@ -30,9 +30,9 @@ test.describe('DEX Trading Terminal', () => {
     // Click import wallet button
     await page.locator('text=Import Wallet').click()
 
-    // Fill wallet form
+    // Fill wallet form (use more specific selectors)
     await page.locator('input[placeholder="My Wallet"]').fill('Test Wallet')
-    await page.locator('input[placeholder="0x..."]').fill('0x742d35Cc6634C0532925a3b844Bc454e4438f44e')
+    await page.locator('input[placeholder="0x..."]').first().fill('0x742d35Cc6634C0532925a3b844Bc454e4438f44e')
 
     // Submit form
     await page.locator('text=Create Wallet').click()
@@ -73,8 +73,8 @@ test.describe('DEX Trading Terminal', () => {
   })
 
   test('should show trading section', async ({ page }) => {
-    // Check trading section is present
-    await expect(page.locator('h3:has-text("Trading")')).toBeVisible()
+    // Check trading section is present (first occurrence, not Trading Presets)
+    await expect(page.locator('h3:has-text("Trading")').first()).toBeVisible()
   })
 
   test('should show error center', async ({ page }) => {

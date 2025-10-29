@@ -14,4 +14,15 @@ export default defineConfig({
     host: true,
     port: 3000,
   },
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['buffer', '@solana/web3.js'],
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+    },
+  },
 })

@@ -1,0 +1,177 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - heading "DEX Trading Terminal" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Manage your wallets, RPC endpoints, aggregators, and execute trades
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "Wallets" [level=3] [ref=e10]
+        - generic [ref=e11]:
+          - button "Connect Wallet" [ref=e12] [cursor=pointer]
+          - button "Import Wallet" [ref=e13] [cursor=pointer]
+      - paragraph [ref=e15]: No wallets configured. Add your first wallet to get started.
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - heading "EVM RPC Endpoints" [level=3] [ref=e19]
+          - button "Add RPC" [ref=e20] [cursor=pointer]
+        - table [ref=e23]:
+          - rowgroup [ref=e24]:
+            - row "Name URL Status Actions" [ref=e25]:
+              - cell "Name" [ref=e26]
+              - cell "URL" [ref=e27]
+              - cell "Status" [ref=e28]
+              - cell "Actions" [ref=e29]
+          - rowgroup [ref=e30]:
+            - row "Ethereum Mainnet Default https://eth.llamarpc.com Active" [ref=e31]:
+              - cell "Ethereum Mainnet Default" [ref=e32]:
+                - text: Ethereum Mainnet
+                - generic [ref=e33]: Default
+              - cell "https://eth.llamarpc.com" [ref=e34]
+              - cell "Active" [ref=e35]:
+                - generic [ref=e36]: Active
+              - cell [ref=e37]
+            - row "Ethereum Mainnet Default https://eth.llamarpc.com Active" [ref=e38]:
+              - cell "Ethereum Mainnet Default" [ref=e39]:
+                - text: Ethereum Mainnet
+                - generic [ref=e40]: Default
+              - cell "https://eth.llamarpc.com" [ref=e41]
+              - cell "Active" [ref=e42]:
+                - generic [ref=e43]: Active
+              - cell [ref=e44]
+            - row "Ethereum Mainnet Default https://eth.llamarpc.com Active" [ref=e45]:
+              - cell "Ethereum Mainnet Default" [ref=e46]:
+                - text: Ethereum Mainnet
+                - generic [ref=e47]: Default
+              - cell "https://eth.llamarpc.com" [ref=e48]
+              - cell "Active" [ref=e49]:
+                - generic [ref=e50]: Active
+              - cell [ref=e51]
+            - row "Ethereum Mainnet Default https://eth.llamarpc.com Active" [ref=e52]:
+              - cell "Ethereum Mainnet Default" [ref=e53]:
+                - text: Ethereum Mainnet
+                - generic [ref=e54]: Default
+              - cell "https://eth.llamarpc.com" [ref=e55]
+              - cell "Active" [ref=e56]:
+                - generic [ref=e57]: Active
+              - cell [ref=e58]
+      - generic [ref=e59]:
+        - heading "SVM RPC Endpoints" [level=3] [ref=e61]
+        - table [ref=e64]:
+          - rowgroup [ref=e65]:
+            - row "Name URL Status Actions" [ref=e66]:
+              - cell "Name" [ref=e67]
+              - cell "URL" [ref=e68]
+              - cell "Status" [ref=e69]
+              - cell "Actions" [ref=e70]
+          - rowgroup [ref=e71]:
+            - row "Solana Mainnet Default https://api.mainnet-beta.solana.com Active" [ref=e72]:
+              - cell "Solana Mainnet Default" [ref=e73]:
+                - text: Solana Mainnet
+                - generic [ref=e74]: Default
+              - cell "https://api.mainnet-beta.solana.com" [ref=e75]
+              - cell "Active" [ref=e76]:
+                - generic [ref=e77]: Active
+              - cell [ref=e78]
+            - row "Solana Mainnet Default https://api.mainnet-beta.solana.com Active" [ref=e79]:
+              - cell "Solana Mainnet Default" [ref=e80]:
+                - text: Solana Mainnet
+                - generic [ref=e81]: Default
+              - cell "https://api.mainnet-beta.solana.com" [ref=e82]
+              - cell "Active" [ref=e83]:
+                - generic [ref=e84]: Active
+              - cell [ref=e85]
+    - generic [ref=e86]:
+      - generic [ref=e87]:
+        - heading "Aggregators" [level=3] [ref=e88]
+        - button "Add Aggregator" [ref=e89] [cursor=pointer]
+      - table [ref=e92]:
+        - rowgroup [ref=e93]:
+          - row "Name Type Priority Status Actions" [ref=e94]:
+            - cell "Name" [ref=e95]
+            - cell "Type" [ref=e96]
+            - cell "Priority" [ref=e97]
+            - cell "Status" [ref=e98]
+            - cell "Actions" [ref=e99]
+        - rowgroup [ref=e100]:
+          - row "1inch 1inch 1 Delete" [ref=e101]:
+            - cell "1inch" [ref=e102]
+            - cell "1inch" [ref=e103]
+            - cell "1" [ref=e104]:
+              - spinbutton [ref=e105]: "1"
+            - cell [ref=e106]:
+              - switch [checked] [ref=e107] [cursor=pointer]
+            - cell "Delete" [ref=e108]:
+              - button "Delete" [ref=e109] [cursor=pointer]
+          - row "Jupiter jupiter 2 Delete" [ref=e110]:
+            - cell "Jupiter" [ref=e111]
+            - cell "jupiter" [ref=e112]
+            - cell "2" [ref=e113]:
+              - spinbutton [ref=e114]: "2"
+            - cell [ref=e115]:
+              - switch [checked] [ref=e116] [cursor=pointer]
+            - cell "Delete" [ref=e117]:
+              - button "Delete" [ref=e118] [cursor=pointer]
+          - row "Jupiter jupiter 2 Delete" [ref=e119]:
+            - cell "Jupiter" [ref=e120]
+            - cell "jupiter" [ref=e121]
+            - cell "2" [ref=e122]:
+              - spinbutton [ref=e123]: "2"
+            - cell [ref=e124]:
+              - switch [checked] [ref=e125] [cursor=pointer]
+            - cell "Delete" [ref=e126]:
+              - button "Delete" [ref=e127] [cursor=pointer]
+          - row "1inch 1inch 1 Delete" [ref=e128]:
+            - cell "1inch" [ref=e129]
+            - cell "1inch" [ref=e130]
+            - cell "1" [ref=e131]:
+              - spinbutton [ref=e132]: "1"
+            - cell [ref=e133]:
+              - switch [checked] [ref=e134] [cursor=pointer]
+            - cell "Delete" [ref=e135]:
+              - button "Delete" [ref=e136] [cursor=pointer]
+    - generic [ref=e137]:
+      - heading "Trading" [level=3] [ref=e139]
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - text: From Token
+            - textbox "0x..." [ref=e143]
+          - generic [ref=e144]:
+            - text: To Token
+            - textbox "0x..." [ref=e145]
+          - generic [ref=e146]:
+            - text: Amount
+            - spinbutton [ref=e147]
+          - generic [ref=e148]:
+            - text: Wallet
+            - combobox [ref=e149] [cursor=pointer]:
+              - generic: Select wallet
+              - img [ref=e150]
+          - generic [ref=e152]:
+            - text: RPC
+            - combobox [ref=e153] [cursor=pointer]:
+              - generic: Select RPC
+              - img [ref=e154]
+          - generic [ref=e156]:
+            - text: Slippage (%)
+            - spinbutton [ref=e157]: "0.5"
+        - button "Get Quotes" [active] [ref=e158] [cursor=pointer]
+    - generic [ref=e159]:
+      - generic [ref=e160]:
+        - heading "Trading Presets" [level=3] [ref=e161]
+        - button "Add Preset" [ref=e162] [cursor=pointer]
+      - paragraph [ref=e164]: No presets configured. Create your first trading preset.
+    - button "Errors (0)" [ref=e166] [cursor=pointer]
+  - region "Notifications (F8)":
+    - list [ref=e168]:
+      - listitem [ref=e169]:
+        - generic [ref=e170]:
+          - generic [ref=e171]: Error
+          - generic [ref=e172]: Please fill in all required fields
+        - button [ref=e173] [cursor=pointer]:
+          - img [ref=e174]
+```

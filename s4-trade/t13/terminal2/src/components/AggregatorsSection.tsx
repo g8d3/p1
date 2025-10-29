@@ -146,7 +146,7 @@ export function AggregatorsSection() {
               <div className="flex items-center space-x-2">
                 <Switch
                   checked={newAggregator.isActive}
-                  onCheckedChange={(checked) => setNewAggregator(prev => ({ ...prev, isActive: checked }))}
+                  onCheckedChange={(checked: boolean) => setNewAggregator(prev => ({ ...prev, isActive: checked }))}
                 />
                 <label className="text-sm font-medium">Active</label>
               </div>
@@ -191,7 +191,7 @@ export function AggregatorsSection() {
                   <TableCell>
                     <Switch
                       checked={aggregator.isActive}
-                      onCheckedChange={(checked) => handleToggleActive(aggregator.id, checked)}
+                      onCheckedChange={(checked: boolean) => handleToggleActive(aggregator.id, checked)}
                     />
                   </TableCell>
                   <TableCell>
